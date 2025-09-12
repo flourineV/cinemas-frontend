@@ -1,0 +1,150 @@
+// Main types for CineHub movie booking system
+
+export interface Movie {
+  id: string;
+  title: string;
+  description: string;
+  genre: string[];
+  duration: number; // in minutes
+  rating: string;
+  releaseDate: string;
+  poster: string;
+  trailer?: string;
+  director: string;
+  cast: string[];
+  language: string;
+  isActive: boolean;
+}
+
+export interface Cinema {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  facilities: string[];
+  screens: Screen[];
+}
+
+export interface Screen {
+  id: string;
+  name: string;
+  totalSeats: number;
+  screenType: 'Standard' | '3D' | 'IMAX' | '4DX';
+  seatLayout: Seat[][];
+}
+
+export interface Seat {
+  id: string;
+  row: string;
+  number: number;
+  type: 'Regular' | 'VIP' | 'Couple';
+  isAvailable: boolean;
+  price: number;
+}
+
+export interface Showtime {
+  id: string;
+  movieId: string;
+  cinemaId: string;
+  screenId: string;
+  startTime: string;
+  endTime: string;
+  date: string;
+  availableSeats: number;
+  basePrice: number;
+}
+
+export interface Booking {
+  id: string;
+  userId: string;
+  showtimeId: string;
+  seats: SelectedSeat[];
+  totalAmount: number;
+  bookingDate: string;
+  status: 'Pending' | 'Confirmed' | 'Cancelled';
+  paymentId?: string;
+}
+
+export interface SelectedSeat {
+  seatId: string;
+  row: string;
+  number: number;
+  type: string;
+  price: number;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  avatar?: string;
+  bookingHistory: Booking[];
+}
+
+export interface Payment {
+  id: string;
+  bookingId: string;
+  amount: number;
+  method: 'Credit Card' | 'Debit Card' | 'PayPal' | 'Bank Transfer';
+  status: 'Pending' | 'Success' | 'Failed';
+  transactionDate: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+// Form types
+export interface BookingForm {
+  showtimeId: string;
+  selectedSeats: SelectedSeat[];
+  userInfo: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  paymentMethod: string;
+}
+
+export interface LoginForm {
+  email: string;
+  password: string;
+}
+
+export interface RegisterForm {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+}
+
+// Filter types
+export interface MovieFilters {
+  genre?: string;
+  city?: string;
+  date?: string;
+  language?: string;
+  rating?: string;
+}
+
+export interface ShowtimeFilters {
+  movieId?: string;
+  cinemaId?: string;
+  date?: string;
+  time?: 'morning' | 'afternoon' | 'evening' | 'night';
+}
