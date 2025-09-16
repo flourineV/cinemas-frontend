@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 import Header from './Header';
-import Footer from './Footer';
-import './Layout.css';
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,12 +7,11 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="layout">
+    <div className="min-h-screen w-full">
       <Header />
-      <main className="main-content">
+      <main className="w-full">
         {children}
       </main>
-      <Footer />
     </div>
   );
 };
