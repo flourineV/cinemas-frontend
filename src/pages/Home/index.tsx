@@ -430,6 +430,71 @@ const Home = () => {
             </button>
           </div>
         </section>
+
+        {/* Liên hệ chúng tôi */}
+        <section className="w-full max-w-6xl mx-auto px-4 py-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">📞 Liên hệ chúng tôi</h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Thông tin liên hệ */}
+            <div className="space-y-4 text-slate-300">
+              <p>
+                <span className="font-semibold text-white">📍 Địa chỉ:</span> 123 Đường ABC, Quận 1, TP. HCM
+              </p>
+              <p>
+                <span className="font-semibold text-white">☎️ Hotline:</span> 1900 123 456
+              </p>
+              <p>
+                <span className="font-semibold text-white">✉️ Email:</span> support@cinema.vn
+              </p>
+
+              {/* Bản đồ (embed Google Map) */}
+              <div className="rounded-xl overflow-hidden shadow-md mt-6">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.509045985394!2d106.700423!3d10.776530!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f41b2f1f1f1%3A0xbadmapid!2zU8ahIHBo4bqhbSBs4bqtcA!5e0!3m2!1svi!2s!4v1636789123456"
+                  width="100%"
+                  height="250"
+                  allowFullScreen={true}
+                  loading="lazy"
+                ></iframe>
+              </div>
+            </div>
+
+            {/* Form liên hệ */}
+            <form className="bg-slate-800 p-6 rounded-xl shadow-md space-y-4">
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Họ và tên</label>
+                <input
+                  type="text"
+                  placeholder="Nhập họ tên"
+                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Email</label>
+                <input
+                  type="email"
+                  placeholder="Nhập email"
+                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Nội dung</label>
+                <textarea
+                  rows={4}  
+                  placeholder="Nhập nội dung"
+                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition"
+              >
+                Gửi liên hệ
+              </button>
+            </form>
+          </div>
+        </section>
       </div>
     </Layout>
   );
