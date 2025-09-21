@@ -19,7 +19,6 @@ const movies = [
   { title: "Movie 6", poster: "https://via.placeholder.com/200x300?text=Movie+6" },
   { title: "Movie 7", poster: "https://via.placeholder.com/200x300?text=Movie+7" },
   { title: "Movie 8", poster: "https://via.placeholder.com/200x300?text=Movie+8" },
-  // thêm phim khác...
 ];
 
 const upcomingMovies = [
@@ -27,7 +26,6 @@ const upcomingMovies = [
   { id: 2, title: "Batman Beyond", poster: "link-anh-2" },
   { id: 3, title: "Inside Out 2", poster: "link-anh-3" },
   { id: 4, title: "Deadpool 3", poster: "link-anh-4" },
-  // thêm phim khác...
 ];
 
 const promotions = [

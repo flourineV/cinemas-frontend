@@ -10,24 +10,24 @@ const Header = () => {
   const { logout } = useAuthActions();
 
   return (
-    <header className="fixed bg-slate-900 text-white w-full">
+    <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="
-            flex items-center justify-between 
-            py-3 px-4       /* mobile: nhỏ gọn */
-            sm:py-4 sm:px-6 /* tablet */
-            md:py-5 md:px-12
+        <div
+          className="
+            flex items-center justify-between
+            py-5 px-4
+            sm:py-6 sm:px-6
+            md:py-6 md:px-12
             lg:py-6 lg:px-36
             w-full
-          ">
-          {/* Logo - Fixed width */}
-          <Link to="/" className="flex items-center space-x-2 w-48">
-            <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-yellow-400 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">C</span>
-            </div>
-            <span className="text-xl font-bold text-white">
-              CINESTAR
-            </span>
+          "
+        >
+          <Link to="/" className="flex items-center">
+            <img
+              src="/LogoFullfinal.png"
+              alt="CineHub Logo"
+              className="max-h-14 w-auto object-contain"
+            />
           </Link>
 
           {/* Navigation Menu */}
@@ -61,11 +61,6 @@ const Header = () => {
                 <Link to="/login" className="flex items-center space-x-1 hover:text-yellow-400 transition-colors whitespace-nowrap">
                   <User className="w-4 h-4" />
                   <span className="text-base">Đăng nhập</span>
-                </Link>
-
-                {/* User Signup */}
-                <Link to="/signup" className="bg-yellow-400 text-black px-4 py-2 rounded-md hover:bg-yellow-300 transition-colors whitespace-nowrap">
-                  <span className="text-sm font-medium">Đăng ký</span>
                 </Link>
               </>
             ) : (
