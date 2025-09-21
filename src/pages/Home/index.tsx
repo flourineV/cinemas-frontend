@@ -107,7 +107,7 @@ const Home = () => {
     <Layout>
       <div className="w-full bg-slate-900 min-h-screen pt-20">
          {/* Banner quảng cáo */}
-         <section className="relative w-full max-w-6xl mx-auto h-[300px] sm:h-[400px] lg:h-[500px] overflow-hidden rounded-2xl shadow-lg">
+         <section className="relative w-full max-w-6xl mx-auto aspect-[16/6] overflow-hidden rounded-2xl shadow-lg">
           <div
             className="flex transition-transform duration-700 ease-in-out h-full"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }} // hiệu ứng trượt ngang
@@ -157,7 +157,7 @@ const Home = () => {
 
         {/* Carousel phim đang chiếu */}
         <section className="relative w-full max-w-6xl mx-auto mt-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎬 Phim đang chiếu</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎬 PHIM ĐANG CHIẾU</h2>
 
           <div className="relative overflow-hidden rounded-2xl shadow-lg">
             <div
@@ -231,7 +231,7 @@ const Home = () => {
 
         {/* Phim sắp chiếu */}
         <section className="relative w-full max-w-6xl mx-auto mt-16">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎥 Phim sắp chiếu</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎥 PHIM SẮP CHIẾU</h2>
 
           <div className="relative overflow-hidden rounded-2xl shadow-lg">
             <div
@@ -305,7 +305,7 @@ const Home = () => {
 
         {/* --- Khuyến mãi --- */}
         <section className="relative w-full max-w-6xl mx-auto mt-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🔥 Khuyến mãi</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🔥 KHUYẾN MÃI</h2>
 
           <div className="relative overflow-hidden rounded-2xl shadow-lg">
             <div
@@ -380,7 +380,7 @@ const Home = () => {
 
         {/* Chương trình thành viên */}
         <section className="w-full max-w-6xl mx-auto px-4 py-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎟️ Chương trình thành viên</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎟️ CHƯƠNG TRÌNH THÀNH VIÊN</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Member Card 1 */}
@@ -433,7 +433,7 @@ const Home = () => {
 
         {/* Liên hệ chúng tôi */}
         <section className="w-full max-w-6xl mx-auto px-4 py-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">📞 Liên hệ chúng tôi</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">📞 LIÊN HỆ CHÚNG TÔI</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Thông tin liên hệ */}
@@ -445,7 +445,7 @@ const Home = () => {
                 <span className="font-semibold text-white">☎️ Hotline:</span> 1900 123 456
               </p>
               <p>
-                <span className="font-semibold text-white">✉️ Email:</span> support@cinema.vn
+                <span className="font-semibold text-white">✉️ Email:</span> support@cinehub.vn
               </p>
 
               {/* Bản đồ (embed Google Map) */}

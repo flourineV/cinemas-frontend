@@ -10,15 +10,15 @@ const Header = () => {
   const { logout } = useAuthActions();
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white">
+    <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white z-50 shadow-md">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div
           className="
             flex items-center justify-between
-            py-5 px-4
-            sm:py-6 sm:px-6
-            md:py-6 md:px-12
-            lg:py-6 lg:px-36
+            py-2 px-4
+            sm:py-3 sm:px-6
+            md:py-3 md:px-12
+            lg:py-3 lg:px-36
             w-full
           "
         >
@@ -26,7 +26,7 @@ const Header = () => {
             <img
               src="/LogoFullfinal.png"
               alt="CineHub Logo"
-              className="max-h-14 w-auto object-contain"
+              className="max-h-14 sm:max-h-16 md:max-h-20 lg:max-h-24 w-auto object-contain"
             />
           </Link>
 
