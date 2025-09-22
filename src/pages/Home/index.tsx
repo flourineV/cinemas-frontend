@@ -14,24 +14,6 @@ const images = [
     "https://insieutoc.vn/wp-content/uploads/2021/02/poster-ngang.jpg",
   ];
 
-// const movies = [
-//   { title: "Movie 1", poster: "https://via.placeholder.com/200x300?text=Movie+1" },
-//   { title: "Movie 2", poster: "https://via.placeholder.com/200x300?text=Movie+2" },
-//   { title: "Movie 3", poster: "https://via.placeholder.com/200x300?text=Movie+3" },
-//   { title: "Movie 4", poster: "https://via.placeholder.com/200x300?text=Movie+4" },
-//   { title: "Movie 5", poster: "https://via.placeholder.com/200x300?text=Movie+5" },
-//   { title: "Movie 6", poster: "https://via.placeholder.com/200x300?text=Movie+6" },
-//   { title: "Movie 7", poster: "https://via.placeholder.com/200x300?text=Movie+7" },
-//   { title: "Movie 8", poster: "https://via.placeholder.com/200x300?text=Movie+8" },
-// ];
-
-const upcomingMovies = [
-  { id: 1, title: "Avatar 3", poster: "link-anh-1" },
-  { id: 2, title: "Batman Beyond", poster: "link-anh-2" },
-  { id: 3, title: "Inside Out 2", poster: "link-anh-3" },
-  { id: 4, title: "Deadpool 3", poster: "link-anh-4" },
-];
-
 const promotions = [
   {
     title: "Mua 1 tặng 1 vé 2D",
@@ -51,15 +33,10 @@ const promotions = [
 ];
 
 const Home = () => {
-  const [currentIndex, setCurrentIndex] = useState(0); // lưu currentIndex ảnh hiện tại
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
+  // --- Banner quảng cáo state ---
+  const [currentIndex, setCurrentIndex] = useState(0); 
+  const prevSlide = () => { setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1)); };
+  const nextSlide = () => { setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1)); };
 
   // Auto slide
   useEffect(() => {
@@ -70,45 +47,42 @@ const Home = () => {
   }, [currentIndex]);
 
   // --- Now-playing Movie carousel state ---
-  const [movies, setMovies] = useState<MovieSummary[]>([]);
-  const [movieIndex, setMovieIndex] = useState(0);
+  const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
+  const [nowPlayingIndex, setNowPlayingIndex] = useState(0);
   const itemsPerSlide = 4;
 
   useEffect(() => {
     movieService.getNowPlaying(0, 20).then((res) => {
-      setMovies(res.data.content); // Spring Page<MovieSummaryResponse>
+      setNowPlaying(res.data.content); 
     });
   }, []);
 
-  const totalSlides = Math.ceil(movies.length / itemsPerSlide);
-  const nextMovies = () => { setMovieIndex((prev) => (prev + 1) % totalSlides); };
-  const prevMovies = () => { setMovieIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1)); };
+  const totalNowPlayingSlides = Math.ceil(nowPlaying.length / itemsPerSlide);
+  const nextMovies = () => { setNowPlayingIndex((prev) => (prev + 1) % totalNowPlayingSlides); };
+  const prevMovies = () => { setNowPlayingIndex((prev) => (prev === 0 ? totalNowPlayingSlides - 1 : prev - 1)); };
 
-  // --- UpcomingMovie carousel state ---
-  const totalUpcomingSlides = Math.ceil(upcomingMovies.length / itemsPerSlide);
+  // --- Up-coming Movie carousel state ---
+  const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
   const [upcomingIndex, setUpcomingIndex] = useState(0);
 
-  const nextUpcoming = () => {
-    setUpcomingIndex((prev) => (prev + 1) % totalUpcomingSlides);
-  };
-  const prevUpcoming = () => {
-    setUpcomingIndex((prev) => (prev === 0 ? totalUpcomingSlides - 1 : prev - 1));
-  };
+  useEffect(() => {
+    movieService.getUpcoming(0, 20).then((res) => {
+      setUpcoming(res.data.content); 
+    });
+  }, []);
+  
+  const totalUpcomingSlides = Math.ceil(upcoming.length / itemsPerSlide);
+  const nextUpcoming = () => { setUpcomingIndex((prev) => (prev + 1) % totalUpcomingSlides); };
+  const prevUpcoming = () => { setUpcomingIndex((prev) => (prev === 0 ? totalUpcomingSlides - 1 : prev - 1)); };
 
   // --- Promotion carousel state ---
   const promosPerSlide = 3; // 3 promo mỗi slide
   const totalPromoSlides = Math.ceil(promotions.length / promosPerSlide);
   const [promoIndex, setPromoIndex] = useState(0);
 
-  const nextPromos = () => {
-    setPromoIndex((prev) => (prev + 1) % totalPromoSlides);
-  };
+  const nextPromos = () => { setPromoIndex((prev) => (prev + 1) % totalPromoSlides); };
 
-  const prevPromos = () => {
-    setPromoIndex((prev) =>
-      prev === 0 ? totalPromoSlides - 1 : prev - 1
-    );
-  };
+  const prevPromos = () => { setPromoIndex((prev) => prev === 0 ? totalPromoSlides - 1 : prev - 1); };
 
   return (
     <Layout>
@@ -169,30 +143,30 @@ const Home = () => {
           <div className="relative overflow-hidden rounded-2xl shadow-lg">
             <div
               className="flex transition-transform duration-700 ease-in-out"
-              style={{ transform: `translateX(-${movieIndex * 100}%)` }}
+              style={{ transform: `translateX(-${nowPlayingIndex * 100}%)` }}
             >
-              {Array.from({ length: totalSlides }).map((_, slideIndex) => (
+              {Array.from({ length: totalNowPlayingSlides }).map((_, slideIndex) => (
                 <div
                   key={slideIndex}
                   className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full flex-shrink-0 px-4 py-6"
                 >
-                  {movies
+                  {nowPlaying
                     .slice(
                       slideIndex * itemsPerSlide,
                       (slideIndex + 1) * itemsPerSlide
                     )
-                    .map((movie) => (
+                    .map((nowPlaying) => (
                       <div
-                        key={movie.id}
+                        key={nowPlaying.id}
                         className="bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
                       >
                         <img
-                          src={getPosterUrl(movie.posterUrl)}
-                          alt={movie.title}
+                          src={getPosterUrl(nowPlaying.posterUrl)}
+                          alt={nowPlaying.title}
                           className="w-full h-[350px] object-cover"
                         />
-                        <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[60px] whitespace-pre-line">
-                          {formatTitle(movie.title)}
+                        <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
+                          {formatTitle(nowPlaying.title)}
                         </div>
                       </div>
                     ))}
@@ -217,12 +191,12 @@ const Home = () => {
 
           {/* Dots indicator */}
           <div className="flex justify-center mt-3 space-x-2">
-            {Array.from({ length: totalSlides }).map((_, idx) => (
+            {Array.from({ length: totalNowPlayingSlides }).map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => setMovieIndex(idx)}
+                onClick={() => setNowPlayingIndex(idx)}
                 className={`w-3 h-3 rounded-full ${
-                  idx === movieIndex ? "bg-white" : "bg-gray-500"
+                  idx === nowPlayingIndex ? "bg-white" : "bg-gray-500"
                 }`}
               ></button>
             ))}
@@ -250,23 +224,23 @@ const Home = () => {
                   key={slideIndex}
                   className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full flex-shrink-0 px-4 py-6"
                 >
-                  {upcomingMovies
+                  {upcoming
                     .slice(
                       slideIndex * itemsPerSlide,
                       (slideIndex + 1) * itemsPerSlide
                     )
-                    .map((movie, idx) => (
+                    .map((upcoming) => (
                       <div
-                        key={idx}
+                        key={upcoming.id}
                         className="bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
                       >
                         <img
-                          src={movie.poster}
-                          alt={movie.title}
+                          src={getPosterUrl(upcoming.posterUrl)}
+                          alt={upcoming.title}
                           className="w-full h-[350px] object-cover"
                         />
-                        <div className="p-2 text-center text-white text-sm font-medium">
-                          {movie.title}
+                        <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
+                          {formatTitle(upcoming.title)}
                         </div>
                       </div>
                     ))}
