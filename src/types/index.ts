@@ -16,6 +16,18 @@ export interface Movie {
   isActive: boolean;
 }
 
+export interface MovieSummary {
+  id: string;
+  tmdbId: number;
+  title: string;
+  posterUrl: string;
+  age: string;
+  status: string;
+  time: number;
+  spokenLanguages: string[];
+  genres: string[];
+}
+
 export interface Cinema {
   id: string;
   name: string;

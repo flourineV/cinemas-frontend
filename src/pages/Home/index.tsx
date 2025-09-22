@@ -2,6 +2,10 @@ import Layout from '../../components/layout/Layout';
 import QuickBookingBar from "../../components/ui/QuickBookingBar";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { movieService } from "@/services/movieService";
+import type { MovieSummary } from "@/types";
+import { getPosterUrl } from "@/utils/image";
+import { formatTitle } from "@/utils/format";
 
 const images = [
   // thay bằng ảnh quảng cáo thật
@@ -10,16 +14,16 @@ const images = [
     "https://insieutoc.vn/wp-content/uploads/2021/02/poster-ngang.jpg",
   ];
 
-const movies = [
-  { title: "Movie 1", poster: "https://via.placeholder.com/200x300?text=Movie+1" },
-  { title: "Movie 2", poster: "https://via.placeholder.com/200x300?text=Movie+2" },
-  { title: "Movie 3", poster: "https://via.placeholder.com/200x300?text=Movie+3" },
-  { title: "Movie 4", poster: "https://via.placeholder.com/200x300?text=Movie+4" },
-  { title: "Movie 5", poster: "https://via.placeholder.com/200x300?text=Movie+5" },
-  { title: "Movie 6", poster: "https://via.placeholder.com/200x300?text=Movie+6" },
-  { title: "Movie 7", poster: "https://via.placeholder.com/200x300?text=Movie+7" },
-  { title: "Movie 8", poster: "https://via.placeholder.com/200x300?text=Movie+8" },
-];
+// const movies = [
+//   { title: "Movie 1", poster: "https://via.placeholder.com/200x300?text=Movie+1" },
+//   { title: "Movie 2", poster: "https://via.placeholder.com/200x300?text=Movie+2" },
+//   { title: "Movie 3", poster: "https://via.placeholder.com/200x300?text=Movie+3" },
+//   { title: "Movie 4", poster: "https://via.placeholder.com/200x300?text=Movie+4" },
+//   { title: "Movie 5", poster: "https://via.placeholder.com/200x300?text=Movie+5" },
+//   { title: "Movie 6", poster: "https://via.placeholder.com/200x300?text=Movie+6" },
+//   { title: "Movie 7", poster: "https://via.placeholder.com/200x300?text=Movie+7" },
+//   { title: "Movie 8", poster: "https://via.placeholder.com/200x300?text=Movie+8" },
+// ];
 
 const upcomingMovies = [
   { id: 1, title: "Avatar 3", poster: "link-anh-1" },
@@ -65,17 +69,20 @@ const Home = () => {
     return () => clearInterval(timer);
   }, [currentIndex]);
 
-  // --- Movie carousel state ---
-  const itemsPerSlide = 4;
-  const totalSlides = Math.ceil(movies.length / itemsPerSlide);
+  // --- Now-playing Movie carousel state ---
+  const [movies, setMovies] = useState<MovieSummary[]>([]);
   const [movieIndex, setMovieIndex] = useState(0);
+  const itemsPerSlide = 4;
 
-  const nextMovies = () => {
-    setMovieIndex((prev) => (prev + 1) % totalSlides);
-  };
-  const prevMovies = () => {
-    setMovieIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
-  };
+  useEffect(() => {
+    movieService.getNowPlaying(0, 20).then((res) => {
+      setMovies(res.data.content); // Spring Page<MovieSummaryResponse>
+    });
+  }, []);
+
+  const totalSlides = Math.ceil(movies.length / itemsPerSlide);
+  const nextMovies = () => { setMovieIndex((prev) => (prev + 1) % totalSlides); };
+  const prevMovies = () => { setMovieIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1)); };
 
   // --- UpcomingMovie carousel state ---
   const totalUpcomingSlides = Math.ceil(upcomingMovies.length / itemsPerSlide);
@@ -174,18 +181,18 @@ const Home = () => {
                       slideIndex * itemsPerSlide,
                       (slideIndex + 1) * itemsPerSlide
                     )
-                    .map((movie, idx) => (
+                    .map((movie) => (
                       <div
-                        key={idx}
+                        key={movie.id}
                         className="bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
                       >
                         <img
-                          src={movie.poster}
+                          src={getPosterUrl(movie.posterUrl)}
                           alt={movie.title}
                           className="w-full h-[350px] object-cover"
                         />
-                        <div className="p-2 text-center text-white text-sm font-medium">
-                          {movie.title}
+                        <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[60px] whitespace-pre-line">
+                          {formatTitle(movie.title)}
                         </div>
                       </div>
                     ))}
