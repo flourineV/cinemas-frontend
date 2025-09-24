@@ -1,4 +1,4 @@
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 
 export const useAuthActions = () => {

@@ -6,6 +6,7 @@ import Signup from './pages/Signup';
 import About from './pages/About';
 import Promotions from './pages/Promotions';
 import Events from './pages/Events';
+import Profile from './pages/Profile';
 import DashboardWrapper from './components/layout/DashboardWrapper';
 import './styles/globals.css';
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/promotions" element={<Promotions />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/dashboard" element={<DashboardWrapper />} />
         </Routes>
       </Router>

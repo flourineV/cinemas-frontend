@@ -1,4 +1,32 @@
 // Main types for CineHub movie booking system
+export interface User {
+  id: string;
+  username: string;
+  role: 'USER' | 'STAFF' | 'ADMIN';
+}
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+  email: string;
+  username: string;
+  phoneNumber: string;
+  nationalId: string;
+
+  fullName: string | null;
+  dateOfBirth: string | null; // ISO date string, ví dụ "2025-09-24T09:07:37.046925"
+  gender: "MALE" | "FEMALE" | "OTHER" | null;
+
+  avatarUrl: string | null;
+  favoriteGenres: string[] | null;
+
+  loyaltyPoint: number;
+  rank: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+  status: "ACTIVE" | "BANNED";
+
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
 
 export interface Movie {
   id: string;
@@ -83,15 +111,6 @@ export interface SelectedSeat {
   number: number;
   type: string;
   price: number;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  phone: string;
-  avatar?: string;
-  bookingHistory: Booking[];
 }
 
 export interface Payment {

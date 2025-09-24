@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../../stores/authStore';
 
 interface SignupFormData {
   email: string;
@@ -14,7 +14,7 @@ interface SignupFormData {
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { setTokens, setSignupToken } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const [formData, setFormData] = useState<SignupFormData>({
     email: '',
     username: '',
@@ -111,7 +111,7 @@ const Signup = () => {
         
         // Store signin tokens in Zustand store
         if (signinResult.accessToken) {
-          setTokens(signinResult.accessToken, signinResult.refreshToken);
+          setAuth(signinResult.accessToken, signinResult.user);
           // Navigate to dashboard - Zustand will handle role detection
           navigate('/dashboard');
         } else {
@@ -131,61 +131,46 @@ const Signup = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+  e.preventDefault();
 
-    setIsLoading(true);
+  if (!validateForm()) return;
+  setIsLoading(true);
 
-    try {
-      const response = await fetch('http://localhost:8081/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          username: formData.username,
-          phoneNumber: formData.phoneNumber,
-          nationalId: formData.nationalId,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword
-        }),
-      });
+  try {
+    const response = await fetch('http://localhost:8081/api/auth/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Đăng ký thành công:', result);
-        
-        // Store signup access token in Zustand
-        if (result.accessToken) {
-          setSignupToken(result.accessToken);
-          
-          // Auto signin with the access token
-          await autoSignin(formData.email, formData.password, result.accessToken);
-        } else {
-          // If no access token, redirect to login
-          navigate('/login');
-        }
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Đăng ký thành công:', result);
+
+      if (result.accessToken && result.user) {
+        // Lưu token + user vào Zustand
+        setAuth(result.accessToken, result.user);
+
+        // Redirect sang dashboard
+        navigate('/dashboard');
       } else {
-        const errorData = await response.json();
-        console.error('Lỗi đăng ký:', errorData);
-        // Handle specific errors from API
-        if (errorData.message) {
-          alert(errorData.message);
-        } else {
-          alert('Đăng ký không thành công. Vui lòng thử lại.');
-        }
+        navigate('/login');
       }
-    } catch (error) {
-      console.error('Lỗi kết nối:', error);
-      alert('Không thể kết nối đến server. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
+    } else {
+      const errorData = await response.json();
+      console.error('Lỗi đăng ký:', errorData);
+      alert(errorData.message || 'Đăng ký không thành công. Vui lòng thử lại.');
     }
-  };
+  } catch (error) {
+    console.error('Lỗi kết nối:', error);
+    alert('Không thể kết nối đến server. Vui lòng thử lại.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <Layout>

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../stores/authStore';
 
 interface LoginFormData {
   email: string;
@@ -10,13 +11,20 @@ interface LoginFormData {
 
 const Login = () => {
   const navigate = useNavigate();
-  const { setTokens } = useAuthStore();
+  const { isAuthenticated } = useAuth();
+  const { setAuth } = useAuthStore();
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -78,7 +86,7 @@ const Login = () => {
         
         // Store tokens in Zustand store
         if (result.accessToken) {
-          setTokens(result.accessToken, result.refreshToken);
+          setAuth(result.accessToken, result.user);
           // Navigate to dashboard - Zustand will handle role detection
           navigate('/dashboard');
         } else {

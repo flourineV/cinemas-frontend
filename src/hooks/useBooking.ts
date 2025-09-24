@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Booking } from '../types';
-import { bookingService } from '../services/api';
+import { bookingService } from '../services/authService';
 
 export const useBooking = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Movie, MovieFilters } from '../types';
-import { movieService } from '../services/api';
+import { movieService } from '../services/authService';
 
 export const useMovies = (filters?: MovieFilters) => {
   const [movies, setMovies] = useState<Movie[]>([]);
