@@ -158,13 +158,44 @@ const Home = () => {
                     .map((nowPlaying) => (
                       <div
                         key={nowPlaying.id}
-                        className="bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
+                        className="group relative bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
                       >
+                        {/* Poster */}
                         <img
                           src={getPosterUrl(nowPlaying.posterUrl)}
                           alt={nowPlaying.title}
                           className="w-full h-[350px] object-cover"
                         />
+
+                        {/* Overlay mờ khi hover - More info */}
+                        <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                          <div className="text-white text-left">
+                            <h3 className="text-lg font-bold mb-2">
+                              {formatTitle(nowPlaying.title)}
+                            </h3>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Thể loại:</span>{" "}
+                              {nowPlaying.genres.join(", ")}
+                            </p>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Thời lượng:</span> {nowPlaying.time}’
+                            </p>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Ngôn ngữ:</span>{" "}
+                              {nowPlaying.spokenLanguages.join(", ")}
+                            </p>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Quốc gia:</span>{" "}
+                              {nowPlaying.status}
+                            </p>
+                            <p className="text-sm">
+                              <span className="font-semibold">Độ tuổi:</span>{" "}
+                              {nowPlaying.age}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Title */}
                         <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
                           {formatTitle(nowPlaying.title)}
                         </div>
@@ -173,22 +204,22 @@ const Home = () => {
                 </div>
               ))}
             </div>
-
-            {/* Nút điều hướng */}
-            <button
-              onClick={prevMovies}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <button
-              onClick={nextMovies}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-            >
-              <ChevronRight size={24} />
-            </button>
           </div>
 
+          {/* Nút điều hướng */}
+          <button
+            onClick={prevMovies}
+            className="absolute -left-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={nextMovies}
+            className="absolute -right-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
+          >
+            <ChevronRight size={24} />
+          </button>
+          
           {/* Dots indicator */}
           <div className="flex justify-center mt-3 space-x-2">
             {Array.from({ length: totalNowPlayingSlides }).map((_, idx) => (
@@ -232,13 +263,44 @@ const Home = () => {
                     .map((upcoming) => (
                       <div
                         key={upcoming.id}
-                        className="bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
+                        className="group relative bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
                       >
+                        {/* Poster */}
                         <img
                           src={getPosterUrl(upcoming.posterUrl)}
                           alt={upcoming.title}
                           className="w-full h-[350px] object-cover"
                         />
+                        
+                        {/* Overlay mờ khi hover - More info */}
+                        <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                          <div className="text-white text-left">
+                            <h3 className="text-lg font-bold mb-2">
+                              {formatTitle(upcoming.title)}
+                            </h3>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Thể loại:</span>{" "}
+                              {upcoming.genres.join(", ")}
+                            </p>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Thời lượng:</span> {upcoming.time}’
+                            </p>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Ngôn ngữ:</span>{" "}
+                              {upcoming.spokenLanguages.join(", ")}
+                            </p>
+                            <p className="text-sm mb-1">
+                              <span className="font-semibold">Quốc gia:</span>{" "}
+                              {upcoming.status}
+                            </p>
+                            <p className="text-sm">
+                              <span className="font-semibold">Độ tuổi:</span>{" "}
+                              {upcoming.age}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Title */}
                         <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
                           {formatTitle(upcoming.title)}
                         </div>
@@ -247,21 +309,22 @@ const Home = () => {
                 </div>
               ))}
             </div>
-
-            {/* Nút điều hướng */}
-            <button
-              onClick={prevUpcoming}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <button
-              onClick={nextUpcoming}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-            >
-              <ChevronRight size={24} />
-            </button>
           </div>
+
+          {/* Nút điều hướng */}
+          <button
+            onClick={prevUpcoming}
+            className="absolute -left-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={nextUpcoming}
+            className="absolute -right-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
+          >
+            <ChevronRight size={24} />
+          </button>
+          
 
           {/* Dots indicator */}
           <div className="flex justify-center mt-3 space-x-2">
