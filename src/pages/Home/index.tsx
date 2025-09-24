@@ -6,6 +6,7 @@ import { movieService } from "@/services/movieService";
 import type { MovieSummary } from "@/types";
 import { getPosterUrl } from "@/utils/image";
 import { formatTitle } from "@/utils/format";
+import { Link } from "react-router-dom";
 
 const images = [
   // thay bằng ảnh quảng cáo thật
@@ -156,8 +157,9 @@ const Home = () => {
                       (slideIndex + 1) * itemsPerSlide
                     )
                     .map((nowPlaying) => (
-                      <div
+                      <Link 
                         key={nowPlaying.id}
+                        to={`/movies/${nowPlaying.tmdbId}`} 
                         className="group relative bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
                       >
                         {/* Poster */}
@@ -184,10 +186,6 @@ const Home = () => {
                               <span className="font-semibold">Ngôn ngữ:</span>{" "}
                               {nowPlaying.spokenLanguages.join(", ")}
                             </p>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Quốc gia:</span>{" "}
-                              {nowPlaying.status}
-                            </p>
                             <p className="text-sm">
                               <span className="font-semibold">Độ tuổi:</span>{" "}
                               {nowPlaying.age}
@@ -199,7 +197,7 @@ const Home = () => {
                         <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
                           {formatTitle(nowPlaying.title)}
                         </div>
-                      </div>
+                      </Link>
                     ))}
                 </div>
               ))}

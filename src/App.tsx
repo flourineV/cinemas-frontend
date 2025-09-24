@@ -8,6 +8,7 @@ import Promotions from './pages/Promotions';
 import Events from './pages/Events';
 import Profile from './pages/Profile';
 import DashboardWrapper from './components/layout/DashboardWrapper';
+import MovieDetailPage from "./pages/Movie/MovieDetailPage";
 import './styles/globals.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/events" element={<Events />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/dashboard" element={<DashboardWrapper />} />
+          <Route path="/movies/:id" element={<MovieDetailPage />} />
         </Routes>
       </Router>
     </AuthProvider>
