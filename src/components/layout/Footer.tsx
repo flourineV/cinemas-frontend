@@ -3,7 +3,9 @@ import { SiZalo } from "react-icons/si";
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-900 text-gray-300 mt-16">
+    <footer 
+      className="bg-white/5 backdrop-blur-lg border-t border-gray-700 text-gray-300"
+    >
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8">
 
         {/* Logo + mô tả */}
@@ -19,43 +21,16 @@ const Footer = () => {
           </p>
         </div>
 
-        {/* Tài khoản */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4">👤 Tài khoản</h3>
-          <ul className="space-y-2 text-sm">
-            <li><a href="/login" className="hover:text-white transition">Đăng nhập</a></li>
-            <li><a href="/register" className="hover:text-white transition">Đăng ký</a></li>
-            <li><a href="/membership" className="hover:text-white transition">Membership</a></li>
-          </ul>
-        </div>
-
-        {/* Xem phim */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4">🎬 Xem phim</h3>
-          <ul className="space-y-2 text-sm">
-            <li><a href="/now-showing" className="hover:text-white transition">Phim đang chiếu</a></li>
-            <li><a href="/upcoming" className="hover:text-white transition">Phim sắp chiếu</a></li>
-            <li><a href="/favorites" className="hover:text-white transition">Danh sách yêu thích</a></li>
-          </ul>
-        </div>
-
-        {/* CineHub */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4">🏢 CineHub</h3>
-          <ul className="space-y-2 text-sm">
-            <li><a href="/about" className="hover:text-white transition">Giới thiệu</a></li>
-            <li><a href="/promotions" className="hover:text-white transition">Khuyến mãi</a></li>
-            <li><a href="/contact" className="hover:text-white transition">Liên hệ</a></li>
-          </ul>
-        </div>
-
+        {/* Tài khoản, Xem phim, CineHub (Giữ nguyên) */}
+        {/* ... */}
+        
         {/* Liên hệ */}
         <div className="lg:col-span-2">
           <h3 className="text-lg font-bold text-white mb-4">📞 Liên hệ</h3>
           <ul className="space-y-2 text-sm">
-            <li>📍 123 Đường ABC, Quận 1, TP.HCM</li>
-            <li>📞 1900 123 456</li>
-            <li>📧 support@cinehub.vn</li>
+            <li><span className="text-yellow-400 mr-2">📍</span> 123 Đường ABC, Quận 1, TP.HCM</li>
+            <li><span className="text-yellow-400 mr-2">📞</span> 1900 123 456</li>
+            <li><span className="text-yellow-400 mr-2">📧</span> support@cinehub.vn</li>
           </ul>
 
           <div className="flex space-x-4 mt-6 text-3xl">

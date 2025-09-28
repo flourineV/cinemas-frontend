@@ -1,5 +1,3 @@
-// Home.tsx (Đã được sửa đổi)
-
 import Layout from '../../components/layout/Layout';
 import QuickBookingBar from "../../components/ui/QuickBookingBar";
 import { useEffect, useState } from "react";
@@ -11,6 +9,7 @@ import { formatTitle } from "@/utils/format";
 import { Link } from "react-router-dom";
 import { useCarousel } from "@/hooks/useCarousel"; 
 import { useBannerCarousel } from "@/hooks/useBannerCarousel";
+import AnimatedButton from "../../components/ui/AnimatedButton";
 
 const images = [
     "https://images.spiderum.com/sp-images/8d5590c080e311ed8a6481196edc880f.jpeg", 
@@ -90,30 +89,29 @@ const Home = () => {
 
                     {/* Nút điều hướng: Đặt ABSOLUTE so với DIV cha mới (relative w-full) */}
                     <button
-                        onClick={prevSlide}
-                        // THAY ĐỔI: left-1/2, translate-x-[-30rem] (hoặc giá trị cố định) để căn ra ngoài mép
-                        className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-full bg-black/40 hover:bg-black/60 p-3 rounded-full text-white z-10"
-                        style={{ marginLeft: '-3rem' }} // Tùy chỉnh dịch chuyển
+                        onClick={prevSlide} 
+                        // ĐÃ THÊM: hidden (mặc định ẩn) và sm:block (hiện từ sm trở lên)
+                        className="absolute left-28 top-1/2 border-none -translate-y-1/2 p-2 z-10 text-white hidden sm:block focus:outline-none"
                     >
-                        <ChevronLeft size={30} />
+                        <ChevronLeft size={40} />
                     </button>
                     <button
-                        onClick={nextSlide}
-                        className="absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-full bg-black/40 hover:bg-black/60 p-3 rounded-full text-white z-10"
-                        style={{ marginRight: '-3rem' }} // Tùy chỉnh dịch chuyển
+                        onClick={nextSlide} 
+                        // ĐÃ THÊM: hidden (mặc định ẩn) và sm:block (hiện từ sm trở lên)
+                        className="absolute right-28 top-1/2 border-none -translate-y-1/2 p-2 z-10 text-white hidden sm:block focus:outline-none"
                     >
-                        <ChevronRight size={30} />
+                        <ChevronRight size={40} />
                     </button>
                 </div>
 
                 {/* Thanh đặt vé nhanh (Giữ nguyên) */}
-                <section className="max-w-6xl mx-auto mt-10">
+                <section className="max-w-6xl mx-auto mt-8">
                     <QuickBookingBar />
                 </section>
                 
                 {/* Carousel phim đang chiếu (Giữ nguyên) */}
-                <section className="relative w-full max-w-6xl mx-auto mt-10">
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-6"> PHIM ĐANG CHIẾU</h2>
+                <section className="relative w-full max-w-6xl mx-auto mt-8">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">PHIM ĐANG CHIẾU</h2>
                     {/* ... (Phần hiển thị carousel Phim Đang Chiếu) ... */}
                     {nowPlaying.length === 0 ? (
                         <p className="text-white text-center">Đang tải phim...</p>

@@ -8,12 +8,9 @@ import AdminDashboard from '../../pages/Dashboard/AdminDashboard';
 const DashboardWrapper: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   
-  // Check if user is authenticated
   if (!isAuthenticated || !user?.role) {
     return <Navigate to="/login" replace />;
   }
-  
-  // Render appropriate dashboard based on role
   if (user?.role === 'ADMIN') return <AdminDashboard />;
   if (user?.role === 'STAFF') return <StaffDashboard />;
   return <Home />;
