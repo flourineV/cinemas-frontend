@@ -1,545 +1,326 @@
+// Home.tsx (Đã được sửa đổi)
+
 import Layout from '../../components/layout/Layout';
 import QuickBookingBar from "../../components/ui/QuickBookingBar";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Clock, Globe, ShieldAlert } from "lucide-react";
 import { movieService } from "@/services/movieService";
 import type { MovieSummary } from "@/types";
 import { getPosterUrl } from "@/utils/image";
 import { formatTitle } from "@/utils/format";
 import { Link } from "react-router-dom";
+import { useCarousel } from "@/hooks/useCarousel"; 
+import { useBannerCarousel } from "@/hooks/useBannerCarousel";
 
 const images = [
-  // thay bằng ảnh quảng cáo thật
     "https://images.spiderum.com/sp-images/8d5590c080e311ed8a6481196edc880f.jpeg", 
     "https://cdn2.fptshop.com.vn/unsafe/Uploads/images/tin-tuc/176175/Originals/poster-film-5.jpg",
     "https://insieutoc.vn/wp-content/uploads/2021/02/poster-ngang.jpg",
-  ];
-
-const promotions = [
-  {
-    title: "Mua 1 tặng 1 vé 2D",
-    description: "Áp dụng vào thứ 3 hàng tuần tại tất cả rạp.",
-    image: "https://via.placeholder.com/400x200?text=Promo+1",
-  },
-  {
-    title: "Combo bắp nước 49K",
-    description: "Tiết kiệm hơn 30% khi mua kèm vé xem phim.",
-    image: "https://via.placeholder.com/400x200?text=Promo+2",
-  },
-  {
-    title: "Ưu đãi thành viên",
-    description: "Giảm 20% cho khách hàng VIP.",
-    image: "https://via.placeholder.com/400x200?text=Promo+3",
-  },
 ];
 
+
 const Home = () => {
-  // --- Banner quảng cáo state ---
-  const [currentIndex, setCurrentIndex] = useState(0); 
-  const prevSlide = () => { setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1)); };
-  const nextSlide = () => { setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1)); };
+    // --- Banner quảng cáo hook (Đã thay thế logic cũ) ---
+    const { 
+        currentIndex, 
+        prevSlide, 
+        nextSlide, 
+        goToSlide: setCurrentIndex // Đổi tên goToSlide thành setCurrentIndex để khớp với cách dùng cũ
+    } = useBannerCarousel(images.length, 4000); // 4000ms là 4s
 
-  // Auto slide
-  useEffect(() => {
-    const timer = setInterval(() => {
-      nextSlide();
-    }, 4000); // 4s đổi 1 lần
-    return () => clearInterval(timer);
-  }, [currentIndex]);
+    // --- Data fetching state (Giữ nguyên) ---
+    const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
+    const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
+    const itemsPerSlide = 4; // Số lượng item mặc định cho phim
 
-  // --- Now-playing Movie carousel state ---
-  const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
-  const [nowPlayingIndex, setNowPlayingIndex] = useState(0);
-  const itemsPerSlide = 4;
+    useEffect(() => {
+        movieService.getNowPlaying(0, 20).then((res: { data: { content: MovieSummary[] } }) => {
+            setNowPlaying(res.data.content); 
+        });
+        movieService.getUpcoming(0, 20).then((res: { data: { content: MovieSummary[] } }) => {
+            setUpcoming(res.data.content); 
+        });
+    }, []);
 
-  useEffect(() => {
-    movieService.getNowPlaying(0, 20).then((res) => {
-      setNowPlaying(res.data.content); 
-    });
-  }, []);
+    // 2. Sử dụng useCarousel cho PHIM ĐANG CHIẾU (Giữ nguyên)
+    const { 
+        currentIndex: nowPlayingIndex, 
+        totalSlides: totalNowPlayingSlides, 
+        nextSlide: nextMovies, 
+        prevSlide: prevMovies,
+        currentSlideItems: currentNowPlayingItems,
+        goToSlide: goToNowPlayingSlide
+    } = useCarousel(nowPlaying, itemsPerSlide);
 
-  const totalNowPlayingSlides = Math.ceil(nowPlaying.length / itemsPerSlide);
-  const nextMovies = () => { setNowPlayingIndex((prev) => (prev + 1) % totalNowPlayingSlides); };
-  const prevMovies = () => { setNowPlayingIndex((prev) => (prev === 0 ? totalNowPlayingSlides - 1 : prev - 1)); };
 
-  // --- Up-coming Movie carousel state ---
-  const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
-  const [upcomingIndex, setUpcomingIndex] = useState(0);
+    // 3. Sử dụng useCarousel cho PHIM SẮP CHIẾU (Giữ nguyên)
+    const { 
+        currentIndex: upcomingIndex, 
+        totalSlides: totalUpcomingSlides, 
+        nextSlide: nextUpcoming, 
+        prevSlide: prevUpcoming,
+        currentSlideItems: currentUpcomingItems,
+        goToSlide: goToUpcomingSlide
+    }
+    = useCarousel(upcoming, itemsPerSlide);
 
-  useEffect(() => {
-    movieService.getUpcoming(0, 20).then((res) => {
-      setUpcoming(res.data.content); 
-    });
-  }, []);
-  
-  const totalUpcomingSlides = Math.ceil(upcoming.length / itemsPerSlide);
-  const nextUpcoming = () => { setUpcomingIndex((prev) => (prev + 1) % totalUpcomingSlides); };
-  const prevUpcoming = () => { setUpcomingIndex((prev) => (prev === 0 ? totalUpcomingSlides - 1 : prev - 1)); };
-
-  // --- Promotion carousel state ---
-  const promosPerSlide = 3; // 3 promo mỗi slide
-  const totalPromoSlides = Math.ceil(promotions.length / promosPerSlide);
-  const [promoIndex, setPromoIndex] = useState(0);
-
-  const nextPromos = () => { setPromoIndex((prev) => (prev + 1) % totalPromoSlides); };
-
-  const prevPromos = () => { setPromoIndex((prev) => prev === 0 ? totalPromoSlides - 1 : prev - 1); };
-
-  return (
-    <Layout>
-      <div className="w-full bg-slate-900 min-h-screen pt-20">
-         {/* Banner quảng cáo */}
-         <section className="relative w-full max-w-6xl mx-auto aspect-[16/6] overflow-hidden rounded-2xl shadow-lg">
-          <div
-            className="flex transition-transform duration-700 ease-in-out h-full"
-            style={{ transform: `translateX(-${currentIndex * 100}%)` }} // hiệu ứng trượt ngang
-          >
-            {images.map((src, index) => (
-              <img
-                key={index}
-                src={src}
-                alt={`Slide ${index}`}
-                className="w-full h-full flex-shrink-0 object-cover object-center"
-              />
-            ))}
-          </div>
-
-          {/* Nút điều hướng */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-          >
-            <ChevronLeft size={28} />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-          >
-            <ChevronRight size={28} />
-          </button>
-
-          {/* Dots Indicator */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {images.map((_, idx) => (
-              <div
-                key={idx}
-                className={`w-3 h-3 rounded-full cursor-pointer ${
-                  idx === currentIndex ? "bg-white" : "bg-gray-500"
-                }`}
-                onClick={() => setCurrentIndex(idx)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* Thanh đặt vé nhanh */}
-        <section className="max-w-6xl mx-auto px-4 mt-10">
-          <QuickBookingBar />
-        </section>
-
-        {/* Carousel phim đang chiếu */}
-        <section className="relative w-full max-w-6xl mx-auto mt-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎬 PHIM ĐANG CHIẾU</h2>
-
-          <div className="relative overflow-hidden rounded-2xl shadow-lg">
-            <div
-              className="flex transition-transform duration-700 ease-in-out"
-              style={{ transform: `translateX(-${nowPlayingIndex * 100}%)` }}
-            >
-              {Array.from({ length: totalNowPlayingSlides }).map((_, slideIndex) => (
-                <div
-                  key={slideIndex}
-                  className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full flex-shrink-0 px-4 py-6"
-                >
-                  {nowPlaying
-                    .slice(
-                      slideIndex * itemsPerSlide,
-                      (slideIndex + 1) * itemsPerSlide
-                    )
-                    .map((nowPlaying) => (
-                      <Link 
-                        key={nowPlaying.id}
-                        to={`/movies/${nowPlaying.tmdbId}`} 
-                        className="group relative bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
-                      >
-                        {/* Poster */}
-                        <img
-                          src={getPosterUrl(nowPlaying.posterUrl)}
-                          alt={nowPlaying.title}
-                          className="w-full h-[350px] object-cover"
-                        />
-
-                        {/* Overlay mờ khi hover - More info */}
-                        <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
-                          <div className="text-white text-left">
-                            <h3 className="text-lg font-bold mb-2">
-                              {formatTitle(nowPlaying.title)}
-                            </h3>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Thể loại:</span>{" "}
-                              {nowPlaying.genres.join(", ")}
-                            </p>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Thời lượng:</span> {nowPlaying.time}’
-                            </p>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Ngôn ngữ:</span>{" "}
-                              {nowPlaying.spokenLanguages.join(", ")}
-                            </p>
-                            <p className="text-sm">
-                              <span className="font-semibold">Độ tuổi:</span>{" "}
-                              {nowPlaying.age}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Title */}
-                        <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
-                          {formatTitle(nowPlaying.title)}
-                        </div>
-                      </Link>
-                    ))}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Nút điều hướng */}
-          <button
-            onClick={prevMovies}
-            className="absolute -left-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <button
-            onClick={nextMovies}
-            className="absolute -right-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-          >
-            <ChevronRight size={24} />
-          </button>
-          
-          {/* Dots indicator */}
-          <div className="flex justify-center mt-3 space-x-2">
-            {Array.from({ length: totalNowPlayingSlides }).map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setNowPlayingIndex(idx)}
-                className={`w-3 h-3 rounded-full ${
-                  idx === nowPlayingIndex ? "bg-white" : "bg-gray-500"
-                }`}
-              ></button>
-            ))}
-          </div>
-
-          {/* Nút xem thêm */}
-          <div className="flex justify-center mt-5">
-            <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
-              Xem thêm
-            </button>
-          </div>
-        </section>
-
-        {/* Phim sắp chiếu */}
-        <section className="relative w-full max-w-6xl mx-auto mt-16">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎥 PHIM SẮP CHIẾU</h2>
-
-          <div className="relative overflow-hidden rounded-2xl shadow-lg">
-            <div
-              className="flex transition-transform duration-700 ease-in-out"
-              style={{ transform: `translateX(-${upcomingIndex * 100}%)` }}
-            >
-              {Array.from({ length: totalUpcomingSlides }).map((_, slideIndex) => (
-                <div
-                  key={slideIndex}
-                  className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full flex-shrink-0 px-4 py-6"
-                >
-                  {upcoming
-                    .slice(
-                      slideIndex * itemsPerSlide,
-                      (slideIndex + 1) * itemsPerSlide
-                    )
-                    .map((upcoming) => (
-                      <div
-                        key={upcoming.id}
-                        className="group relative bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
-                      >
-                        {/* Poster */}
-                        <img
-                          src={getPosterUrl(upcoming.posterUrl)}
-                          alt={upcoming.title}
-                          className="w-full h-[350px] object-cover"
-                        />
+    return (
+        <Layout>
+            <div className="w-full min-h-screen">
+                // Bọc tất cả vào một DIV không giới hạn chiều ngang
+                <div className="relative w-full"> 
+                    
+                    <section className="w-full max-w-6xl mx-auto aspect-[16/6] overflow-hidden rounded-sm shadow-lg"> 
+                    {/* Bỏ relative để nút bên ngoài dễ căn chỉnh hơn */}
                         
-                        {/* Overlay mờ khi hover - More info */}
-                        <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
-                          <div className="text-white text-left">
-                            <h3 className="text-lg font-bold mb-2">
-                              {formatTitle(upcoming.title)}
-                            </h3>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Thể loại:</span>{" "}
-                              {upcoming.genres.join(", ")}
-                            </p>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Thời lượng:</span> {upcoming.time}’
-                            </p>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Ngôn ngữ:</span>{" "}
-                              {upcoming.spokenLanguages.join(", ")}
-                            </p>
-                            <p className="text-sm mb-1">
-                              <span className="font-semibold">Quốc gia:</span>{" "}
-                              {upcoming.status}
-                            </p>
-                            <p className="text-sm">
-                              <span className="font-semibold">Độ tuổi:</span>{" "}
-                              {upcoming.age}
-                            </p>
-                          </div>
+                        <div 
+                            className="flex transition-transform duration-700 ease-in-out h-full"
+                            style={{ transform: `translateX(-${currentIndex * 100}%)` }} 
+                        >
+                            {images.map((src, index) => (
+                                <img
+                                    key={index}
+                                    src={src}
+                                    alt={`Slide ${index}`}
+                                    className="min-w-full h-full object-cover object-center"
+                                />
+                            ))}
                         </div>
+                    </section>
 
-                        {/* Title */}
-                        <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
-                          {formatTitle(upcoming.title)}
-                        </div>
-                      </div>
-                    ))}
+                    {/* Nút điều hướng: Đặt ABSOLUTE so với DIV cha mới (relative w-full) */}
+                    <button
+                        onClick={prevSlide}
+                        // THAY ĐỔI: left-1/2, translate-x-[-30rem] (hoặc giá trị cố định) để căn ra ngoài mép
+                        className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-full bg-black/40 hover:bg-black/60 p-3 rounded-full text-white z-10"
+                        style={{ marginLeft: '-3rem' }} // Tùy chỉnh dịch chuyển
+                    >
+                        <ChevronLeft size={30} />
+                    </button>
+                    <button
+                        onClick={nextSlide}
+                        className="absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-full bg-black/40 hover:bg-black/60 p-3 rounded-full text-white z-10"
+                        style={{ marginRight: '-3rem' }} // Tùy chỉnh dịch chuyển
+                    >
+                        <ChevronRight size={30} />
+                    </button>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Nút điều hướng */}
-          <button
-            onClick={prevUpcoming}
-            className="absolute -left-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <button
-            onClick={nextUpcoming}
-            className="absolute -right-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-          >
-            <ChevronRight size={24} />
-          </button>
-          
+                {/* Thanh đặt vé nhanh (Giữ nguyên) */}
+                <section className="max-w-6xl mx-auto mt-10">
+                    <QuickBookingBar />
+                </section>
+                
+                {/* Carousel phim đang chiếu (Giữ nguyên) */}
+                <section className="relative w-full max-w-6xl mx-auto mt-10">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-6"> PHIM ĐANG CHIẾU</h2>
+                    {/* ... (Phần hiển thị carousel Phim Đang Chiếu) ... */}
+                    {nowPlaying.length === 0 ? (
+                        <p className="text-white text-center">Đang tải phim...</p>
+                    ) : (
+                        <div className="relative overflow-hidden rounded-2xl">
+                            {/* Slide Wrapper */}
+                            <div
+                                className="flex transition-transform duration-700 ease-in-out"
+                                style={{ transform: `translateX(-${nowPlayingIndex * 100}%)` }}
+                            >
+                                {/* Slide Content */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6">
+                                    {currentNowPlayingItems.map((movie) => (
+                                        <Link 
+                                            key={movie.id}
+                                            to={`/movies/${movie.tmdbId}`} 
+                                            // THẺ LINK LỚN: là group, có hiệu ứng phóng to (scale)
+                                            className="group relative flex flex-col transition" 
+                                        >
+                                            {/* 1. CONTAINER CHỨA POSTER VÀ OVERLAY (Không có scale, chỉ có group-hover opacity) */}
+                                            <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
+                                                {/* Poster */}
+                                                <img
+                                                    src={getPosterUrl(movie.posterUrl)}
+                                                    alt={movie.title}
+                                                    className="w-full h-[400px] object-cover" // Đã tăng chiều cao lên 400px
+                                                />
+                                                {/* Overlay và Info (Giữ nguyên) */}
+                                                <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                                                    <div className="text-white text-left">
+                                                        <h3 className="text-lg font-bold mb-2">{formatTitle(movie.title)}</h3>
+                                                        {/* 1. THỂ LOẠI (Thay bằng Icon MapPin) */}
+                                                        <p className="text-xs font-light mb-1 flex items-center">
+                                                            <MapPin size={16} className="mr-2 text-red-500" />
+                                                            {movie.genres.join(", ")}
+                                                        </p>
+                                                        
+                                                        {/* 2. THỜI LƯỢNG (Thay bằng Icon Clock) */}
+                                                        <p className="text-xs font-light mb-1 flex items-center">
+                                                            <Clock size={16} className="mr-2 text-red-500" />
+                                                            {movie.time}’
+                                                        </p>
+                                                        
+                                                        {/* 3. NGÔN NGỮ (Thay bằng Icon Globe) */}
+                                                        <p className="text-xs font-light mb-1 flex items-center">
+                                                            <Globe size={16} className="mr-2 text-red-500" />
+                                                            {movie.spokenLanguages.join(", ")}
+                                                        </p>
+                                                        
+                                                        {/* 4. ĐỘ TUỔI (Thay bằng Icon ShieldAlert) */}
+                                                        <p className="text-xs font-light flex items-center">
+                                                            <ShieldAlert size={16} className="mr-2 text-red-500" />
+                                                            {movie.age}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* 2. TITLE (Tách biệt, không bị che bởi hiệu ứng opacity của Poster) */}
+                                            <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] ">
+                                                {formatTitle(movie.title)}
+                                            </div>
 
-          {/* Dots indicator */}
-          <div className="flex justify-center mt-3 space-x-2">
-            {Array.from({ length: totalUpcomingSlides }).map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setUpcomingIndex(idx)}
-                className={`w-3 h-3 rounded-full ${
-                  idx === upcomingIndex ? "bg-white" : "bg-gray-500"
-                }`}
-              ></button>
-            ))}
-          </div>
+                                            {/* 3. NÚT XEM TRAILER & ĐẶT VÉ */}
+                                            <div className="flex w-full mt-2 space-x-2">
+                                                {/* Nút Xem Trailer (Dạng nút phụ) */}
+                                                <button className="flex items-center justify-center border border-white/50 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-white/10 w-1/2">
+                                                    {/* Icon Play (Có thể thay bằng icon thực tế) */}
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.969 12l-3.328 2.5a.75.75 0 01-1.141-.645V10.145a.75.75 0 011.141-.645l3.328 2.5z" />
+                                                    </svg>
+                                                    Trailer
+                                                </button>
 
-          {/* Nút xem thêm */}
-          <div className="flex justify-center mt-5">
-            <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
-              Xem thêm
-            </button>
-          </div>
-        </section>
-
-        {/* --- Khuyến mãi --- */}
-        <section className="relative w-full max-w-6xl mx-auto mt-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🔥 KHUYẾN MÃI</h2>
-
-          <div className="relative overflow-hidden rounded-2xl shadow-lg">
-            <div
-              className="flex transition-transform duration-700 ease-in-out"
-              style={{ transform: `translateX(-${promoIndex * 100}%)` }}
-            >
-              {Array.from({ length: totalPromoSlides }).map((_, slideIndex) => (
-                <div
-                  key={slideIndex}
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto flex-shrink-0 px-4 py-6"
-                >
-                  {promotions
-                    .slice(
-                      slideIndex * promosPerSlide,
-                      (slideIndex + 1) * promosPerSlide
-                    )
-                    .map((promo, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
-                      >
-                        <img
-                          src={promo.image}
-                          alt={promo.title}
-                          className="w-full h-[200px] object-cover"
-                        />
-                        <div className="p-4 text-white">
-                          <h3 className="text-lg font-semibold mb-2">{promo.title}</h3>
-                          <p className="text-sm text-gray-300">{promo.description}</p>
+                                                {/* Nút Đặt Vé (Nút chính) */}
+                                                <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
+                                                    ĐẶT VÉ
+                                                </button>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* ... (Nút điều hướng và Dots indicator giữ nguyên) ... */}
+                            <button
+                                onClick={prevMovies}
+                                className="absolute -left-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 text-white"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <button
+                                onClick={nextMovies}
+                                className="absolute -right-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 text-white"
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                            
+                            {/* Dots indicator */}
+                            <div className="flex justify-center mt-3 space-x-2">
+                                {Array.from({ length: totalNowPlayingSlides }).map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => goToNowPlayingSlide(idx)}
+                                        className={`w-3 h-3 rounded-full ${idx === nowPlayingIndex ? "bg-white" : "bg-gray-500"}`}
+                                    ></button>
+                                ))}
+                            </div>
                         </div>
-                      </div>
-                    ))}
-                </div>
-              ))}
+                    )}
+                    {/* Nút xem thêm */}
+                    <div className="flex justify-center mt-5">
+                        <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
+                            Xem thêm
+                        </button>
+                    </div>
+                </section>
+                
+                {/* --- */}
+
+                {/* Phim sắp chiếu (Giữ nguyên) */}
+                <section className="relative w-full max-w-6xl mx-auto mt-16">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎥 PHIM SẮP CHIẾU</h2>
+                    {/* ... (Phần hiển thị carousel Phim Sắp Chiếu giữ nguyên) ... */}
+                    {upcoming.length === 0 ? (
+                        <p className="text-white text-center">Đang tải phim...</p>
+                    ) : (
+                        <div className="relative overflow-hidden rounded-2xl shadow-lg">
+                            {/* Slide Wrapper */}
+                            <div
+                                className="flex transition-transform duration-700 ease-in-out"
+                                style={{ transform: `translateX(-${upcomingIndex * 100}%)` }}
+                            >
+                                {/* Slide Content - Chỉ render items của slide hiện tại */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full flex-shrink-0 px-4 py-6">
+                                    {currentUpcomingItems.map((movie) => (
+                                         <div
+                                            key={movie.id}
+                                            className="group relative bg-slate-800 rounded-xl overflow-hidden shadow-md hover:scale-105 transition"
+                                        >
+                                            {/* Poster */}
+                                            <img
+                                                src={getPosterUrl(movie.posterUrl)}
+                                                alt={movie.title}
+                                                className="w-full h-[350px] object-cover"
+                                            />
+                                            
+                                            {/* Overlay mờ khi hover - More info */}
+                                            <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                                                <div className="text-white text-left">
+                                                    <h3 className="text-lg font-bold mb-2">{formatTitle(movie.title)}</h3>
+                                                    <p className="text-sm mb-1"><span className="font-semibold">Thể loại:</span> {movie.genres.join(", ")}</p>
+                                                    <p className="text-sm mb-1"><span className="font-semibold">Thời lượng:</span> {movie.time}’</p>
+                                                    <p className="text-sm mb-1"><span className="font-semibold">Ngôn ngữ:</span> {movie.spokenLanguages.join(", ")}</p>
+                                                    <p className="text-sm mb-1"><span className="font-semibold">Quốc gia:</span> {movie.status}</p>
+                                                    <p className="text-sm"><span className="font-semibold">Độ tuổi:</span> {movie.age}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Title */}
+                                            <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px] whitespace-pre-line">
+                                                {formatTitle(movie.title)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Nút điều hướng */}
+                            <button
+                                onClick={prevUpcoming}
+                                className="absolute -left-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <button
+                                onClick={nextUpcoming}
+                                className="absolute -right-10 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                            
+
+                            {/* Dots indicator */}
+                            <div className="flex justify-center mt-3 space-x-2">
+                                {Array.from({ length: totalUpcomingSlides }).map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => goToUpcomingSlide(idx)}
+                                        className={`w-3 h-3 rounded-full ${idx === upcomingIndex ? "bg-white" : "bg-gray-500"}`}
+                                    ></button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Nút xem thêm */}
+                    <div className="flex justify-center mt-5">
+                        <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
+                            Xem thêm
+                        </button>
+                    </div>
+                </section>
             </div>
-
-            {/* Nút điều hướng */}
-            <button
-              onClick={prevPromos}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <button
-              onClick={nextPromos}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 p-2 rounded-full text-white"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
-
-          {/* Dots indicator */}
-          <div className="flex justify-center mt-3 space-x-2">
-            {Array.from({ length: totalPromoSlides }).map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setPromoIndex(idx)}
-                className={`w-3 h-3 rounded-full ${
-                  idx === promoIndex ? "bg-white" : "bg-gray-500"
-                }`}
-              ></button>
-            ))}
-          </div>
-
-          {/* Nút Xem tất cả */}
-          <div className="flex justify-center mt-5">
-            <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
-              Xem tất cả ưu đãi
-            </button>
-          </div>
-        </section>
-
-        {/* Chương trình thành viên */}
-        <section className="w-full max-w-6xl mx-auto px-4 py-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">🎟️ CHƯƠNG TRÌNH THÀNH VIÊN</h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Member Card 1 */}
-            <div className="bg-slate-800 rounded-xl p-6 shadow-md text-center hover:scale-105 transition-transform">
-              <img
-                src="/images/member1.png"
-                alt="Thành viên Bạc"
-                className="w-24 h-24 mx-auto mb-4 object-contain"
-              />
-              <h3 className="text-lg font-semibold text-white mb-2">Thành viên Bạc</h3>
-              <p className="text-slate-300 text-sm">
-                Nhận điểm thưởng khi mua vé và combo, ưu đãi sinh nhật đặc biệt.
-              </p>
-            </div>
-
-            {/* Member Card 2 */}
-            <div className="bg-slate-800 rounded-xl p-6 shadow-md text-center hover:scale-105 transition-transform">
-              <img
-                src="/images/member2.png"
-                alt="Thành viên Vàng"
-                className="w-24 h-24 mx-auto mb-4 object-contain"
-              />
-              <h3 className="text-lg font-semibold text-white mb-2">Thành viên Vàng</h3>
-              <p className="text-slate-300 text-sm">
-                Tích điểm nhanh hơn, giảm giá vé và combo, ưu tiên đặt chỗ.
-              </p>
-            </div>
-
-            {/* Member Card 3 */}
-            <div className="bg-slate-800 rounded-xl p-6 shadow-md text-center hover:scale-105 transition-transform">
-              <img
-                src="/images/member3.png"
-                alt="Thành viên Kim Cương"
-                className="w-24 h-24 mx-auto mb-4 object-contain"
-              />
-              <h3 className="text-lg font-semibold text-white mb-2">Thành viên Kim Cương</h3>
-              <p className="text-slate-300 text-sm">
-                Quyền lợi VIP: phòng chờ riêng, ưu đãi vé độc quyền và nhiều quà tặng.
-              </p>
-            </div>
-          </div>
-
-          {/* Button */}
-          <div className="text-center mt-10">
-            <button className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
-              Tìm hiểu ngay
-            </button>
-          </div>
-        </section>
-
-        {/* Liên hệ chúng tôi */}
-        <section className="w-full max-w-6xl mx-auto px-4 py-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">📞 LIÊN HỆ CHÚNG TÔI</h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Thông tin liên hệ */}
-            <div className="space-y-4 text-slate-300">
-              <p>
-                <span className="font-semibold text-white">📍 Địa chỉ:</span> 123 Đường ABC, Quận 1, TP. HCM
-              </p>
-              <p>
-                <span className="font-semibold text-white">☎️ Hotline:</span> 1900 123 456
-              </p>
-              <p>
-                <span className="font-semibold text-white">✉️ Email:</span> support@cinehub.vn
-              </p>
-
-              {/* Bản đồ (embed Google Map) */}
-              <div className="rounded-xl overflow-hidden shadow-md mt-6">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.509045985394!2d106.700423!3d10.776530!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f41b2f1f1f1%3A0xbadmapid!2zU8ahIHBo4bqhbSBs4bqtcA!5e0!3m2!1svi!2s!4v1636789123456"
-                  width="100%"
-                  height="250"
-                  allowFullScreen={true}
-                  loading="lazy"
-                ></iframe>
-              </div>
-            </div>
-
-            {/* Form liên hệ */}
-            <form className="bg-slate-800 p-6 rounded-xl shadow-md space-y-4">
-              <div>
-                <label className="block text-sm text-slate-300 mb-1">Họ và tên</label>
-                <input
-                  type="text"
-                  placeholder="Nhập họ tên"
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-300 mb-1">Email</label>
-                <input
-                  type="email"
-                  placeholder="Nhập email"
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-300 mb-1">Nội dung</label>
-                <textarea
-                  rows={4}  
-                  placeholder="Nhập nội dung"
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                ></textarea>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition"
-              >
-                Gửi liên hệ
-              </button>
-            </form>
-          </div>
-        </section>
-      </div>
-    </Layout>
-  );
+        </Layout>
+    );
 };
 
 export default Home;

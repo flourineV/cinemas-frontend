@@ -7,7 +7,7 @@ export const useAuthActions = () => {
 
   const logout = () => {
     clearAuth();
-    navigate('/login');
+    navigate('/home');
   };
 
   const checkAuth = () => {

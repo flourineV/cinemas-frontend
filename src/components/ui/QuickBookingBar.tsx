@@ -7,10 +7,10 @@ const QuickBookingBar = () => {
   const [selectedTime, setSelectedTime] = useState("");
 
   return (
-    <div className="w-full bg-gradient-to-r from-slate-100 to-slate-200 rounded-md shadow-md px-6 py-4">
+    <div className="w-full bg-gradient-to-r from-slate-100 to-slate-200 rounded-sm shadow-md px-6 py-4">
       <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
         {/* Title */}
-        <h2 className="text-xl font-extrabold text-slate-900 whitespace-nowrap">
+        <h2 className="text-xl font-extrabold">
           ĐẶT VÉ NHANH
         </h2>
 

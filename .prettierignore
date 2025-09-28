@@ -1,0 +1,10 @@
+# Directories
+node_modules
+dist
+build
+.husky
+
+# Files
+package-lock.json
+yarn.lock
+.env*

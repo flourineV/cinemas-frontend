@@ -17,23 +17,20 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-slate-900 text-white z-50 shadow-md">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+    <header className="fixed top-0 left-0 right-0 bg-black text-white z-50 shadow-md border-b border-gray-700"> 
+      <div className="w-full">
         <div
-          className="
-            flex items-center justify-between
-            py-2 px-4
-            sm:py-3 sm:px-6
-            md:py-3 md:px-12
-            lg:py-3 lg:px-36
-            w-full
-          "
-        >
+        className="
+          flex items-center justify-between
+          py-2 
+          max-w-6xl mx-auto
+        "
+      >
           <Link to="/" className="flex items-center">
             <img
               src="/LogoFullfinal.png"
               alt="CineHub Logo"
-              className="max-h-14 sm:max-h-16 md:max-h-20 lg:max-h-24 w-auto object-contain"
+              className="max-h-12 sm:max-h-12 md:max-h-13 lg:max-h-14 w-auto object-contain"
             />
           </Link>
 

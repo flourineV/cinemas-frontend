@@ -13,6 +13,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.content-layout-bg {
+    background-image: url('/bg-stroke.png'); 
+    background-size: cover;          
+    background-position: center;     
+    background-repeat: no-repeat;    
+    background-attachment: fixed;    
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -66,3 +74,4 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
