@@ -49,13 +49,19 @@ class ApiClient {
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: "GET" });
   }
+
+  async put<T>(endpoint: string, data? : any): Promise<T>{
+    return this.request<T>(endpoint, {
+      method: "PUT",
+      body: data ? JSON.stringify(data) : undefined
+    })
+  } 
 }
 
 const authApiClient = new ApiClient(AUTH_BASE_URL);
 const profileApiClient = new ApiClient(PROFILE_BASE_URL);
 
 export const authService = {
-  // Đăng nhập
   login: async (
     credentials: { email: string; password: string }
   ): Promise<{ user: User; accessToken: string }> => {
@@ -71,10 +77,10 @@ export const authService = {
     return response;
   },
 
-  // Đăng ký
   register: async (
     userData: any
-  ): Promise<{ user: User; accessToken: string }> => {
+  ): Promise<{ user: User; accessToken: string; profile?: UserProfile }> => {
+    // 1. Đăng ký user (Auth Service)
     const response = await authApiClient.post<{ user: User; accessToken: string }>(
       "/api/auth/signup",
       userData
@@ -82,23 +88,40 @@ export const authService = {
 
     if (response.accessToken) {
       localStorage.setItem("authToken", response.accessToken);
+
+      // 2. Nếu đăng ký thành công mới gọi tạo profile
+      try {
+        const profile = await profileApiClient.post<UserProfile>("/api/profile", {
+          userId: response.user.id,
+          email: userData.email,   // lấy từ form đăng ký ban đầu
+          username: response.user.username,
+          fullName: userData.name || response.user.username,
+          dateOfBirth: null,
+          phoneNumber: userData.phone || "",
+          nationalId: ""
+        });
+
+        return { ...response, profile };
+      } catch (err) {
+        console.error("❌ Lỗi khi tạo profile:", err);
+        // vẫn return user + token, profile có thể undefined
+        return response;
+      }
     }
 
     return response;
   },
 
-  // Đăng xuất
+
   logout: async (): Promise<void> => {
     await authApiClient.post("/api/auth/logout");
     localStorage.removeItem("authToken");
   },
 
-  // Lấy thông tin profile
   getProfile: async (userId: string): Promise<UserProfile> => {
     return profileApiClient.get<UserProfile>(`/api/profile/${userId}`);
   },
 
-  // Refresh token
   refresh: async (): Promise<string> => {
     const response = await authApiClient.post<{ accessToken: string }>(
       "/api/auth/refresh"
@@ -107,5 +130,9 @@ export const authService = {
       localStorage.setItem("authToken", response.accessToken);
     }
     return response.accessToken;
+  },
+
+  updateProfile: async (userId: string, data: Partial<UserProfile>): Promise<UserProfile> => {
+    return profileApiClient.put<UserProfile>(`/api/profile/${userId}`, data);
   },
 };
