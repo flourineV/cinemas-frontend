@@ -11,6 +11,7 @@ import { useCarousel } from "@/hooks/useCarousel";
 import { useBannerCarousel } from "@/hooks/useBannerCarousel";
 import { formatGenres } from "@/utils/formatGenres";
 import { formatSpokenLanguages } from '@/utils/formatSpokenLanguages';
+import TrailerModal from '@/components/ui/TrailerModal';
 
 const images = [
     "https://images.spiderum.com/sp-images/8d5590c080e311ed8a6481196edc880f.jpeg", 
@@ -183,18 +184,7 @@ const Home = () => {
                                             {/* 3. NÚT XEM TRAILER & ĐẶT VÉ */}
                                             <div className="flex w-full mt-2 space-x-2">
                                                 {/* Nút Xem Trailer (Dạng nút phụ) thay lại thành movie.trailer */}
-                                                <a 
-                                                    href={movie.posterUrl || "#"} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-center border border-white/50 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-white/10 w-1/2"
-                                                    >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.969 12l-3.328 2.5a.75.75 0 01-1.141-.645V10.145a.75.75 0 011.141-.645l3.328 2.5z" />
-                                                    </svg>
-                                                    Trailer
-                                                </a>
+                                                 <TrailerModal trailerUrl={movie.trailer} buttonLabel="Trailer" />
 
                                                 {/* Nút Đặt Vé (Nút chính) */}
                                                 <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">

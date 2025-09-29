@@ -54,6 +54,7 @@ export interface MovieSummary {
   time: number;
   spokenLanguages: string[];
   genres: string[];
+  trailer: string;
 }
 
 export interface MovieDetail {

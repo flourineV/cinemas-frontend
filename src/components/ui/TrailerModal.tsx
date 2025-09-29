@@ -45,11 +45,8 @@ export default function TrailerModal({ trailerUrl, buttonLabel = "Trailer" }: Tr
       {/* Modal hiển thị trailer */}
       {open && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="relative w-[90%] md:w-[60%] lg:w-[50%] aspect-video bg-black rounded-xl overflow-hidden">
-            
-            {/* Chỉ mount iframe khi open = true */}
-            {open && (
-                <iframe
+            <div className="relative w-[95%] md:w-[80%] lg:w-[70%] aspect-video bg-black rounded-xl overflow-hidden">
+            <iframe
                 width="100%"
                 height="100%"
                 src={embedUrl + "?autoplay=1"}
@@ -57,8 +54,7 @@ export default function TrailerModal({ trailerUrl, buttonLabel = "Trailer" }: Tr
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                ></iframe>
-            )}
+            ></iframe>
 
             {/* Nút đóng */}
             <button
