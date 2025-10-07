@@ -32,7 +32,6 @@ export const isTokenExpired = (token: string): boolean => {
 };
 
 export const getRoleBasedRedirectPath = (): string => {
-  // All roles redirect to the same dashboard path
   // DashboardWrapper will handle rendering the appropriate component
   return '/dashboard';
 };

@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useEffect } from 'react';
-import { isTokenExpired } from '../utils/auth';
-import type { User } from '../types';
+import { isTokenExpired } from '../utils/authHelper';
+import type { User } from '../types/index';
 
 interface AuthState {
   // Tokens

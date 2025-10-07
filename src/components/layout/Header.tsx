@@ -23,7 +23,7 @@ const Header = () => {
         className="
           flex items-center justify-between
           py-2 
-          max-w-6xl mx-auto
+          max-w-5xl mx-auto
         "
       >
           <Link to="/" className="flex items-center">

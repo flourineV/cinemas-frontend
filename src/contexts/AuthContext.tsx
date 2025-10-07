@@ -1,29 +1,31 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import type { User } from '../types';
-import { authService } from '../services/authService';
+import { createContext, useContext, useReducer, useEffect } from "react";
+import type { ReactNode } from "react";
+import type { UserResponse } from "@/services/auth/authService";
+import { authService } from "@/services/auth/authService";
 
+// ================== TYPES ==================
 interface AuthState {
-  user: User | null;
+  user: UserResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 }
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
-  register: (userData: any) => Promise<void>;
-  logout: () => Promise<void>;
+  signin: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<void>;
+  signout: () => Promise<void>;
   clearError: () => void;
 }
 
 type AuthAction =
-  | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: User }
-  | { type: 'AUTH_ERROR'; payload: string }
-  | { type: 'AUTH_LOGOUT' }
-  | { type: 'CLEAR_ERROR' };
+  | { type: "AUTH_START" }
+  | { type: "AUTH_SUCCESS"; payload: UserResponse }
+  | { type: "AUTH_ERROR"; payload: string }
+  | { type: "AUTH_LOGOUT" }
+  | { type: "CLEAR_ERROR" };
 
+// ================== INITIAL STATE ==================
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
@@ -31,15 +33,12 @@ const initialState: AuthState = {
   error: null,
 };
 
+// ================== REDUCER ==================
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
-    case 'AUTH_START':
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-      };
-    case 'AUTH_SUCCESS':
+    case "AUTH_START":
+      return { ...state, isLoading: true, error: null };
+    case "AUTH_SUCCESS":
       return {
         ...state,
         user: action.payload,
@@ -47,7 +46,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: false,
         error: null,
       };
-    case 'AUTH_ERROR':
+    case "AUTH_ERROR":
       return {
         ...state,
         user: null,
@@ -55,7 +54,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: false,
         error: action.payload,
       };
-    case 'AUTH_LOGOUT':
+    case "AUTH_LOGOUT":
       return {
         ...state,
         user: null,
@@ -63,103 +62,111 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: false,
         error: null,
       };
-    case 'CLEAR_ERROR':
-      return {
-        ...state,
-        error: null,
-      };
+    case "CLEAR_ERROR":
+      return { ...state, error: null };
     default:
       return state;
   }
 };
 
+// ================== CONTEXT ==================
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
+// ================== PROVIDER ==================
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check for existing token on app start
+  // Kiểm tra token khi load trang
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      dispatch({ type: 'AUTH_START' });
-      authService.getProfile()
-        .then(user => {
-          dispatch({ type: 'AUTH_SUCCESS', payload: user });
-        })
-        .catch(() => {
-          // Token is invalid, remove it
-          localStorage.removeItem('authToken');
-          dispatch({ type: 'AUTH_ERROR', payload: 'Session expired' });
-        });
-    }
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    // Nếu token tồn tại, có thể gọi API xác minh hoặc decode (tuỳ backend)
+    // Tạm thời chỉ setAuthenticated cho nhanh
+    dispatch({
+      type: "AUTH_SUCCESS",
+      payload: JSON.parse(localStorage.getItem("user") || "null"),
+    });
   }, []);
 
-  const login = async (email: string, password: string) => {
-    dispatch({ type: 'AUTH_START' });
+  // ================== ACTIONS ==================
+  const signin = async (email: string, password: string) => {
+    dispatch({ type: "AUTH_START" });
     try {
-      const { user } = await authService.login({ email, password });
-      dispatch({ type: 'AUTH_SUCCESS', payload: user });
-    } catch (error) {
-      dispatch({ 
-        type: 'AUTH_ERROR', 
-        payload: error instanceof Error ? error.message : 'Login failed' 
+      const res = await authService.signin({ email, password });
+      const { accessToken, user } = res.data;
+
+      if (accessToken) {
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+
+      dispatch({ type: "AUTH_SUCCESS", payload: user });
+    } catch (error: any) {
+      dispatch({
+        type: "AUTH_ERROR",
+        payload: error?.message || "Đăng nhập thất bại",
       });
       throw error;
     }
   };
 
-  const register = async (userData: any) => {
-    dispatch({ type: 'AUTH_START' });
+  const signup = async (name: string, email: string, password: string) => {
+    dispatch({ type: "AUTH_START" });
     try {
-      const { user } = await authService.register(userData);
-      dispatch({ type: 'AUTH_SUCCESS', payload: user });
-    } catch (error) {
-      dispatch({ 
-        type: 'AUTH_ERROR', 
-        payload: error instanceof Error ? error.message : 'Registration failed' 
+      const res = await authService.signup({ name, email, password });
+      const { accessToken, user } = res.data;
+
+      if (accessToken) {
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+
+      dispatch({ type: "AUTH_SUCCESS", payload: user });
+    } catch (error: any) {
+      dispatch({
+        type: "AUTH_ERROR",
+        payload: error?.message || "Đăng ký thất bại",
       });
       throw error;
     }
   };
 
-  const logout = async () => {
+  const signout = async () => {
     try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
+      await authService.signout();
+    } catch (err) {
+      console.warn("Signout error:", err);
     } finally {
-      dispatch({ type: 'AUTH_LOGOUT' });
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+      dispatch({ type: "AUTH_LOGOUT" });
     }
   };
 
   const clearError = () => {
-    dispatch({ type: 'CLEAR_ERROR' });
+    dispatch({ type: "CLEAR_ERROR" });
   };
 
   const value: AuthContextType = {
     ...state,
-    login,
-    register,
-    logout,
+    signin,
+    signup,
+    signout,
     clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// ================== HOOK ==================
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined)
+    throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

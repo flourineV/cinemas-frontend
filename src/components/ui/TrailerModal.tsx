@@ -8,10 +8,14 @@ interface TrailerModalProps {
 export default function TrailerModal({ trailerUrl, buttonLabel = "Trailer" }: TrailerModalProps) {
   const [open, setOpen] = useState(false);
 
-  // Convert link watch?v=... → embed/...
-  const embedUrl = trailerUrl.includes("watch?v=")
-    ? trailerUrl.replace("watch?v=", "embed/")
-    : trailerUrl;
+  if (!trailerUrl) {
+    return null; // Hoặc return <></> để không hiển thị component
+  }
+
+  // Convert link watch?v=... → embed/...
+  const embedUrl = trailerUrl.includes("watch?v=")
+    ? trailerUrl.replace("watch?v=", "embed/")
+    : trailerUrl;
 
   return (
     <>

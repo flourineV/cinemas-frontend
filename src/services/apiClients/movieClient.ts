@@ -1,16 +1,18 @@
 import axios from "axios";
 
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+const baseURL = import.meta.env.VITE_MOVIE_URL;
+
+export const movieClient = axios.create({
+  baseURL: baseURL,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: false, // true nếu BE có cookie/session
+  withCredentials: false, 
 });
 
-// ================== INTERCEPTORS ==================
+
 // Request interceptor
-apiClient.interceptors.request.use(
+movieClient.interceptors.request.use(
   (config) => {
     // Nếu sau này có auth token thì gắn vào header:
     // const token = localStorage.getItem("token");
@@ -21,7 +23,7 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor
-apiClient.interceptors.response.use(
+movieClient.interceptors.response.use(
   (response) => response,
   (error) => {
     // Xử lý lỗi chung
@@ -34,4 +36,4 @@ apiClient.interceptors.response.use(
   }
 );
 
-export default apiClient;
+

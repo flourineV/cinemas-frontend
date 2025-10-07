@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { getUserRole, isTokenExpired } from '../../utils/auth';
+import { getUserRole, isTokenExpired } from '../../utils/authHelper';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
