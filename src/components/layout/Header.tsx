@@ -1,48 +1,51 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { User, ChevronDown, Search } from 'lucide-react';
-import { useState } from 'react';
-import { useAuth } from '../../stores/authStore';
-import { useAuthActions } from '../../hooks/useAuthActions';
+import { Link, useNavigate } from "react-router-dom";
+import { User, ChevronDown, Search } from "lucide-react";
+import { useState } from "react";
+import { useAuthStore } from "../../stores/authStore";
 
 const Header = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { isAuthenticated, user } = useAuth();
-  const { logout } = useAuthActions();
+
+  const { user, signout } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout(); // gọi api + clear store
-    navigate('/login');
+    signout(); // clear Zustand + gọi API /signout nếu có
+    navigate("/login");
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-black text-white z-50 shadow-md border-b border-gray-700"> 
+    <header className="fixed top-0 left-0 right-0 bg-black text-white z-50 shadow-md border-b border-gray-700">
       <div className="w-full">
-        <div
-        className="
-          flex items-center justify-between
-          py-2 
-          max-w-5xl mx-auto
-        "
-      >
+        <div className="flex items-center justify-between py-2 max-w-5xl mx-auto">
+          {/* Logo */}
           <Link to="/" className="flex items-center">
             <img
               src="/LogoFullfinal.png"
               alt="CineHub Logo"
-              className="max-h-12 sm:max-h-12 md:max-h-13 lg:max-h-14 w-auto object-contain"
+              className="max-h-12 w-auto object-contain"
             />
           </Link>
 
           {/* Navigation Menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/about" className="text-base hover:text-yellow-400 transition-colors ">
+            <Link
+              to="/about"
+              className="text-base hover:text-yellow-400 transition-colors"
+            >
               Giới thiệu
             </Link>
-            <Link to="/promotions" className="text-base hover:text-yellow-400 transition-colors">
+            <Link
+              to="/promotions"
+              className="text-base hover:text-yellow-400 transition-colors"
+            >
               Khuyến mãi
             </Link>
-            <Link to="/events" className="text-base hover:text-yellow-400 transition-colors">
+            <Link
+              to="/events"
+              className="text-base hover:text-yellow-400 transition-colors"
+            >
               Tổ chức sự kiện
             </Link>
           </nav>
@@ -59,7 +62,8 @@ const Header = () => {
 
           {/* User Section */}
           <div className="flex items-center space-x-8">
-            {!isAuthenticated ? (
+            {!user ? (
+              // Chưa đăng nhập
               <Link
                 to="/login"
                 className="flex items-center space-x-1 hover:text-yellow-400 transition-colors whitespace-nowrap"
@@ -68,13 +72,14 @@ const Header = () => {
                 <span className="text-base">Đăng nhập</span>
               </Link>
             ) : (
+              // Đã đăng nhập
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-1 hover:text-yellow-400 transition-colors whitespace-nowrap focus:outline-none border-0"
                 >
                   <User className="w-4 h-4" />
-                  <span className="text-base">{user?.username}</span>
+                  <span className="text-base">{user.username}</span>
                 </button>
 
                 {isUserMenuOpen && (

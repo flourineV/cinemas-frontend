@@ -1,13 +1,16 @@
 import { authClient } from "../apiClients/authClient";
 
 export interface SignUpRequest {
-  name: string;
+  username: string;
   email: string;
+  phoneNumber: string;
+  nationalId: string;
   password: string;
+  confirmPassword: string;
 }
 
 export interface SignInRequest {
-  email: string;
+  usernameOrEmailOrPhone: string;
   password: string;
 }
 
@@ -27,7 +30,14 @@ export interface ResetPasswordRequest {
 export interface UserResponse {
   id: string;
   email: string;
-  name: string;
+  username: string;
+  role: string;
+  User: User;
+}
+
+export interface User {
+  id: string;
+  username: string;
   role: string;
 }
 

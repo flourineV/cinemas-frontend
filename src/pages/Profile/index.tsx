@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Layout from "../../components/layout/Layout";
 import { userProfileService } from "@/services/userprofile/userProfileService";
 import type { UserProfileResponse } from "@/services/userprofile/userProfileService";
-import { useAuth } from "../../stores/authStore";
-import { useAuthActions } from "../../hooks/useAuthActions";
+import { useAuthStore } from "../../stores/authStore";
 import { User, Camera, Calendar } from "lucide-react";
 import { FaChevronDown } from "react-icons/fa";
 
@@ -161,8 +160,7 @@ const GenderDropdown = ({
 // Main Profile Page
 // ========================================================
 const Profile = () => {
-  const { user } = useAuth();
-  const { logout } = useAuthActions();
+  const { user, signout } = useAuthStore();
 
   const [initialProfile, setInitialProfile] = useState<UserProfileResponse | null>(null);
   const [editableProfile, setEditableProfile] = useState<UserProfileResponse | null>(null);
@@ -236,7 +234,7 @@ const Profile = () => {
     alert("Chức năng Đổi mật khẩu đang được phát triển!");
   };
 
-  const handleLogout = () => logout();
+  const handleLogout = () => signout();
 
   // ================== Render ==================
   if (isLoading)

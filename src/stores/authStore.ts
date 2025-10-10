@@ -1,107 +1,117 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { useEffect } from 'react';
-import { isTokenExpired } from '../utils/authHelper';
-import type { User } from '../types/index';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { authService } from "@/services/auth/authService";
+import type { SignInRequest, SignUpRequest, JwtResponse } from "@/services/auth/authService";
 
-interface AuthState {
-  // Tokens
-  accessToken: string | null;
-
-  // User info (lưu luôn cả id, username, role)
-  user: User | null;
-  isAuthenticated: boolean;
-
-  // Actions
-  setAuth: (accessToken: string, user: User) => void;
-  clearAuth: () => void;
-  checkAuthStatus: () => void;
-  getUserInfo: () => { id: string | null; username: string | null; role: string | null; isAuth: boolean };
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
 }
 
-export const useAuthStore = create<AuthState>()(
+// ----------------------------
+// STATE
+// ----------------------------
+interface AuthState {
+  user: AuthUser | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// ----------------------------
+// ACTIONS
+// ----------------------------
+interface AuthActions {
+  signup: (data: SignUpRequest) => Promise<void>;
+  signin: (data: SignInRequest) => Promise<void>;
+  signout: () => void;
+  refreshUser: () => Promise<void>;
+}
+
+// ----------------------------
+// COMBINED STORE
+// ----------------------------
+export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
-    (set, get) => ({
-      // Initial state
-      accessToken: null,
+    (set) => ({
       user: null,
-      isAuthenticated: false,
+      loading: false,
+      error: null,
 
-      // Set token + user info
-      setAuth: (accessToken: string, user: User) => {
-        const isValid = !isTokenExpired(accessToken);
-        set({
-          accessToken,
-          user,
-          isAuthenticated: isValid,
-        });
-      },
+      // Đăng ký
+      signup: async (data) => {
+        try {
+          set({ loading: true, error: null });
+          const res = await authService.signup(data);
+          const jwt: JwtResponse = res.data;
 
-      // Clear all auth data
-      clearAuth: () => {
-        set({
-          accessToken: null,
-          user: null,
-          isAuthenticated: false,
-        });
-      },
+          // ⛔ Không lưu accessToken vì ông đang để trong localStorage riêng hoặc cookie
+          localStorage.setItem("accessToken", jwt.accessToken ?? "");
 
-      // Check if current token is still valid
-      checkAuthStatus: () => {
-        const { accessToken, user } = get();
-
-        if (!accessToken || !user) {
-          set({ isAuthenticated: false, user: null });
-          return;
+          set({
+            user: jwt.user,
+            loading: false,
+          });
+        } catch (err: any) {
+          set({
+            error: err.response?.data?.message || "Sign up failed",
+            loading: false,
+          });
         }
-
-        if (isTokenExpired(accessToken)) {
-          get().clearAuth();
-          return;
-        }
-
-        set({
-          isAuthenticated: true,
-          user,
-        });
       },
 
-      // Get user info
-      getUserInfo: () => {
-        const { user, isAuthenticated } = get();
-        return {
-          id: user?.id || null,
-          username: user?.username || null,
-          role: user?.role || null,
-          isAuth: isAuthenticated,
-        };
+      // Đăng nhập
+      signin: async (data) => {
+        try {
+          set({ loading: true, error: null });
+          const res = await authService.signin(data);
+          const jwt: JwtResponse = res.data;
+
+          // ⚡ Tạm thời gắn accessToken để test dev
+          localStorage.setItem("accessToken", jwt.accessToken ?? "");
+
+          set({
+            user: jwt.user,
+            loading: false,
+          });
+        } catch (err: any) {
+          set({
+            error: err.response?.data?.message || "Sign in failed",
+            loading: false,
+          });
+        }
+      },
+
+      // Đăng xuất
+      signout: () => {
+        try {
+          authService.signout();
+        } catch (_) {
+          /* ignore network errors */
+        }
+        localStorage.removeItem("accessToken");
+        set({ user: null, error: null, loading: false });
+      },
+
+      // Làm mới user từ server (khi F5, hoặc cookie đã có token)
+      refreshUser: async () => {
+        try {
+          const res = await authService.refreshToken({
+            refreshToken: localStorage.getItem("refreshToken") || "",
+          });
+          const jwt: JwtResponse = res.data;
+          set({ user: jwt.user });
+        } catch {
+          set({ user: null });
+        }
       },
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       partialize: (state) => ({
-        accessToken: state.accessToken,
-        user: state.user, // persist luôn user object
+        user: state.user, // chỉ lưu user thôi
       }),
     }
   )
 );
-
-// Hook để check trạng thái auth
-export const useAuth = () => {
-  const store = useAuthStore();
-
-  useEffect(() => {
-    store.checkAuthStatus();
-  }, [store.accessToken]);
-
-  return {
-    isAuthenticated: store.isAuthenticated,
-    accessToken: store.accessToken,
-    user: store.user,
-    setAuth: store.setAuth,
-    clearAuth: store.clearAuth,
-    checkAuthStatus: store.checkAuthStatus,
-    getUserInfo: store.getUserInfo,
-  };
-};

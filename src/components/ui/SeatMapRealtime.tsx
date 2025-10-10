@@ -35,7 +35,7 @@ export default function SeatMapRealtime({ showtimeId }: SeatMapProps) {
       socketService.subscribe(`/topic/showtime/${showtimeId}/seats`, (msg) => {
         const update: ShowtimeSeatResponse = JSON.parse(msg.body);
         setSeats((prev) =>
-          prev.map((s) => (s.id === update.id ? update : s))
+          prev.map((s) => (s.seatId === update.seatId ? update : s))
         );
       });
     });
@@ -66,7 +66,7 @@ export default function SeatMapRealtime({ showtimeId }: SeatMapProps) {
               : "bg-red-500 cursor-not-allowed";
           return (
             <button
-              key={seat.id}
+              key={seat.seatId}
               disabled={seat.status !== "AVAILABLE"}
               onClick={() => handleSelect(seat)}
               className={`w-10 h-10 rounded text-white font-semibold transition ${color}`}
@@ -90,7 +90,7 @@ export default function SeatMapRealtime({ showtimeId }: SeatMapProps) {
         newStatus
       );
       setSeats((prev) =>
-        prev.map((s) => (s.id === updated.id ? updated : s))
+        prev.map((s) => (s.seatId === updated.seatId ? updated : s))
       );
     } catch (err) {
       console.error("Không thể cập nhật ghế:", err);

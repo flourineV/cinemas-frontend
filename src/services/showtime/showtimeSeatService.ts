@@ -5,12 +5,9 @@ export type SeatStatus = "AVAILABLE" | "LOCKED" | "BOOKED";
 
 /** Dữ liệu trả về từ BE */
 export interface ShowtimeSeatResponse {
-  id: string;
-  showtimeId: string;
   seatId: string;
   seatNumber: string;
   status: SeatStatus;
-  updatedAt: string;
 }
 
 /** Dữ liệu gửi lên BE khi cập nhật status ghế */

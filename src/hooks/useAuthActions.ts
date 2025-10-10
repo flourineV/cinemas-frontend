@@ -1,21 +1,18 @@
-import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from "@/stores/authStore";
+import { useNavigate } from "react-router-dom";
 
 export const useAuthActions = () => {
-  const { clearAuth, checkAuthStatus } = useAuthStore();
+  const { signout, refreshUser } = useAuthStore();
   const navigate = useNavigate();
 
   const logout = () => {
-    clearAuth();
-    navigate('/home');
+    signout();
+    navigate("/home");
   };
 
-  const checkAuth = () => {
-    checkAuthStatus();
+  const checkAuth = async () => {
+    await refreshUser(); // Kiểm tra phiên qua cookie hoặc token
   };
 
-  return {
-    logout,
-    checkAuth,
-  };
+  return { logout, checkAuth };
 };
