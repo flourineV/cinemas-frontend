@@ -8,7 +8,7 @@ import { useState, useMemo } from "react";
  * @param itemsPerSlide The number of items to show per slide.
  * @returns An object containing: currentIndex, totalSlides, nextSlide, prevSlide, and the items for the current slide.
  */
-export const useCarousel = <T>(dataArray: T[], itemsPerSlide: number) => {
+export const useCarousel = <T>(dataArray: T[] = [], itemsPerSlide: number) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Tính tổng số slides cần thiết

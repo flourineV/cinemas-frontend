@@ -84,7 +84,8 @@ const Home = () => {
         </div>
 
         {/* ---------------- QUICK BOOKING ---------------- */}
-        <section className="max-w-5xl mx-auto mt-8">
+        <section className="relative w-full max-w-6xl mx-auto mt-8">
+          <QuickBookingBar />
         </section>
 
         {/* ---------------- PHIM ĐANG CHIẾU ---------------- */}
