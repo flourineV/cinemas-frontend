@@ -11,6 +11,8 @@ import Events from "./pages/Events";
 import Profile from "./pages/Profile";
 import DashboardWrapper from "./components/layout/DashboardWrapper";
 import MovieDetailPage from "./pages/Movie/MovieDetailPage";
+import NowPlayingPage from "@/pages/Movie/NowPlayingPage";
+import UpcomingPage from "@/pages/Movie/UpcomingPage";
 import "./styles/globals.css";
 import useResetPasswordListener from "@/hooks/useAuthListener"
 
@@ -21,6 +23,8 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Home />} />
+        <Route path="/movies/now-playing" element={<NowPlayingPage />} />
+        <Route path="/movies/upcoming" element={<UpcomingPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/promotions" element={<Promotions />} />
         <Route path="/events" element={<Events />} />

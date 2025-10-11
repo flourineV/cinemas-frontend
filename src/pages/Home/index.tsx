@@ -117,7 +117,7 @@ const Home = () => {
                                 <img
                                   src={getPosterUrl(movie.posterUrl)}
                                   alt={movie.title}
-                                  className="w-full h-[400px] object-cover"
+                                  className="w-full h-[400px] object-cover object-cover transition-transform duration-300 transform group-hover:scale-105"
                                 />
                                 <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
                                   <div className="text-white text-left">
@@ -194,9 +194,12 @@ const Home = () => {
           )}
 
           <div className="flex justify-center mt-5">
-            <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
+            <Link
+              to="/movies/now-playing"
+              className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition"
+            >
               Xem thêm
-            </button>
+            </Link>
           </div>
         </section>
 
@@ -224,7 +227,7 @@ const Home = () => {
                                 <img
                                   src={getPosterUrl(movie.posterUrl)}
                                   alt={movie.title}
-                                  className="w-full h-[400px] object-cover"
+                                  className="w-full h-[400px] object-cover object-cover transition-transform duration-300 transform group-hover:scale-105"
                                 />
                                 <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
                                   <div className="text-white text-left">
@@ -301,9 +304,12 @@ const Home = () => {
           )}
 
           <div className="flex justify-center mt-5">
-            <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
+            <Link
+              to="/movies/upcoming"
+              className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition"
+            >
               Xem thêm
-            </button>
+            </Link>
           </div>
         </section>
       </div>
