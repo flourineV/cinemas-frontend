@@ -32,7 +32,7 @@ const Home = () => {
   const itemsPerSlide = 4;
 
   // Banner carousel
-  const { currentIndex, prevSlide, nextSlide } = useBannerCarousel(images.length, 4000);
+  const { currentIndex, prevSlide, nextSlide } = useBannerCarousel(images.length, 5000);
 
   // Fetch movie data
   useEffect(() => {
@@ -42,16 +42,21 @@ const Home = () => {
 
   // Carousel hooks
   const {
-  currentIndex: nowPlayingIndex,
-  totalSlides: totalNowPlayingSlides,
-  nextSlide: nextMovies,
-  prevSlide: prevMovies,
-  goToSlide: goToNowPlayingSlide,
-} = useCarousel(nowPlaying, itemsPerSlide);
+    currentIndex: nowPlayingIndex,
+    totalSlides: totalNowPlayingSlides,
+    nextSlide: nextMovies,
+    prevSlide: prevMovies,
+    goToSlide: goToNowPlayingSlide,
+  } = useCarousel(nowPlaying, itemsPerSlide);
 
-  useCarousel<MovieSummary>(upcoming, itemsPerSlide);
+  const {
+    currentIndex: upcomingIndex,
+    totalSlides: totalUpcomingSlides,
+    nextSlide: nextUpcoming,
+    prevSlide: prevUpcoming,
+    goToSlide: goToUpcomingSlide,
+  } = useCarousel(upcoming, itemsPerSlide);
 
-  // ==================== JSX =====================
   return (
     <Layout>
       <div className="w-full min-h-screen pb-16">
@@ -89,8 +94,8 @@ const Home = () => {
         </section>
 
         {/* ---------------- PHIM ĐANG CHIẾU ---------------- */}
-        <section className="relative w-full max-w-6xl mx-auto mt-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-6 text-center">PHIM ĐANG CHIẾU</h2>
+        <section className="relative w-full max-w-6xl mx-auto mt-12">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-3 text-center">PHIM ĐANG CHIẾU</h2>
 
           {nowPlaying.length === 0 ? (
             <p className="text-white text-center">Đang tải phim...</p>
@@ -102,16 +107,12 @@ const Home = () => {
                   style={{ transform: `translateX(-${nowPlayingIndex * 100}%)` }}
                 >
                   {Array.from({ length: totalNowPlayingSlides }).map((_, slideIdx) => (
-                    <div
-                      key={slideIdx}
-                      className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6"
-                    >
+                    <div key={slideIdx} className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6">
                       {nowPlaying
                         .slice(slideIdx * itemsPerSlide, (slideIdx + 1) * itemsPerSlide)
                         .map((movie) => (
                           <div key={movie.id} className="group relative flex flex-col transition">
                             <Link to={`/movies/${movie.id}`} className="group relative flex flex-col transition">
-                              {/* Poster + overlay */}
                               <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
                                 <img
                                   src={getPosterUrl(movie.posterUrl)}
@@ -141,15 +142,20 @@ const Home = () => {
                                 </div>
                               </div>
 
-                              {/* Title */}
                               <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px]">
                                 {formatTitle(movie.title)}
                               </div>
                             </Link>
 
-                            {/* Nút Trailer + Đặt vé */}
-                            <div className="flex w-full mt-2 space-x-2">
-                              <TrailerModal trailerUrl={movie.trailer} buttonLabel="Trailer" />
+                            <div
+                              className={`flex w-full mt-2 space-x-2 ${
+                                movie.trailer ? "justify-start" : "justify-center"
+                              }`}
+                            >
+                              {movie.trailer && (
+                                <TrailerModal trailerUrl={movie.trailer} buttonLabel="Trailer" />
+                              )}
+
                               <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
                                 ĐẶT VÉ
                               </button>
@@ -195,7 +201,111 @@ const Home = () => {
         </section>
 
         {/* ---------------- PHIM SẮP CHIẾU ---------------- */}
-        {/* (phần dưới giữ nguyên logic của bạn) */}
+        <section className="relative w-full max-w-6xl mx-auto mt-16">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-3 text-center">PHIM SẮP CHIẾU</h2>
+
+          {upcoming.length === 0 ? (
+            <p className="text-white text-center">Đang tải phim...</p>
+          ) : (
+            <div className="relative rounded-2xl">
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-700 ease-in-out"
+                  style={{ transform: `translateX(-${upcomingIndex * 100}%)` }}
+                >
+                  {Array.from({ length: totalUpcomingSlides }).map((_, slideIdx) => (
+                    <div key={slideIdx} className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6">
+                      {upcoming
+                        .slice(slideIdx * itemsPerSlide, (slideIdx + 1) * itemsPerSlide)
+                        .map((movie) => (
+                          <div key={movie.id} className="group relative flex flex-col transition">
+                            <Link to={`/movies/${movie.id}`} className="group relative flex flex-col transition">
+                              <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
+                                <img
+                                  src={getPosterUrl(movie.posterUrl)}
+                                  alt={movie.title}
+                                  className="w-full h-[400px] object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                                  <div className="text-white text-left">
+                                    <h3 className="text-lg font-bold mb-2">{formatTitle(movie.title)}</h3>
+                                    <p className="text-xs font-light mb-1 flex items-center">
+                                      <MapPin size={16} className="mr-2 text-red-500" />
+                                      {formatGenres(movie.genres)}
+                                    </p>
+                                    <p className="text-xs font-light mb-1 flex items-center">
+                                      <Clock size={16} className="mr-2 text-red-500" />
+                                      {movie.time}’
+                                    </p>
+                                    <p className="text-xs font-light mb-1 flex items-center">
+                                      <Globe size={16} className="mr-2 text-red-500" />
+                                      {formatSpokenLanguages(movie.spokenLanguages)}
+                                    </p>
+                                    <p className="text-xs font-light flex items-center">
+                                      <ShieldAlert size={16} className="mr-2 text-red-500" />
+                                      {movie.age}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px]">
+                                {formatTitle(movie.title)}
+                              </div>
+                            </Link>
+
+                            <div
+                              className={`flex w-full mt-2 space-x-2 ${
+                                movie.trailer ? "justify-start" : "justify-center"
+                              }`}
+                            >
+                              {movie.trailer && (
+                                <TrailerModal trailerUrl={movie.trailer} buttonLabel="Trailer" />
+                              )}
+
+                              <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
+                                ĐẶT VÉ
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation + dots */}
+              <button
+                onClick={prevUpcoming}
+                className="absolute -left-16 top-[45%] -translate-y-[45%] z-20 bg-black/40 hover:bg-black/60 p-3 rounded-full text-white shadow-lg"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              <button
+                onClick={nextUpcoming}
+                className="absolute -right-16 top-[45%] -translate-y-[45%] z-20 bg-black/40 hover:bg-black/60 p-3 rounded-full text-white shadow-lg"
+              >
+                <ChevronRight size={28} />
+              </button>
+
+              <div className="flex justify-center mt-3 space-x-2">
+                {Array.from({ length: totalUpcomingSlides }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => goToUpcomingSlide(idx)}
+                    className={`w-3 h-3 rounded-full ${idx === upcomingIndex ? "bg-white" : "bg-gray-500"}`}
+                  ></button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-center mt-5">
+            <button className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
+              Xem thêm
+            </button>
+          </div>
+        </section>
       </div>
     </Layout>
   );

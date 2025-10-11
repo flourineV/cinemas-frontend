@@ -127,7 +127,7 @@ const QuickBookingBar = () => {
         <button
             disabled={!selectedTime}
             className="relative overflow-hidden px-10 py-3 rounded-lg font-extrabold text-white 
-                        shadow-[0_0_15px_rgba(255,0,0,0.4)] 
+                        text-lg shadow-[0_0_15px_rgba(255,0,0,0.4)] 
                         transition-all duration-500 ease-out 
                         disabled:bg-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
             >

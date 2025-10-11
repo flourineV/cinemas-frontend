@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ReactDOM from "react-dom";
 
 interface TrailerModalProps {
   trailerUrl: string;   // link trailer YouTube từ API
@@ -17,6 +18,35 @@ export default function TrailerModal({ trailerUrl, buttonLabel = "Trailer" }: Tr
     ? trailerUrl.replace("watch?v=", "embed/")
     : trailerUrl;
 
+ const modalContent = (
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]"
+      onClick={() => setOpen(false)} // click ra ngoài để đóng
+    >
+      <div
+        className="relative w-[95%] md:w-[80%] lg:w-[70%] aspect-video bg-black rounded-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()} // tránh đóng khi click vào iframe
+      >
+        <iframe
+          width="100%"
+          height="100%"
+          src={`${embedUrl}?autoplay=1`}
+          title="YouTube trailer"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+        {/* Nút đóng */}
+        <button
+          onClick={() => setOpen(false)}
+          className="absolute top-2 right-2 text-white bg-black/60 rounded-full p-2 hover:bg-black/80"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+    
   return (
     <>
       {/* Nút mở trailer */}
@@ -46,30 +76,7 @@ export default function TrailerModal({ trailerUrl, buttonLabel = "Trailer" }: Tr
         {buttonLabel}
       </button>
 
-      {/* Modal hiển thị trailer */}
-      {open && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="relative w-[95%] md:w-[80%] lg:w-[70%] aspect-video bg-black rounded-xl overflow-hidden">
-            <iframe
-                width="100%"
-                height="100%"
-                src={embedUrl + "?autoplay=1"}
-                title="YouTube trailer"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-            ></iframe>
-
-            {/* Nút đóng */}
-            <button
-                onClick={() => setOpen(false)}
-                className="absolute top-2 right-2 text-white bg-black/60 rounded-full p-2 hover:bg-black/80"
-            >
-                ✕
-            </button>
-            </div>
-        </div>
-        )}
+      {open && ReactDOM.createPortal(modalContent, document.body)}
     </>
   );
 }
