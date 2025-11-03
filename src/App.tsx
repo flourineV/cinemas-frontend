@@ -7,7 +7,6 @@ import RedirectReset from "./pages/Auth/RedirectReset";
 import ResetPassword from "./pages/Auth/ResetPassword";
 import About from "./pages/About";
 import Promotions from "./pages/Promotions";
-import Events from "./pages/Events";
 import Profile from "./pages/Profile";
 import DashboardWrapper from "./components/layout/DashboardWrapper";
 import MovieDetailPage from "./pages/Movie/MovieDetailPage";
@@ -27,7 +26,6 @@ function App() {
         <Route path="/movies/upcoming" element={<UpcomingPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/promotions" element={<Promotions />} />
-        <Route path="/events" element={<Events />} />
         <Route path="/movies/:id" element={<MovieDetailPage />} />
 
         {/* Auth routes */}

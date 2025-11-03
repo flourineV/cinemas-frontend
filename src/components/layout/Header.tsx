@@ -37,16 +37,16 @@ const Header = () => {
               Giới thiệu
             </Link>
             <Link
+              to="/showtime"
+              className="text-base hover:text-yellow-400 transition-colors"
+            >
+              Lịch chiếu
+            </Link>
+            <Link
               to="/promotions"
               className="text-base hover:text-yellow-400 transition-colors"
             >
               Khuyến mãi
-            </Link>
-            <Link
-              to="/events"
-              className="text-base hover:text-yellow-400 transition-colors"
-            >
-              Tổ chức sự kiện
             </Link>
           </nav>
 
