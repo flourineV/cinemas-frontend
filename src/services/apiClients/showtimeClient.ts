@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_SHOWTIME_URL
+const baseURL = import.meta.env.VITE_GATEWAY_URL + "/showtimes";
 
 export const showtimeClient = axios.create({
   baseURL,
@@ -24,7 +24,11 @@ showtimeClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      console.error("Profile API Error:", error.response.status, error.response.data);
+      console.error(
+        "Profile API Error:",
+        error.response.status,
+        error.response.data
+      );
     } else {
       console.error("Network error:", error.message);
     }

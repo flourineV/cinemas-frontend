@@ -1,22 +1,37 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_AUTH_URL;
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_GATEWAY_URL,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: false,
+});
 
-export const authClient = axios.create({
-    baseURL: baseURL,
-    headers: {
-        "Content-Type": "application/json",
-    },
-    withCredentials: false,
-})
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-authClient.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      console.warn("Unauthorized: token expired or invalid.");
-      // Tùy logic, có thể redirect hoặc refresh token ở đây
+  (error) => {
+    if (error.response) {
+      console.error(`API Error: ${error.response.status}`, error.response.data);
+      if (error.response.status === 401) {
+        console.warn("Token expired or unauthorized.");
+
+        localStorage.removeItem("accessToken");
+
+        window.location.href = "/login";
+      }
+    } else {
+      console.error("Network error:", error.message);
     }
     return Promise.reject(error);
   }
 );
+
+export default apiClient;

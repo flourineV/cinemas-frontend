@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_FNB_URL;
+const baseURL = import.meta.env.VITE_GATEWAY_URL + "/fnb";
 
 export const fnbClient = axios.create({
   baseURL,

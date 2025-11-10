@@ -1,15 +1,14 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_MOVIE_URL;
+const baseURL = import.meta.env.VITE_GATEWAY_URL + "/movies";
 
 export const movieClient = axios.create({
   baseURL: baseURL,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: false, 
+  withCredentials: false,
 });
-
 
 // Request interceptor
 movieClient.interceptors.request.use(
@@ -35,5 +34,3 @@ movieClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-
