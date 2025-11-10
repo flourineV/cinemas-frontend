@@ -1,4 +1,4 @@
-import { showtimeClient } from "@/services/apiClients/showtimeClient"; // ông sửa lại path nếu khác
+import { showtimeClient } from "@/services/apiClient"; // ông sửa lại path nếu khác
 import type {
   ShowtimeRequest,
   ShowtimeResponse,

@@ -1,5 +1,5 @@
 // src/services/theaterService.ts
-import { showtimeClient } from "../apiClients/showtimeClient";
+import { showtimeClient } from "../apiClient";
 
 import type {
   TheaterRequest,

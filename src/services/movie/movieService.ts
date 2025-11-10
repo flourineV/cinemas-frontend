@@ -1,5 +1,5 @@
 // src/services/movieService.ts
-import { movieClient } from "../apiClients/movieClient";
+import { movieClient } from "../apiClient";
 
 import type { MovieDetail, MovieSummary } from "@/types/movie/movie.type";
 

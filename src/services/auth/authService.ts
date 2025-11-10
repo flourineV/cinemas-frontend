@@ -1,4 +1,4 @@
-import apiClient from "@/services/apiClients/authClient";
+import { authClient } from "@/services/apiClient";
 import type {
   SignUpRequest,
   SignInRequest,
@@ -10,19 +10,19 @@ import type {
 
 export const authService = {
   signup: (data: SignUpRequest) =>
-    apiClient.post<JwtResponse>("/auth/signup", data),
+    authClient.post<JwtResponse>("/signup", data),
 
   signin: (data: SignInRequest) =>
-    apiClient.post<JwtResponse>("/auth/signin", data),
+    authClient.post<JwtResponse>("/signin", data),
 
-  signout: () => apiClient.post("/auth/signout"),
+  signout: () => authClient.post("/signout"),
 
   refreshToken: (data: TokenRefreshRequest) =>
-    apiClient.post<JwtResponse>("/auth/refreshtoken", data),
+    authClient.post<JwtResponse>("/refreshtoken", data),
 
   forgotPassword: (data: ForgotPasswordRequest) =>
-    apiClient.post("/auth/forgot-password", data),
+    authClient.post("/forgot-password", data),
 
   resetPassword: (data: ResetPasswordRequest) =>
-    apiClient.post("/auth/reset-password", data),
+    authClient.post("/reset-password", data),
 };

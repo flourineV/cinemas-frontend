@@ -1,5 +1,5 @@
 // src/services/roomService.ts
-import { showtimeClient } from "../apiClients/showtimeClient";
+import { showtimeClient } from "../apiClient";
 
 import type { RoomRequest, RoomResponse } from "@/types/showtime/room.type";
 

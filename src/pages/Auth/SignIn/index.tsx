@@ -17,14 +17,12 @@ const SignIn: React.FC = () => {
   });
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
 
-  // Nếu đã đăng nhập, tự chuyển trang
   useEffect(() => {
     if (user) {
       navigate("/dashboard");
     }
   }, [user, navigate]);
 
-  // Xử lý thay đổi input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -33,7 +31,6 @@ const SignIn: React.FC = () => {
     }
   };
 
-  // Kiểm tra form
   const validateForm = (): boolean => {
     const newErrors: Partial<LoginFormData> = {};
 
@@ -49,7 +46,6 @@ const SignIn: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Xử lý submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -59,9 +55,21 @@ const SignIn: React.FC = () => {
       password: formData.password,
     });
 
-    // Sau khi signin, Zustand sẽ set user nếu thành công
-    if (useAuthStore.getState().user) {
-      navigate("/dashboard");
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser) {
+      switch (currentUser.role) {
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        case "manager":
+          navigate("/manager/panel");
+          break;
+        case "staff":
+          navigate("/staff/panel");
+          break;
+        default:
+          navigate("/dashboard");
+      }
     }
   };
 

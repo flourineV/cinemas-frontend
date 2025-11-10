@@ -1,4 +1,4 @@
-import { showtimeClient } from "../apiClients/showtimeClient";
+import { showtimeClient } from "../apiClient";
 import type { SeatRequest, SeatResponse } from "@/types/showtime/seat.type";
 
 export const seatService = {

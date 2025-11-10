@@ -2,8 +2,8 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import Home from "../../pages/Home";
-import StaffDashboard from "../../pages/Dashboard/StaffDashboard";
-import AdminDashboard from "../../pages/Dashboard/AdminDashboard";
+import StaffDashboard from "../../pages/Dashboard/Staff/StaffDashboard";
+import AdminDashboard from "../../pages/Dashboard/Admin/AdminDashboard";
 
 const DashboardWrapper: React.FC = () => {
   const { user } = useAuthStore(); // 🔹 Lấy user trực tiếp từ Zustand
