@@ -1,5 +1,12 @@
 import Layout from "../../components/layout/Layout";
-import { ChevronLeft, ChevronRight, MapPin, Clock, Globe, ShieldAlert } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Clock,
+  Globe,
+  ShieldAlert,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -9,7 +16,7 @@ import { useBannerCarousel } from "@/hooks/useBannerCarousel";
 
 // API service + types
 import { movieService } from "@/services/movie/movieService";
-import type { MovieSummary } from "@/services/movie/movieService";
+import type { MovieSummary } from "@/types/movie/movie.type";
 
 // Components
 import QuickBookingBar from "../../components/ui/QuickBookingBar";
@@ -17,7 +24,11 @@ import TrailerModal from "@/components/ui/TrailerModal";
 
 // Utils
 import { getPosterUrl } from "@/utils/getPosterUrl";
-import { formatTitle, formatSpokenLanguages, formatGenres } from "@/utils/format";
+import {
+  formatTitle,
+  formatSpokenLanguages,
+  formatGenres,
+} from "@/utils/format";
 
 const images = [
   "https://images.spiderum.com/sp-images/8d5590c080e311ed8a6481196edc880f.jpeg",
@@ -32,7 +43,10 @@ const Home = () => {
   const itemsPerSlide = 4;
 
   // Banner carousel
-  const { currentIndex, prevSlide, nextSlide } = useBannerCarousel(images.length, 5000);
+  const { currentIndex, prevSlide, nextSlide } = useBannerCarousel(
+    images.length,
+    5000
+  );
 
   // Fetch movie data
   useEffect(() => {
@@ -68,7 +82,12 @@ const Home = () => {
               style={{ transform: `translateX(-${currentIndex * 100}%)` }}
             >
               {images.map((src, index) => (
-                <img key={index} src={src} alt={`Slide ${index}`} className="min-w-full h-full object-cover" />
+                <img
+                  key={index}
+                  src={src}
+                  alt={`Slide ${index}`}
+                  className="min-w-full h-full object-cover"
+                />
               ))}
             </div>
           </section>
@@ -95,7 +114,9 @@ const Home = () => {
 
         {/* ---------------- PHIM ĐANG CHIẾU ---------------- */}
         <section className="relative w-full max-w-6xl mx-auto mt-12">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-3 text-center">PHIM ĐANG CHIẾU</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-3 text-center">
+            PHIM ĐANG CHIẾU
+          </h2>
 
           {nowPlaying.length === 0 ? (
             <p className="text-white text-center">Đang tải phim...</p>
@@ -104,66 +125,103 @@ const Home = () => {
               <div className="overflow-hidden">
                 <div
                   className="flex transition-transform duration-700 ease-in-out"
-                  style={{ transform: `translateX(-${nowPlayingIndex * 100}%)` }}
+                  style={{
+                    transform: `translateX(-${nowPlayingIndex * 100}%)`,
+                  }}
                 >
-                  {Array.from({ length: totalNowPlayingSlides }).map((_, slideIdx) => (
-                    <div key={slideIdx} className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6">
-                      {nowPlaying
-                        .slice(slideIdx * itemsPerSlide, (slideIdx + 1) * itemsPerSlide)
-                        .map((movie) => (
-                          <div key={movie.id} className="group relative flex flex-col transition">
-                            <Link to={`/movies/${movie.id}`} className="group relative flex flex-col transition">
-                              <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
-                                <img
-                                  src={getPosterUrl(movie.posterUrl)}
-                                  alt={movie.title}
-                                  className="w-full h-[400px] object-cover object-cover transition-transform duration-300 transform group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
-                                  <div className="text-white text-left">
-                                    <h3 className="text-lg font-bold mb-2">{formatTitle(movie.title)}</h3>
-                                    <p className="text-xs font-light mb-1 flex items-center">
-                                      <MapPin size={16} className="mr-2 text-red-500" />
-                                      {formatGenres(movie.genres)}
-                                    </p>
-                                    <p className="text-xs font-light mb-1 flex items-center">
-                                      <Clock size={16} className="mr-2 text-red-500" />
-                                      {movie.time}’
-                                    </p>
-                                    <p className="text-xs font-light mb-1 flex items-center">
-                                      <Globe size={16} className="mr-2 text-red-500" />
-                                      {formatSpokenLanguages(movie.spokenLanguages)}
-                                    </p>
-                                    <p className="text-xs font-light flex items-center">
-                                      <ShieldAlert size={16} className="mr-2 text-red-500" />
-                                      {movie.age}
-                                    </p>
+                  {Array.from({ length: totalNowPlayingSlides }).map(
+                    (_, slideIdx) => (
+                      <div
+                        key={slideIdx}
+                        className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6"
+                      >
+                        {nowPlaying
+                          .slice(
+                            slideIdx * itemsPerSlide,
+                            (slideIdx + 1) * itemsPerSlide
+                          )
+                          .map((movie) => (
+                            <div
+                              key={movie.id}
+                              className="group relative flex flex-col transition"
+                            >
+                              <Link
+                                to={`/movies/${movie.id}`}
+                                className="group relative flex flex-col transition"
+                              >
+                                <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
+                                  <img
+                                    src={getPosterUrl(movie.posterUrl)}
+                                    alt={movie.title}
+                                    className="w-full h-[400px] object-cover object-cover transition-transform duration-300 transform group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                                    <div className="text-white text-left">
+                                      <h3 className="text-lg font-bold mb-2">
+                                        {formatTitle(movie.title)}
+                                      </h3>
+                                      <p className="text-xs font-light mb-1 flex items-center">
+                                        <MapPin
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {formatGenres(movie.genres)}
+                                      </p>
+                                      <p className="text-xs font-light mb-1 flex items-center">
+                                        <Clock
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {movie.time}’
+                                      </p>
+                                      <p className="text-xs font-light mb-1 flex items-center">
+                                        <Globe
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {formatSpokenLanguages(
+                                          movie.spokenLanguages
+                                        )}
+                                      </p>
+                                      <p className="text-xs font-light flex items-center">
+                                        <ShieldAlert
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {movie.age}
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
+
+                                <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px]">
+                                  {formatTitle(movie.title)}
+                                </div>
+                              </Link>
+
+                              <div
+                                className={`flex w-full mt-2 space-x-2 ${
+                                  movie.trailer
+                                    ? "justify-start"
+                                    : "justify-center"
+                                }`}
+                              >
+                                {movie.trailer && (
+                                  <TrailerModal
+                                    trailerUrl={movie.trailer}
+                                    buttonLabel="Trailer"
+                                  />
+                                )}
+
+                                <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
+                                  ĐẶT VÉ
+                                </button>
                               </div>
-
-                              <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px]">
-                                {formatTitle(movie.title)}
-                              </div>
-                            </Link>
-
-                            <div
-                              className={`flex w-full mt-2 space-x-2 ${
-                                movie.trailer ? "justify-start" : "justify-center"
-                              }`}
-                            >
-                              {movie.trailer && (
-                                <TrailerModal trailerUrl={movie.trailer} buttonLabel="Trailer" />
-                              )}
-
-                              <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
-                                ĐẶT VÉ
-                              </button>
                             </div>
-                          </div>
-                        ))}
-                    </div>
-                  ))}
+                          ))}
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -205,7 +263,9 @@ const Home = () => {
 
         {/* ---------------- PHIM SẮP CHIẾU ---------------- */}
         <section className="relative w-full max-w-6xl mx-auto mt-16">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-3 text-center">PHIM SẮP CHIẾU</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-3 text-center">
+            PHIM SẮP CHIẾU
+          </h2>
 
           {upcoming.length === 0 ? (
             <p className="text-white text-center">Đang tải phim...</p>
@@ -216,64 +276,99 @@ const Home = () => {
                   className="flex transition-transform duration-700 ease-in-out"
                   style={{ transform: `translateX(-${upcomingIndex * 100}%)` }}
                 >
-                  {Array.from({ length: totalUpcomingSlides }).map((_, slideIdx) => (
-                    <div key={slideIdx} className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6">
-                      {upcoming
-                        .slice(slideIdx * itemsPerSlide, (slideIdx + 1) * itemsPerSlide)
-                        .map((movie) => (
-                          <div key={movie.id} className="group relative flex flex-col transition">
-                            <Link to={`/movies/${movie.id}`} className="group relative flex flex-col transition">
-                              <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
-                                <img
-                                  src={getPosterUrl(movie.posterUrl)}
-                                  alt={movie.title}
-                                  className="w-full h-[400px] object-cover object-cover transition-transform duration-300 transform group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
-                                  <div className="text-white text-left">
-                                    <h3 className="text-lg font-bold mb-2">{formatTitle(movie.title)}</h3>
-                                    <p className="text-xs font-light mb-1 flex items-center">
-                                      <MapPin size={16} className="mr-2 text-red-500" />
-                                      {formatGenres(movie.genres)}
-                                    </p>
-                                    <p className="text-xs font-light mb-1 flex items-center">
-                                      <Clock size={16} className="mr-2 text-red-500" />
-                                      {movie.time}’
-                                    </p>
-                                    <p className="text-xs font-light mb-1 flex items-center">
-                                      <Globe size={16} className="mr-2 text-red-500" />
-                                      {formatSpokenLanguages(movie.spokenLanguages)}
-                                    </p>
-                                    <p className="text-xs font-light flex items-center">
-                                      <ShieldAlert size={16} className="mr-2 text-red-500" />
-                                      {movie.age}
-                                    </p>
+                  {Array.from({ length: totalUpcomingSlides }).map(
+                    (_, slideIdx) => (
+                      <div
+                        key={slideIdx}
+                        className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6"
+                      >
+                        {upcoming
+                          .slice(
+                            slideIdx * itemsPerSlide,
+                            (slideIdx + 1) * itemsPerSlide
+                          )
+                          .map((movie) => (
+                            <div
+                              key={movie.id}
+                              className="group relative flex flex-col transition"
+                            >
+                              <Link
+                                to={`/movies/${movie.id}`}
+                                className="group relative flex flex-col transition"
+                              >
+                                <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
+                                  <img
+                                    src={getPosterUrl(movie.posterUrl)}
+                                    alt={movie.title}
+                                    className="w-full h-[400px] object-cover object-cover transition-transform duration-300 transform group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                                    <div className="text-white text-left">
+                                      <h3 className="text-lg font-bold mb-2">
+                                        {formatTitle(movie.title)}
+                                      </h3>
+                                      <p className="text-xs font-light mb-1 flex items-center">
+                                        <MapPin
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {formatGenres(movie.genres)}
+                                      </p>
+                                      <p className="text-xs font-light mb-1 flex items-center">
+                                        <Clock
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {movie.time}’
+                                      </p>
+                                      <p className="text-xs font-light mb-1 flex items-center">
+                                        <Globe
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {formatSpokenLanguages(
+                                          movie.spokenLanguages
+                                        )}
+                                      </p>
+                                      <p className="text-xs font-light flex items-center">
+                                        <ShieldAlert
+                                          size={16}
+                                          className="mr-2 text-red-500"
+                                        />
+                                        {movie.age}
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
+
+                                <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px]">
+                                  {formatTitle(movie.title)}
+                                </div>
+                              </Link>
+
+                              <div
+                                className={`flex w-full mt-2 space-x-2 ${
+                                  movie.trailer
+                                    ? "justify-start"
+                                    : "justify-center"
+                                }`}
+                              >
+                                {movie.trailer && (
+                                  <TrailerModal
+                                    trailerUrl={movie.trailer}
+                                    buttonLabel="Trailer"
+                                  />
+                                )}
+
+                                <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
+                                  ĐẶT VÉ
+                                </button>
                               </div>
-
-                              <div className="p-2 flex items-center justify-center text-center text-white text-base font-medium h-[70px]">
-                                {formatTitle(movie.title)}
-                              </div>
-                            </Link>
-
-                            <div
-                              className={`flex w-full mt-2 space-x-2 ${
-                                movie.trailer ? "justify-start" : "justify-center"
-                              }`}
-                            >
-                              {movie.trailer && (
-                                <TrailerModal trailerUrl={movie.trailer} buttonLabel="Trailer" />
-                              )}
-
-                              <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
-                                ĐẶT VÉ
-                              </button>
                             </div>
-                          </div>
-                        ))}
-                    </div>
-                  ))}
+                          ))}
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 

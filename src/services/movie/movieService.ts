@@ -1,38 +1,8 @@
 // src/services/movieService.ts
 import { movieClient } from "../apiClients/movieClient";
 
-// ================== Interfaces (Giữ nguyên) ==================
-export interface MovieSummary {
-  id: string;
-  tmdbId: number;
-  title: string;
-  posterUrl: string;
-  age: string;
-  status: string;
-  time: number;
-  spokenLanguages: string[];
-  genres: string[];
-  trailer: string;
-}
+import type { MovieDetail, MovieSummary } from "@/types/movie/movie.type";
 
-export interface MovieDetail {
-  id: string;
-  tmdbId: number;
-  title: string;
-  age: string;
-  genres: string[];
-  time: number;
-  country: string;
-  spokenLanguages: string[];
-  crew: string[];
-  cast: string[];
-  releaseDate: string;
-  overview: string;
-  trailer: string;
-  posterUrl: string;
-}
-
-// ================== Service (Đã sửa với async/await) ==================
 export const movieService = {
   syncMovies: async (): Promise<void> => {
     // Thêm async và await
