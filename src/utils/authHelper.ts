@@ -1,8 +1,9 @@
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from "jwt-decode";
+import type { UserRole } from "@/constants/UserRole";
 
 export interface DecodedToken {
-  sub: string;
-  role: 'USER' | 'STAFF' | 'ADMIN';
+  sub: string; // userId
+  role: UserRole;
   exp: number;
   iat: number;
   [key: string]: any;
@@ -10,28 +11,36 @@ export interface DecodedToken {
 
 export const decodeToken = (token: string): DecodedToken | null => {
   try {
-    const decoded = jwtDecode<DecodedToken>(token);
-    return decoded;
-  } catch (error) {
-    console.error('Error decoding token:', error);
+    return jwtDecode<DecodedToken>(token);
+  } catch {
     return null;
   }
 };
 
-export const getUserRole = (token: string): 'USER' | 'STAFF' | 'ADMIN' | null => {
+export const getUserRole = (token: string | null): UserRole => {
+  if (!token) return "GUEST";
   const decoded = decodeToken(token);
-  return decoded?.role || null;
+  return decoded?.role ?? "GUEST";
 };
 
-export const isTokenExpired = (token: string): boolean => {
+export const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
   const decoded = decodeToken(token);
   if (!decoded) return true;
-  
-  const currentTime = Date.now() / 1000;
-  return decoded.exp < currentTime;
+  return decoded.exp < Date.now() / 1000;
 };
 
-export const getRoleBasedRedirectPath = (): string => {
-  // DashboardWrapper will handle rendering the appropriate component
-  return '/dashboard';
+export const getRoleRedirectPath = (role: UserRole): string => {
+  switch (role) {
+    case "ADMIN":
+      return "/admin/dashboard";
+    case "MANAGER":
+      return "/manager/dashboard";
+    case "STAFF":
+      return "/staff/dashboard";
+    case "CUSTOMER":
+      return "/";
+    default:
+      return "/";
+  }
 };

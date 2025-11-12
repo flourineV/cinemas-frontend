@@ -62,13 +62,13 @@ const SignIn: React.FC = () => {
           navigate("/admin/dashboard");
           break;
         case "manager":
-          navigate("/manager/panel");
+          navigate("/manager/dashboard");
           break;
         case "staff":
-          navigate("/staff/panel");
+          navigate("/staff/dashboard");
           break;
         default:
-          navigate("/dashboard");
+          navigate("/");
       }
     }
   };

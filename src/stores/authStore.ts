@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { authService } from "@/services/auth/authService";
-import type { SignInRequest, SignUpRequest, JwtResponse } from "@/services/auth/authService";
+import type {
+  SignInRequest,
+  SignUpRequest,
+  JwtResponse,
+} from "@/types/auth/auth.type";
+import { decodeToken, getUserRole, isTokenExpired } from "@/utils/authHelper";
 
 export interface AuthUser {
   id: string;
@@ -10,47 +15,44 @@ export interface AuthUser {
   role: string;
 }
 
-// ----------------------------
-// STATE
-// ----------------------------
 interface AuthState {
   user: AuthUser | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   loading: boolean;
   error: string | null;
 }
 
-// ----------------------------
-// ACTIONS
-// ----------------------------
 interface AuthActions {
   signup: (data: SignUpRequest) => Promise<void>;
   signin: (data: SignInRequest) => Promise<void>;
   signout: () => void;
-  refreshUser: () => Promise<void>;
+  refreshAccessToken: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
-// ----------------------------
-// COMBINED STORE
-// ----------------------------
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
+      accessToken: null,
+      refreshToken: null,
       loading: false,
       error: null,
 
-      // Đăng ký
       signup: async (data) => {
+        set({ loading: true, error: null });
         try {
-          set({ loading: true, error: null });
           const res = await authService.signup(data);
           const jwt: JwtResponse = res.data;
 
-          // ⛔ Không lưu accessToken vì ông đang để trong localStorage riêng hoặc cookie
           localStorage.setItem("accessToken", jwt.accessToken ?? "");
+          localStorage.setItem("refreshToken", jwt.refreshToken ?? "");
 
           set({
             user: jwt.user,
+            accessToken: jwt.accessToken,
+            refreshToken: jwt.refreshToken,
             loading: false,
           });
         } catch (err: any) {
@@ -61,18 +63,19 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      // Đăng nhập
       signin: async (data) => {
+        set({ loading: true, error: null });
         try {
-          set({ loading: true, error: null });
           const res = await authService.signin(data);
           const jwt: JwtResponse = res.data;
 
-          // ⚡ Tạm thời gắn accessToken để test dev
           localStorage.setItem("accessToken", jwt.accessToken ?? "");
+          localStorage.setItem("refreshToken", jwt.refreshToken ?? "");
 
           set({
             user: jwt.user,
+            accessToken: jwt.accessToken,
+            refreshToken: jwt.refreshToken,
             loading: false,
           });
         } catch (err: any) {
@@ -83,34 +86,76 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      // Đăng xuất
       signout: () => {
-        try {
-          authService.signout();
-        } catch (_) {
-          /* ignore network errors */
-        }
+        authService.signout().catch(() => {});
         localStorage.removeItem("accessToken");
-        set({ user: null, error: null, loading: false });
+        localStorage.removeItem("refreshToken");
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          error: null,
+          loading: false,
+        });
       },
 
-      // Làm mới user từ server (khi F5, hoặc cookie đã có token)
-      refreshUser: async () => {
-        try {
-          const res = await authService.refreshToken({
-            refreshToken: localStorage.getItem("refreshToken") || "",
-          });
-          const jwt: JwtResponse = res.data;
-          set({ user: jwt.user });
-        } catch {
-          set({ user: null });
+      refreshAccessToken: async () => {
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) {
+          set({ user: null, accessToken: null });
+          return;
         }
+
+        try {
+          const res = await authService.refreshToken({ refreshToken });
+          const jwt: JwtResponse = res.data;
+
+          localStorage.setItem("accessToken", jwt.accessToken ?? "");
+          set({
+            accessToken: jwt.accessToken,
+            user: jwt.user,
+          });
+        } catch {
+          set({ user: null, accessToken: null });
+        }
+      },
+
+      checkAuth: async () => {
+        const accessToken = localStorage.getItem("accessToken");
+        const refreshToken = localStorage.getItem("refreshToken");
+
+        if (!accessToken) {
+          if (refreshToken) await get().refreshAccessToken();
+          else set({ user: null });
+          return;
+        }
+
+        if (isTokenExpired(accessToken)) {
+          if (refreshToken) await get().refreshAccessToken();
+          else set({ user: null });
+          return;
+        }
+
+        const decoded = decodeToken(accessToken);
+        if (decoded)
+          set({
+            user: {
+              id: decoded.sub,
+              username: decoded.username ?? "",
+              email: decoded.email ?? "",
+              role: decoded.role ?? getUserRole(accessToken),
+            },
+            accessToken,
+            refreshToken,
+          });
       },
     }),
     {
       name: "auth-storage",
       partialize: (state) => ({
-        user: state.user, // chỉ lưu user thôi
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
       }),
     }
   )

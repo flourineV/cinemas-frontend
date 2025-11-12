@@ -1,0 +1,46 @@
+import Home from "@/pages/Home";
+import SignIn from "@/pages/Auth/SignIn";
+import SignUp from "@/pages/Auth/SignUp";
+import ForgotPassword from "@/pages/Auth/ForgotPassword";
+import RedirectReset from "@/pages/Auth/RedirectReset";
+import ResetPassword from "@/pages/Auth/ResetPassword";
+import About from "@/pages/About";
+import Promotions from "@/pages/Promotions";
+import Profile from "@/pages/Profile";
+import MovieDetailPage from "@/pages/Movie/MovieDetailPage";
+import AdminDashboard from "@/pages/Dashboard/Admin/AdminDashboard";
+import ManagerDashboard from "@/pages/Dashboard/Manager/ManagerDashboard";
+import StaffDashboard from "@/pages/Dashboard/Staff/StaffDashboard";
+
+import { UserRole } from "@/constants/UserRole";
+
+export const publicRoutes = [
+  { path: "/", element: <Home /> },
+  { path: "/about", element: <About /> },
+  { path: "/promotions", element: <Promotions /> },
+  { path: "/movies/:id", element: <MovieDetailPage /> },
+  { path: "/login", element: <SignIn /> },
+  { path: "/signup", element: <SignUp /> },
+  { path: "/reset-password", element: <ResetPassword /> },
+  { path: "/redirect-reset", element: <RedirectReset /> },
+  { path: "/forgot-password", element: <ForgotPassword /> },
+];
+
+export const protectedRoutes = [
+  { path: "/profile", element: <Profile />, role: UserRole.CUSTOMER },
+  {
+    path: "/admin/dashboard",
+    element: <AdminDashboard />,
+    role: UserRole.ADMIN,
+  },
+  {
+    path: "/manager/dashboard",
+    element: <ManagerDashboard />,
+    role: UserRole.MANAGER,
+  },
+  {
+    path: "/staff/dashboard",
+    element: <StaffDashboard />,
+    role: UserRole.STAFF,
+  },
+];

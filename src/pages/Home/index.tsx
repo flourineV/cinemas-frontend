@@ -9,20 +9,12 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-
-// Hooks
 import { useCarousel } from "@/hooks/useCarousel";
 import { useBannerCarousel } from "@/hooks/useBannerCarousel";
-
-// API service + types
 import { movieService } from "@/services/movie/movieService";
 import type { MovieSummary } from "@/types/movie/movie.type";
-
-// Components
 import QuickBookingBar from "../../components/ui/QuickBookingBar";
 import TrailerModal from "@/components/ui/TrailerModal";
-
-// Utils
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import {
   formatTitle,

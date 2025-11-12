@@ -28,7 +28,7 @@ export const applyInterceptors = (client: AxiosInstance): AxiosInstance => {
         );
         if (error.response.status === 401) {
           localStorage.removeItem("accessToken");
-          window.location.href = "/login";
+          window.location.href = "/";
         }
       } else {
         console.error("Network error:", error.message);
