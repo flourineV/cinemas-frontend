@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Layout from "../../../components/layout/Layout";
 import { useAuthStore } from "../../../stores/authStore";
 import { Loader2 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface SignupFormData {
   email: string;
@@ -28,6 +29,9 @@ const SignUp: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<Partial<SignupFormData>>({});
+
+  // Respect reduced motion preference
+  const shouldReduceMotion = useReducedMotion();
 
   // ----------------------
   // HANDLE INPUT
@@ -115,9 +119,6 @@ const SignUp: React.FC = () => {
     }
   };
 
-  // ----------------------
-  // UI
-  // ----------------------
   return (
     <Layout>
       <div
@@ -125,8 +126,11 @@ const SignUp: React.FC = () => {
         aria-live="polite"
       >
         <div className="w-full max-w-md">
-          {/* Panel */}
-          <div
+          {/* Motion wrapper for the panel */}
+          <motion.div
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 24 }}
+            animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
             className="bg-black/60 backdrop-blur-md 
                         border border-yellow-400/20 
                         rounded-2xl p-8 sm:p-10 shadow-2xl"
@@ -146,7 +150,7 @@ const SignUp: React.FC = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               <div className="space-y-5">
                 {/* Email */}
                 <InputField
@@ -241,7 +245,7 @@ const SignUp: React.FC = () => {
                 )}
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       </div>
     </Layout>
@@ -274,6 +278,11 @@ const InputField: React.FC<InputFieldProps> = ({
       name={name}
       type={type}
       required
+      autoComplete={
+        name === "password" || name === "confirmPassword"
+          ? "new-password"
+          : name
+      }
       className="mt-2 block w-full px-4 py-2.5 rounded-lg 
                  bg-slate-800/70 border border-gray-600 
                  text-white placeholder-gray-400

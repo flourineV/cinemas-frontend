@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Layout from "../../../components/layout/Layout";
 import { useAuthStore } from "../../../stores/authStore";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface LoginFormData {
   usernameOrEmailOrPhone: string;
@@ -68,16 +69,21 @@ const SignIn: React.FC = () => {
     });
   };
 
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <Layout>
+      {/* Container đảm bảo form luôn ở giữa màn hình */}
       <div className="min-h-[calc(100vh-72px)] flex items-center justify-center px-6">
         <div className="w-full max-w-md">
-          {" "}
-          {/* ← nhỏ hơn bản trước một mức */}
-          <div
+          <motion.div
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 24 }}
+            animate={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
             className="bg-black/60 backdrop-blur-md 
-                 border border-yellow-400/20 
-                 rounded-2xl p-8 sm:p-10 shadow-2xl"
+               border border-yellow-400/20 rounded-2xl 
+               p-8 sm:p-10 shadow-2xl"
+            aria-live="polite"
           >
             <div className="text-center mb-6">
               <h2 className="text-3xl font-extrabold text-white tracking-wide">
@@ -94,7 +100,7 @@ const SignIn: React.FC = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               <div className="space-y-5">
                 {/* Username */}
                 <div>
@@ -114,6 +120,7 @@ const SignIn: React.FC = () => {
                          focus:ring-yellow-400 focus:border-yellow-400 
                          text-sm sm:text-base"
                     placeholder="Nhập email hoặc tên đăng nhập"
+                    autoComplete="username"
                   />
                   {errors.usernameOrEmailOrPhone && (
                     <p className="mt-1 text-sm text-red-400">
@@ -141,12 +148,16 @@ const SignIn: React.FC = () => {
                            focus:ring-yellow-400 focus:border-yellow-400 
                            text-sm sm:text-base pr-12"
                       placeholder="Mật khẩu"
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((s) => !s)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 
                            text-gray-300 hover:text-white"
+                      aria-label={
+                        showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                      }
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -176,6 +187,7 @@ const SignIn: React.FC = () => {
                      bg-yellow-400 hover:bg-yellow-300
                      focus:ring-2 focus:ring-yellow-400 
                      disabled:opacity-60"
+                aria-disabled={loading}
               >
                 {loading && <Loader2 className="animate-spin" size={18} />}
                 {loading ? "Đang đăng nhập..." : "Đăng nhập"}
@@ -185,7 +197,7 @@ const SignIn: React.FC = () => {
                 <p className="text-center text-red-400 text-sm">{error}</p>
               )}
             </form>
-          </div>
+          </motion.div>
         </div>
       </div>
     </Layout>

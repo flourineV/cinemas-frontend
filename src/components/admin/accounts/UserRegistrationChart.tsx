@@ -62,12 +62,23 @@ export default function UserRegistrationChart() {
   }
 
   return (
-    <div className="bg-black text-white rounded shadow p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-medium">User registrations (monthly)</h3>
+    <div
+      className="
+      bg-black/60 backdrop-blur-md 
+      border border-yellow-400/40  
+      rounded-2xl shadow-2xl p-6
+      text-white
+    "
+    >
+      <div className="flex items-center justify-end mb-8">
         <button
           onClick={exportCSV}
-          className="flex items-center gap-2 px-3 py-1 border border-gray-700 rounded text-sm bg-gray-800"
+          className="
+          flex items-center gap-2 px-3 py-1.5 
+          border border-yellow-400/40 
+          rounded-lg text-sm bg-black/40 
+          hover:bg-black/60 transition
+        "
         >
           <Download size={16} /> Export CSV
         </button>
@@ -76,9 +87,9 @@ export default function UserRegistrationChart() {
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d2d2d" />
-            <XAxis dataKey="name" stroke="#cfcfcf" />
-            <YAxis allowDecimals={false} stroke="#cfcfcf" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#979797ff" />
+            <XAxis dataKey="name" stroke="#e5e5e5" />
+            <YAxis allowDecimals={false} stroke="#e5e5e5" />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#0b1020",
@@ -90,13 +101,14 @@ export default function UserRegistrationChart() {
             <Line
               type="monotone"
               dataKey="total"
-              stroke="#4f46e5"
-              strokeWidth={2}
-              dot={{ r: 3 }}
+              stroke="#facc15"
+              strokeWidth={3}
+              dot={{ r: 4, stroke: "#facc15", fill: "#facc15" }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
+
       {loading && <div className="text-sm text-gray-400 mt-2">Loading...</div>}
     </div>
   );

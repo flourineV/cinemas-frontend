@@ -1,4 +1,3 @@
-// src/components/common/Badge.tsx
 "use client";
 import React from "react";
 
@@ -6,48 +5,43 @@ type BadgeType = "AccountRole" | "AccountStatus";
 
 interface BadgeProps {
   type?: BadgeType;
-  value: string;
+  value: string; // text hiển thị (có thể là tiếng Việt)
+  raw?: string; // giá trị thô từ DB (ví dụ 'admin','manager', 'staff', 'customer' hoặc 'ACTIVE','INACTIVE')
   className?: string;
 }
 
-/**
- * Simple Badge component used by the tables.
- * - AccountRole: different colors per role
- * - AccountStatus: green for active, red/gray for others
- */
 export const Badge: React.FC<BadgeProps> = ({
   type = "AccountRole",
   value,
+  raw,
   className = "",
 }) => {
   const base =
-    "inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium";
+    "inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold border backdrop-blur-sm";
 
   if (type === "AccountRole") {
-    // map some common role -> color
+    const role = (raw ?? value).toString().toLowerCase();
+
     const cls =
-      value === "Khách hàng" || value.toLowerCase().includes("customer")
-        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-        : value === "Nhân viên" || value.toLowerCase().includes("staff")
-          ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-          : value === "Quản lý" || value.toLowerCase().includes("manager")
-            ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
-            : value.toLowerCase().includes("admin")
-              ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-              : "bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-200";
+      role === "admin"
+        ? "bg-black/40 border-yellow-400/40 text-red-300"
+        : role === "manager"
+          ? "bg-black/40 border-yellow-400/40 text-yellow-300"
+          : role === "staff"
+            ? "bg-black/40 border-yellow-400/40 text-green-300"
+            : role === "customer"
+              ? "bg-black/40 border-yellow-400/40 text-blue-300"
+              : "bg-black/40 border-yellow-400/40 text-white/90";
 
     return <span className={`${base} ${cls} ${className}`}>{value}</span>;
   }
 
   // AccountStatus
+  const status = (raw ?? value).toString().toLowerCase();
   const statusCls =
-    value.toLowerCase().includes("đang") ||
-    value.toLowerCase().includes("active")
-      ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-      : value.toLowerCase().includes("vô") ||
-          value.toLowerCase().includes("inactive")
-        ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-        : "bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-200";
+    status === "active" || status.includes("đang")
+      ? "bg-black/30 border-green-400/40 text-green-300"
+      : "bg-black/30 border-red-400/40 text-red-300";
 
   return <span className={`${base} ${statusCls} ${className}`}>{value}</span>;
 };
