@@ -45,22 +45,3 @@ export interface JwtResponse {
   refreshToken?: string;
   user: UserResponse;
 }
-
-export interface UserListResponse {
-  id: string;
-  username: string;
-  email: string;
-  phoneNumber: string;
-  role: string | null;
-  status: string;
-  createdAt: string;
-}
-
-export interface StatsOverviewResponse {
-  totalUsers: number;
-  totalCustomers: number;
-  totalStaff: number;
-  totalManagers: number;
-  totalAdmins: number;
-  customerRatio: number;
-}

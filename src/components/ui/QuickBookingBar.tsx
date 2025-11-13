@@ -1,142 +1,274 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown, Check } from "lucide-react";
 
-const QuickBookingBar = () => {
+/* ---------------- CustomSelect (self-contained) ---------------- */
+type Option = { value: string; label: string };
+
+function CustomSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled = false,
+}: {
+  options: Option[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState<number>(-1);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setOpen(true);
+      setHighlight((h) => Math.min(h + 1, options.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setOpen(true);
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        const idx = options.findIndex((o) => o.value === value);
+        setHighlight(idx >= 0 ? idx : 0);
+      } else {
+        if (highlight >= 0 && highlight < options.length) {
+          onChange(options[highlight].value);
+        }
+        setOpen(false);
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!listRef.current || highlight < 0) return;
+    const el = listRef.current.children[highlight] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [highlight]);
+
+  const currentLabel =
+    options.find((o) => o.value === value)?.label ?? placeholder ?? "";
+
+  return (
+    <div
+      ref={rootRef}
+      className={`relative w-full select-none ${disabled ? "opacity-50" : ""}`}
+    >
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onKeyDown={onKeyDown}
+        onClick={() => !disabled && setOpen((o) => !o)}
+        disabled={disabled}
+        className="
+          w-full text-left px-4 py-3 pr-12 rounded-lg h-12 leading-tight
+          bg-transparent text-white border border-yellow-300/90 font-semibold outline-none
+          focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/30
+          backdrop-blur-sm hover:bg-white/5 transition-shadow
+          shadow-[0_6px_14px_rgba(0,0,0,0.45)]
+        "
+      >
+        <span className="truncate block">{currentLabel}</span>
+        <ChevronDown
+          size={18}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-white pointer-events-none"
+        />
+      </button>
+
+      {open && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          aria-activedescendant={
+            highlight >= 0
+              ? `opt-${highlight}-${options[highlight].value}`
+              : undefined
+          }
+          tabIndex={-1}
+          className="
+            absolute z-50 left-0 top-full mt-2 min-w-full max-h-56 overflow-auto rounded-lg
+            bg-black/40 backdrop-blur-xl border border-yellow-400/40
+            shadow-[0_0_15px_rgba(255,200,0,0.25)]
+          "
+        >
+          {options.map((opt, idx) => {
+            const isSelected = opt.value === value;
+            const isHighlighted = idx === highlight;
+            return (
+              <li
+                id={`opt-${idx}-${opt.value}`}
+                key={opt.value}
+                role="option"
+                aria-selected={isSelected}
+                onMouseEnter={() => setHighlight(idx)}
+                onMouseLeave={() => setHighlight(-1)}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors text-white
+                  ${isHighlighted ? "bg-yellow-400/20" : ""} ${isSelected ? "font-semibold text-yellow-300" : ""}
+                `}
+              >
+                <span className="truncate">{opt.label}</span>
+                {isSelected && <Check size={16} className="text-yellow-400" />}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- QuickBookingBar (uses CustomSelect) ---------------- */
+
+const QuickBookingBar: React.FC = () => {
   const [selectedCinema, setSelectedCinema] = useState("");
   const [selectedMovie, setSelectedMovie] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
 
+  // sample options (replace with real data)
+  const cinemas: Option[] = [
+    { value: "galaxy", label: "Rạp Galaxy" },
+    { value: "cgv", label: "Rạp CGV" },
+    { value: "lotte", label: "Lotte Cinema" },
+  ];
+  const moviesForCinema: Record<string, Option[]> = {
+    galaxy: [
+      { value: "endgame", label: "Avengers: Endgame" },
+      { value: "frozen", label: "Frozen II" },
+      { value: "oppenheimer", label: "Oppenheimer" },
+    ],
+    cgv: [
+      { value: "oppenheimer", label: "Oppenheimer" },
+      { value: "tenet", label: "Tenet" },
+      { value: "matrix", label: "The Matrix" },
+    ],
+    lotte: [
+      { value: "inception", label: "Inception" },
+      { value: "dune", label: "Dune" },
+    ],
+  };
+  const dates: Option[] = [
+    { value: "2025-09-20", label: "20/09/2025" },
+    { value: "2025-09-21", label: "21/09/2025" },
+    { value: "2025-09-22", label: "22/09/2025" },
+  ];
+  const times: Option[] = [
+    { value: "10:00", label: "10:00" },
+    { value: "13:00", label: "13:00" },
+    { value: "19:30", label: "19:30" },
+  ];
+
+  const movieOptions = selectedCinema
+    ? (moviesForCinema[selectedCinema] ?? [])
+    : [];
+
   return (
     <div
       className="relative w-full bg-gradient-to-r from-[#3a0d0d] via-[#4a1a1a] to-[#3a0d0d]
-                 rounded-2xl shadow-[0_0_25px_rgba(255,0,0,0.3)] 
-                 border border-red-700/40 px-6 py-6 overflow-hidden"
+                 rounded-2xl shadow-[0_0_25px_rgba(255,0,0,0.3)]
+                 border border-red-700/40 px-6 py-6 overflow-visible"
     >
-      {/* Hiệu ứng sáng nền nhẹ */}
       <div className="absolute inset-0 bg-gradient-to-r from-red-900/10 via-yellow-700/5 to-transparent pointer-events-none" />
 
       <div className="flex flex-col lg:flex-row items-center gap-5 w-full relative z-10">
-        {/* Title */}
         <h2 className="text-2xl font-extrabold text-yellow-400 whitespace-nowrap drop-shadow-[0_0_10px_rgba(255,200,0,0.4)]">
           ĐẶT VÉ NHANH
         </h2>
 
-        {/* Dropdowns */}
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* --- Chọn Rạp --- */}
-          <div className="relative">
-            <select
+          <div>
+            <CustomSelect
+              options={cinemas}
               value={selectedCinema}
-              onChange={(e) => setSelectedCinema(e.target.value)}
-              className="w-full appearance-none px-4 py-3 pr-10 rounded-lg bg-[#181818] text-white border border-gray-500/70 
-                         font-semibold focus:border-red-500 focus:ring-2 focus:ring-red-500/60 
-                         outline-none transition shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]"
-            >
-              <option value="" disabled>
-                1. Chọn Rạp
-              </option>
-              <option value="galaxy">Rạp Galaxy</option>
-              <option value="cgv">Rạp CGV</option>
-              <option value="lotte">Lotte Cinema</option>
-            </select>
-
-            <ChevronDown
-              size={18}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              onChange={(v) => {
+                setSelectedCinema(v);
+                setSelectedMovie("");
+                setSelectedDate("");
+                setSelectedTime("");
+              }}
+              placeholder="1. Chọn Rạp"
             />
           </div>
 
-          {/* --- Chọn Phim --- */}
-          <div className="relative">
-            <select
+          <div>
+            <CustomSelect
+              options={movieOptions}
               value={selectedMovie}
-              onChange={(e) => setSelectedMovie(e.target.value)}
+              onChange={(v) => {
+                setSelectedMovie(v);
+                setSelectedDate("");
+                setSelectedTime("");
+              }}
+              placeholder="2. Chọn Phim"
               disabled={!selectedCinema}
-              className="w-full appearance-none px-4 py-3 pr-10 rounded-lg bg-[#181818] text-white border border-gray-500/70 
-                         font-semibold focus:border-red-500 focus:ring-2 focus:ring-red-500/60 outline-none 
-                         transition shadow-[inset_0_0_10px_rgba(255,255,255,0.05)] 
-                         disabled:bg-[#2a2a2a] disabled:text-gray-500"
-            >
-              <option value="" disabled>
-                2. Chọn Phim
-              </option>
-              <option value="endgame">Avengers: Endgame</option>
-              <option value="frozen">Frozen II</option>
-              <option value="oppenheimer">Oppenheimer</option>
-            </select>
-
-            <ChevronDown
-              size={18}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
             />
           </div>
 
-          {/* --- Chọn Ngày --- */}
-          <div className="relative">
-            <select
+          <div>
+            <CustomSelect
+              options={dates}
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(v) => {
+                setSelectedDate(v);
+                setSelectedTime("");
+              }}
+              placeholder="3. Chọn Ngày"
               disabled={!selectedMovie}
-              className="w-full appearance-none px-4 py-3 pr-10 rounded-lg bg-[#181818] text-white border border-gray-500/70 
-                         font-semibold focus:border-red-500 focus:ring-2 focus:ring-red-500/60 outline-none 
-                         transition shadow-[inset_0_0_10px_rgba(255,255,255,0.05)] 
-                         disabled:bg-[#2a2a2a] disabled:text-gray-500"
-            >
-              <option value="" disabled>
-                3. Chọn Ngày
-              </option>
-              <option value="2025-09-20">20/09/2025</option>
-              <option value="2025-09-21">21/09/2025</option>
-              <option value="2025-09-22">22/09/2025</option>
-            </select>
-
-            <ChevronDown
-              size={18}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
             />
           </div>
 
-          {/* --- Chọn Suất --- */}
-          <div className="relative">
-            <select
+          <div>
+            <CustomSelect
+              options={times}
               value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
+              onChange={(v) => setSelectedTime(v)}
+              placeholder="4. Chọn Suất"
               disabled={!selectedDate}
-              className="w-full appearance-none px-4 py-3 pr-10 rounded-lg bg-[#181818] text-white border border-gray-500/70 
-                         font-semibold focus:border-red-500 focus:ring-2 focus:ring-red-500/60 outline-none 
-                         transition shadow-[inset_0_0_10px_rgba(255,255,255,0.05)] 
-                         disabled:bg-[#2a2a2a] disabled:text-gray-500"
-            >
-              <option value="" disabled>
-                4. Chọn Suất
-              </option>
-              <option value="10:00">10:00</option>
-              <option value="13:00">13:00</option>
-              <option value="19:30">19:30</option>
-            </select>
-
-            <ChevronDown
-              size={18}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
             />
           </div>
         </div>
 
-        {/* Button */}
         <button
-            disabled={!selectedTime}
-            className="relative overflow-hidden px-10 py-3 rounded-lg font-extrabold text-white 
-                        text-lg shadow-[0_0_15px_rgba(255,0,0,0.4)] 
-                        transition-all duration-500 ease-out 
-                        disabled:bg-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
-            >
-            <span className="relative z-10">ĐẶT NGAY</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-yellow-400 to-red-600 
-                            bg-[length:200%_100%] animate-gradientMove rounded-lg opacity-90
-                            group-hover:opacity-100" />
+          disabled={!selectedTime}
+          className="relative overflow-hidden px-10 py-3 rounded-lg font-extrabold text-white 
+                    text-lg shadow-[0_0_15px_rgba(255,0,0,0.4)] 
+                    transition-all duration-500 ease-out disabled:opacity-60 disabled:cursor-not-allowed"
+          onClick={() => {
+            // placeholder: thay bằng action thực tế
+            alert(
+              `Đặt: ${selectedCinema} | ${selectedMovie} | ${selectedDate} | ${selectedTime}`
+            );
+          }}
+        >
+          <span className="relative z-10">ĐẶT NGAY</span>
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-red-600 via-yellow-400 to-red-600 
+                        bg-[length:200%_100%] animate-gradientMove rounded-lg opacity-90"
+          />
         </button>
-
       </div>
     </div>
   );

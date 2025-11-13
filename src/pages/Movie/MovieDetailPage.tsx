@@ -1,9 +1,21 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Film, Clock, Languages, Globe, Shield, Calendar, BookOpen, Clapperboard, Star, MonitorPlay} from "lucide-react";
+import {
+  Film,
+  Clock,
+  Languages,
+  Globe,
+  Shield,
+  Calendar,
+  BookOpen,
+  Clapperboard,
+  Star,
+  MonitorPlay,
+} from "lucide-react";
 import Layout from "../../components/layout/Layout";
 import { getPosterUrl } from "../../utils/getPosterUrl";
-import { movieService, type MovieDetail } from "@/services/movie/movieService";
+import { movieService } from "@/services/movie/movieService";
+import type { MovieDetail } from "@/types/movie/movie.type";
 import ShowtimeList from "../Showtime/ShowtimeList";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -15,7 +27,6 @@ export default function MovieDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Lấy chi tiết phim ---
   useEffect(() => {
     if (!id) return;
     const fetchMovie = async () => {
@@ -86,7 +97,7 @@ export default function MovieDetailPage() {
               {movie.title}
             </h1>
             <div className="space-y-2 text-sm md:text-base">
-               <p className="flex items-center gap-2">
+              <p className="flex items-center gap-2">
                 <Film className="w-4 h-4 text-yellow-400" />
                 <span className="font-bold">Thể loại:</span>{" "}
                 {movie.genres.join(", ")}
@@ -169,7 +180,7 @@ export default function MovieDetailPage() {
         {/* --- Lịch chiếu của phim --- */}
         <div className="mt-12">
           <ShowtimeList movie={{ id: movie.id, title: movie.title }} />
-        </div> 
+        </div>
       </main>
     </Layout>
   );

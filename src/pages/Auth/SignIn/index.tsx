@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "../../../components/layout/Layout";
-import { useAuthStore } from "../../../stores/authStore"; // Chỉ cần store, bỏ useAuth cũ
+import { useAuthStore } from "../../../stores/authStore";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface LoginFormData {
   usernameOrEmailOrPhone: string;
@@ -10,54 +12,17 @@ interface LoginFormData {
 
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
-  const { user, signin, loading, error } = useAuthStore(); // lấy action từ zustand
+  const { user, signin, loading, error } = useAuthStore();
   const [formData, setFormData] = useState<LoginFormData>({
     usernameOrEmailOrPhone: "",
     password: "",
   });
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name as keyof LoginFormData]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Partial<LoginFormData> = {};
-
-    if (!formData.usernameOrEmailOrPhone.trim()) {
-      newErrors.usernameOrEmailOrPhone = "Tên đăng nhập hoặc email là bắt buộc";
-    }
-
-    if (!formData.password.trim()) {
-      newErrors.password = "Mật khẩu là bắt buộc";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    await signin({
-      usernameOrEmailOrPhone: formData.usernameOrEmailOrPhone,
-      password: formData.password,
-    });
-
-    const currentUser = useAuthStore.getState().user;
-    if (currentUser) {
-      switch (currentUser.role) {
+      switch (user.role) {
         case "admin":
           navigate("/admin/dashboard");
           break;
@@ -71,107 +36,156 @@ const SignIn: React.FC = () => {
           navigate("/");
       }
     }
+  }, [user, navigate]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name as keyof LoginFormData]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<LoginFormData> = {};
+    if (!formData.usernameOrEmailOrPhone.trim()) {
+      newErrors.usernameOrEmailOrPhone = "Tên đăng nhập hoặc email là bắt buộc";
+    }
+    if (!formData.password.trim()) {
+      newErrors.password = "Mật khẩu là bắt buộc";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    await signin({
+      usernameOrEmailOrPhone: formData.usernameOrEmailOrPhone,
+      password: formData.password,
+    });
   };
 
   return (
     <Layout>
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-              Đăng nhập
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-300">
-              Hoặc{" "}
-              <Link
-                to="/signup"
-                className="font-medium text-yellow-400 hover:text-yellow-300"
-              >
-                đăng ký tài khoản mới
-              </Link>
-            </p>
-          </div>
-
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              {/* Username / Email */}
-              <div>
-                <label
-                  htmlFor="usernameOrEmailOrPhone"
-                  className="block text-sm font-medium text-gray-300"
+      <div className="min-h-[calc(100vh-72px)] flex items-center justify-center px-6">
+        <div className="w-full max-w-md">
+          {" "}
+          {/* ← nhỏ hơn bản trước một mức */}
+          <div
+            className="bg-black/60 backdrop-blur-md 
+                 border border-yellow-400/20 
+                 rounded-2xl p-8 sm:p-10 shadow-2xl"
+          >
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-extrabold text-white tracking-wide">
+                Đăng nhập
+              </h2>
+              <p className="mt-2 text-sm text-gray-300">
+                Hoặc{" "}
+                <Link
+                  to="/signup"
+                  className="font-semibold text-yellow-400 hover:text-yellow-300"
                 >
-                  Tên đăng nhập / Email / Số điện thoại
-                </label>
-                <input
-                  id="usernameOrEmailOrPhone"
-                  name="usernameOrEmailOrPhone"
-                  type="text"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-slate-800 rounded-md focus:outline-none focus:ring-yellow-400 focus:border-yellow-400 sm:text-sm"
-                  placeholder="Nhập email hoặc tên đăng nhập"
-                  value={formData.usernameOrEmailOrPhone}
-                  onChange={handleChange}
-                />
-                {errors.usernameOrEmailOrPhone && (
-                  <p className="mt-1 text-sm text-red-400">
-                    {errors.usernameOrEmailOrPhone}
-                  </p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-300"
-                >
-                  Mật khẩu
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-slate-800 rounded-md focus:outline-none focus:ring-yellow-400 focus:border-yellow-400 sm:text-sm"
-                  placeholder="Mật khẩu"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-400">{errors.password}</p>
-                )}
-              </div>
+                  đăng ký tài khoản mới
+                </Link>
+              </p>
             </div>
 
-            {/* Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-5">
+                {/* Username */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">
+                    Tên đăng nhập / Email / Số điện thoại
+                  </label>
+                  <input
+                    id="usernameOrEmailOrPhone"
+                    name="usernameOrEmailOrPhone"
+                    type="text"
+                    value={formData.usernameOrEmailOrPhone}
+                    onChange={handleChange}
+                    className="mt-2 block w-full px-4 py-2.5 rounded-lg 
+                         bg-slate-800/70 border border-gray-600 
+                         text-white placeholder-gray-400
+                         focus:outline-none focus:ring-2 
+                         focus:ring-yellow-400 focus:border-yellow-400 
+                         text-sm sm:text-base"
+                    placeholder="Nhập email hoặc tên đăng nhập"
+                  />
+                  {errors.usernameOrEmailOrPhone && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.usernameOrEmailOrPhone}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">
+                    Mật khẩu
+                  </label>
+                  <div className="relative mt-2">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="block w-full px-4 py-2.5 rounded-lg 
+                           bg-slate-800/70 border border-gray-600 
+                           text-white placeholder-gray-400
+                           focus:outline-none focus:ring-2 
+                           focus:ring-yellow-400 focus:border-yellow-400 
+                           text-sm sm:text-base pr-12"
+                      placeholder="Mật khẩu"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 
+                           text-gray-300 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-right">
                 <Link
                   to="/forgot-password"
-                  className="font-medium text-yellow-400 hover:text-yellow-300"
+                  className="text-sm font-medium text-yellow-400 hover:text-yellow-300"
                 >
                   Quên mật khẩu?
                 </Link>
               </div>
-            </div>
 
-            {/* Submit */}
-            <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-yellow-400 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400 disabled:opacity-50"
+                className="w-full flex justify-center items-center gap-2 
+                     py-3 rounded-lg text-black text-base font-bold
+                     bg-yellow-400 hover:bg-yellow-300
+                     focus:ring-2 focus:ring-yellow-400 
+                     disabled:opacity-60"
               >
+                {loading && <Loader2 className="animate-spin" size={18} />}
                 {loading ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
-            </div>
 
-            {/* Hiển thị lỗi từ server */}
-            {error && (
-              <p className="text-center text-red-400 text-sm mt-2">{error}</p>
-            )}
-          </form>
+              {error && (
+                <p className="text-center text-red-400 text-sm">{error}</p>
+              )}
+            </form>
+          </div>
         </div>
       </div>
     </Layout>

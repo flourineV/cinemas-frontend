@@ -1,7 +1,9 @@
+"use client";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "../../../components/layout/Layout";
 import { useAuthStore } from "../../../stores/authStore";
+import { Loader2 } from "lucide-react";
 
 interface SignupFormData {
   email: string;
@@ -14,7 +16,7 @@ interface SignupFormData {
 
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
-  const { signup, loading, error } = useAuthStore(); // lấy action signup từ store
+  const { signup, loading, error } = useAuthStore();
 
   const [formData, setFormData] = useState<SignupFormData>({
     email: "",
@@ -54,7 +56,8 @@ const SignUp: React.FC = () => {
     else if (formData.username.length < 3)
       newErrors.username = "Tên đăng nhập phải có ít nhất 3 ký tự";
 
-    if (!formData.phoneNumber) newErrors.phoneNumber = "Số điện thoại là bắt buộc";
+    if (!formData.phoneNumber)
+      newErrors.phoneNumber = "Số điện thoại là bắt buộc";
     else if (!/^[0-9]{10,11}$/.test(formData.phoneNumber))
       newErrors.phoneNumber = "Số điện thoại không hợp lệ";
 
@@ -93,8 +96,22 @@ const SignUp: React.FC = () => {
     });
 
     // nếu đăng ký thành công thì Zustand đã lưu user rồi
-    if (useAuthStore.getState().user) {
-      navigate("/dashboard");
+    const user = useAuthStore.getState().user;
+    if (user) {
+      // redirect giống SignIn: nếu admin/manager/staff -> dashboard, else về /
+      switch (user.role) {
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        case "manager":
+          navigate("/manager/dashboard");
+          break;
+        case "staff":
+          navigate("/staff/dashboard");
+          break;
+        default:
+          navigate("/");
+      }
     }
   };
 
@@ -103,120 +120,142 @@ const SignUp: React.FC = () => {
   // ----------------------
   return (
     <Layout>
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-              Đăng ký tài khoản
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-300">
-              Hoặc{" "}
-              <Link
-                to="/login"
-                className="font-medium text-yellow-400 hover:text-yellow-300"
-              >
-                đăng nhập nếu đã có tài khoản
-              </Link>
-            </p>
+      <div
+        className="min-h-[calc(100vh-72px)] flex items-center justify-center px-6 mb-16"
+        aria-live="polite"
+      >
+        <div className="w-full max-w-md">
+          {/* Panel */}
+          <div
+            className="bg-black/60 backdrop-blur-md 
+                        border border-yellow-400/20 
+                        rounded-2xl p-8 sm:p-10 shadow-2xl"
+          >
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-extrabold text-white tracking-wide">
+                Đăng ký
+              </h2>
+              <p className="mt-2 text-sm text-gray-300">
+                Hoặc{" "}
+                <Link
+                  to="/login"
+                  className="font-semibold text-yellow-400 hover:text-yellow-300"
+                >
+                  đăng nhập nếu đã có tài khoản
+                </Link>
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-5">
+                {/* Email */}
+                <InputField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  placeholder="Email của bạn"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={errors.email}
+                />
+
+                {/* Username */}
+                <InputField
+                  label="Tên đăng nhập"
+                  name="username"
+                  type="text"
+                  placeholder="Tên đăng nhập"
+                  value={formData.username}
+                  onChange={handleChange}
+                  error={errors.username}
+                />
+
+                {/* Phone number */}
+                <InputField
+                  label="Số điện thoại"
+                  name="phoneNumber"
+                  type="tel"
+                  placeholder="Số điện thoại"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  error={errors.phoneNumber}
+                />
+
+                {/* National ID */}
+                <InputField
+                  label="CMND/CCCD"
+                  name="nationalId"
+                  type="text"
+                  placeholder="Số CMND/CCCD"
+                  value={formData.nationalId}
+                  onChange={handleChange}
+                  error={errors.nationalId}
+                />
+
+                {/* Password */}
+                <InputField
+                  label="Mật khẩu"
+                  name="password"
+                  type="password"
+                  placeholder="Mật khẩu"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={errors.password}
+                />
+
+                {/* Confirm Password */}
+                <InputField
+                  label="Xác nhận mật khẩu"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Xác nhận mật khẩu"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  error={errors.confirmPassword}
+                />
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center items-center gap-2 
+                             py-3 rounded-lg text-black text-base font-bold
+                             bg-yellow-400 hover:bg-yellow-300
+                             focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={18} />
+                      <span>Đang đăng ký...</span>
+                    </>
+                  ) : (
+                    <span>Đăng ký</span>
+                  )}
+                </button>
+
+                {error && (
+                  <p className="text-center text-red-400 text-sm mt-2">
+                    {error}
+                  </p>
+                )}
+              </div>
+            </form>
           </div>
-
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              {/* Email */}
-              <InputField
-                label="Email"
-                name="email"
-                type="email"
-                placeholder="Email của bạn"
-                value={formData.email}
-                onChange={handleChange}
-                error={errors.email}
-              />
-
-              {/* Username */}
-              <InputField
-                label="Tên đăng nhập"
-                name="username"
-                type="text"
-                placeholder="Tên đăng nhập"
-                value={formData.username}
-                onChange={handleChange}
-                error={errors.username}
-              />
-
-              {/* Phone number */}
-              <InputField
-                label="Số điện thoại"
-                name="phoneNumber"
-                type="tel"
-                placeholder="Số điện thoại"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                error={errors.phoneNumber}
-              />
-
-              {/* National ID */}
-              <InputField
-                label="CMND/CCCD"
-                name="nationalId"
-                type="text"
-                placeholder="Số CMND/CCCD"
-                value={formData.nationalId}
-                onChange={handleChange}
-                error={errors.nationalId}
-              />
-
-              {/* Password */}
-              <InputField
-                label="Mật khẩu"
-                name="password"
-                type="password"
-                placeholder="Mật khẩu"
-                value={formData.password}
-                onChange={handleChange}
-                error={errors.password}
-              />
-
-              {/* Confirm Password */}
-              <InputField
-                label="Xác nhận mật khẩu"
-                name="confirmPassword"
-                type="password"
-                placeholder="Xác nhận mật khẩu"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                error={errors.confirmPassword}
-              />
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-yellow-400 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "Đang đăng ký..." : "Đăng ký"}
-              </button>
-
-              {error && (
-                <p className="text-center text-red-400 text-sm mt-2">{error}</p>
-              )}
-            </div>
-          </form>
         </div>
       </div>
     </Layout>
   );
 };
 
-// component nhỏ tái sử dụng
+// component nhỏ tái sử dụng (style đồng bộ với SignIn)
 interface InputFieldProps {
   label: string;
   name: string;
   type: string;
   placeholder: string;
   value: string;
-  error?: string;
+  error?: string | undefined;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 const InputField: React.FC<InputFieldProps> = ({
@@ -229,15 +268,17 @@ const InputField: React.FC<InputFieldProps> = ({
   error,
 }) => (
   <div>
-    <label htmlFor={name} className="block text-sm font-medium text-gray-300">
-      {label}
-    </label>
+    <label className="block text-sm font-medium text-gray-200">{label}</label>
     <input
       id={name}
       name={name}
       type={type}
       required
-      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-slate-800 rounded-md focus:outline-none focus:ring-yellow-400 focus:border-yellow-400 focus:z-10 sm:text-sm"
+      className="mt-2 block w-full px-4 py-2.5 rounded-lg 
+                 bg-slate-800/70 border border-gray-600 
+                 text-white placeholder-gray-400
+                 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400
+                 text-sm sm:text-base"
       placeholder={placeholder}
       value={value}
       onChange={onChange}

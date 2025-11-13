@@ -1,10 +1,7 @@
 export interface PageResponse<T> {
-  content: T[];
-  pageable: {
-    pageNumber: number;
-    pageSize: number;
-  };
+  data: T[];
+  page: number;
+  size: number;
   totalElements: number;
   totalPages: number;
-  last: boolean;
 }

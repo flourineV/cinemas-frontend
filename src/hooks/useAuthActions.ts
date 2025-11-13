@@ -2,7 +2,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 
 export const useAuthActions = () => {
-  const { signout, refreshUser } = useAuthStore();
+  const { signout, refreshAccessToken } = useAuthStore();
   const navigate = useNavigate();
 
   const logout = () => {
@@ -11,7 +11,7 @@ export const useAuthActions = () => {
   };
 
   const checkAuth = async () => {
-    await refreshUser(); // Kiểm tra phiên qua cookie hoặc token
+    await refreshAccessToken(); // Kiểm tra phiên qua cookie hoặc token
   };
 
   return { logout, checkAuth };

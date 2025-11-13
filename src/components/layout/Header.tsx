@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { User, ChevronDown, Search } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "../../stores/authStore";
@@ -8,11 +8,9 @@ const Header = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const { user, signout } = useAuthStore();
-  const navigate = useNavigate();
 
   const handleLogout = async () => {
-    signout(); // clear Zustand + gọi API /signout nếu có
-    navigate("/login");
+    signout();
   };
 
   return (
