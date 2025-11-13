@@ -3,7 +3,7 @@ import Layout from "@/components/layout/Layout";
 import { movieService } from "@/services/movie/movieService";
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import { Link } from "react-router-dom";
-import type { MovieSummary } from "@/services/movie/movieService";
+import type { MovieSummary } from "@/types/movie/movie.type";
 import TrailerModal from "@/components/ui/TrailerModal";
 import { MapPin, Clock, Globe, ShieldAlert } from "lucide-react";
 import { formatTitle, formatGenres, formatSpokenLanguages } from "@/utils/format";
