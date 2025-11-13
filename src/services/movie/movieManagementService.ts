@@ -1,0 +1,55 @@
+// src/services/auth/movieManagementService.ts
+import { movieClient } from "@/services/apiClient";
+import type { MovieDetail, MovieSummary } from "@/types/movie/movie.type";
+import type { PageResponse } from "@/types/PageResponse";
+
+export const movieManagementService = {
+  adminList: async ({
+    keyword,
+    status,
+    page = 1,
+    size = 10,
+    sortBy,
+    sortType,
+  }: {
+    keyword?: string;
+    status?: string;
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortType?: string;
+  }): Promise<PageResponse<MovieSummary>> => {
+    const res = await movieClient.get("/", {
+      params: {
+        keyword,
+        status,
+        page,
+        size,
+        sortBy,
+        sortType,
+      },
+    });
+    return res.data;
+  },
+
+  getByUuid: async (id: string): Promise<MovieDetail> => {
+    const res = await movieClient.get<MovieDetail>(`/${id}`);
+    return res.data;
+  },
+
+  updateMovie: async (
+    id: string,
+    payload: MovieDetail
+  ): Promise<MovieDetail> => {
+    const res = await movieClient.put<MovieDetail>(`/${id}`, payload);
+    return res.data;
+  },
+
+  deleteMovie: async (id: string): Promise<void> => {
+    await movieClient.delete(`/${id}`);
+  },
+
+  changeStatus: async (id: string, status: string): Promise<void> => {
+    await movieClient.put(`/change-status/${id}`, { status });
+  },
+};

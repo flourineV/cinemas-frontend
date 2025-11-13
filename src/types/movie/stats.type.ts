@@ -10,3 +10,12 @@ export interface MovieStatsResponse {
   upcoming: number;
   archived: number;
 }
+
+export interface GetMoviesParams {
+  page?: number;
+  size?: number;
+  keyword?: string;
+  status?: string;
+  sortBy?: string;
+  sortType?: "ASC" | "DESC";
+}
