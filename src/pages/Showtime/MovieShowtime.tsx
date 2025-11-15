@@ -1,71 +1,47 @@
 import React, { useEffect, useState } from "react";
-import { theaterService } from "@/services/showtime/theaterService";
 import { showtimeService } from "@/services/showtime/showtimeService";
-import { provinceService } from "@/services/showtime/provinceService";
-import type { TheaterResponse } from "@/types/showtime/theater.type";
-import type { ShowtimeResponse } from "@/types/showtime/showtime.type";
-import type { ProvinceResponse } from "@/types/showtime/province.type";
-import { BookingStep } from "@/pages/Booking/BookingStep"; 
-import { MOCK_PROVINCES, MOCK_THEATERS, MOCK_SHOWTIMES } from "@/pages/Showtime/MockDataShowtime";
+import type {
+  ShowtimeResponse,
+  MovieShowtimeResponse,
+} from "@/types/showtime/showtime.type";
+import SelectSeat from "@/pages/Booking/SelectSeat";
+import SelectTicket from "@/pages/Booking/SelectTicket";
+import SelectCombo from "@/pages/Booking/SelectCombo";
 import dayjs from "dayjs";
+import "dayjs/locale/vi";
+
+dayjs.locale("vi");
 
 interface MovieShowtimeProps {
   movieId: string;
   onSelectShowtime?: (showtime: ShowtimeResponse) => void;
 }
 
-const MovieShowtime: React.FC<MovieShowtimeProps> = ({ movieId, onSelectShowtime }) => {
-  const [provinces, setProvinces] = useState<ProvinceResponse[]>([]);
-  const [selectedProvince, setSelectedProvince] = useState<string>("");
-  const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
-  const [showtimes, setShowtimes] = useState<ShowtimeResponse[]>([]);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+const MovieShowtime: React.FC<MovieShowtimeProps> = ({
+  movieId,
+  onSelectShowtime,
+}) => {
+  const [showtimeData, setShowtimeData] =
+    useState<MovieShowtimeResponse | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedTheater, setSelectedTheater] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [selectedShowtime, setSelectedShowtime] = useState<ShowtimeResponse | null>(null);
+  const [selectedShowtime, setSelectedShowtime] =
+    useState<ShowtimeResponse | null>(null);
 
-  // Mock data - muốn thấy giao diện thì bỏ comment phần này
-  useEffect(() => {
-    setProvinces(MOCK_PROVINCES);
-    setTheaters(MOCK_THEATERS.filter((t) => t.provinceName === MOCK_PROVINCES[0].name));
-    setShowtimes(MOCK_SHOWTIMES);
-    setSelectedProvince(MOCK_PROVINCES[0].id);
-  }, []);
-  // Lọc rạp theo tỉnh khi selectedProvince thay đổi
-  useEffect(() => {
-    if (!selectedProvince) return;
-    const filteredTheaters = MOCK_THEATERS.filter(
-        (t) => t.provinceName === provinces.find(p => p.id === selectedProvince)?.name
-    );
-    setTheaters(filteredTheaters);
-  }, [selectedProvince, provinces]);
-
-  // Lấy data tỉnh
-  useEffect(() => {
-    const fetchProvinces = async () => {
-      const res = await provinceService.getAllProvinces();
-      setProvinces(res);
-      if (res.length > 0) setSelectedProvince(res[0].id);
-    };
-    fetchProvinces();
-  }, []);
-
-  // Lấy data rạp
-  useEffect(() => {
-    if (!selectedProvince) return;
-    const fetchTheaters = async () => {
-      const res = await theaterService.getTheatersByProvince(selectedProvince);
-      setTheaters(res);
-    };
-    fetchTheaters();
-  }, [selectedProvince]);
-
-  // Lấy data lịch chiếu
+  // Lấy data lịch chiếu từ API
   useEffect(() => {
     const fetchShowtimes = async () => {
       try {
         setLoading(true);
         const res = await showtimeService.getShowtimesByMovie(movieId);
-        setShowtimes(res);
+        setShowtimeData(res);
+        // Set ngày đầu tiên làm mặc định
+        if (res.availableDates.length > 0) {
+          setSelectedDate(res.availableDates[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching showtimes:", error);
       } finally {
         setLoading(false);
       }
@@ -73,38 +49,65 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({ movieId, onSelectShowtime
     fetchShowtimes();
   }, [movieId]);
 
-  // Lọc lịch chiếu theo rạp và ngày
-  const getShowtimesByTheaterAndDate = (theaterId: string) => {
-    const dateStr = selectedDate.format("YYYY-MM-DD");
-    return showtimes.filter(
-      (st) =>
-        st.theaterName === theaters.find((t) => t.id === theaterId)?.name &&
-        dayjs(st.startTime).format("YYYY-MM-DD") === dateStr
-    );
+  // Lấy danh sách unique theaters
+  const getUniqueTheaters = () => {
+    if (!showtimeData) return [];
+    const theaters = new Set<string>();
+    Object.values(showtimeData.showtimesByDate).forEach((showtimes) => {
+      showtimes.forEach((st) => theaters.add(st.theaterName));
+    });
+    return Array.from(theaters);
   };
 
-  // Lấy danh sách các ngày có lịch chiếu
-  const availableDates = Array.from(
-    new Set(
-        showtimes.map((st) => dayjs(st.startTime).format("YYYY-MM-DD"))
-    )
-  )
-    .map((dateStr) => dayjs(dateStr))
-    .sort((a, b) => a.valueOf() - b.valueOf());
-
-  // Nếu selectedDate chưa có hoặc không nằm trong availableDates, set default
+  // Set theater mặc định khi có data
   useEffect(() => {
-    if (!selectedDate || !availableDates.some((d) => d.isSame(selectedDate, "day"))) {
-        if (availableDates.length > 0) setSelectedDate(availableDates[0]);
+    const theaters = getUniqueTheaters();
+    if (theaters.length > 0 && !selectedTheater) {
+      setSelectedTheater(theaters[0]);
     }
-  }, [availableDates]);
+  }, [showtimeData]);
 
-  // Lọc rạp theo tỉnh và theo ngày
-  const theatersWithShowtimes = theaters.filter((t) =>
-    getShowtimesByTheaterAndDate(t.id).length > 0
-  );
+  // Group showtimes by theater, filtered by selected theater
+  const getShowtimesByTheater = () => {
+    if (!showtimeData || !selectedDate) return {};
 
+    const showtimesForDate = showtimeData.showtimesByDate[selectedDate] || [];
+    const grouped: { [theaterName: string]: ShowtimeResponse[] } = {};
+
+    showtimesForDate.forEach((showtime) => {
+      // Lọc theo rạp được chọn
+      if (!selectedTheater || showtime.theaterName === selectedTheater) {
+        if (!grouped[showtime.theaterName]) {
+          grouped[showtime.theaterName] = [];
+        }
+        grouped[showtime.theaterName].push(showtime);
+      }
+    });
+
+    return grouped;
+  };
+
+  const theaterGroups = getShowtimesByTheater();
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const uniqueTheaters = getUniqueTheaters();
+
+  if (loading) {
+    return (
+      <div className="p-6 pt-24 text-center">
+        <p className="text-white text-xl">Đang tải lịch chiếu...</p>
+      </div>
+    );
+  }
+
+  if (!showtimeData || showtimeData.availableDates.length === 0) {
+    return (
+      <div className="p-6 pt-24 text-center">
+        <p className="text-white text-xl">
+          Hiện chưa có lịch chiếu cho phim này.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 pt-24 rounded-2xl shadow-md">
@@ -113,99 +116,166 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({ movieId, onSelectShowtime
       </h2>
 
       {/* Tabs chọn ngày */}
-      <div className="flex justify-center gap-4 mb-10">
-        {availableDates.map((date, index) => (
+      <div className="flex justify-center gap-4 mb-10 flex-wrap">
+        {showtimeData.availableDates.map((date) => {
+          const dateObj = dayjs(date);
+          const isToday = dateObj.isSame(dayjs(), "day");
+          return (
             <button
-            key={index}
-            onClick={() => setSelectedDate(date)}
-            className={`px-6 py-3 rounded-lg text-lg font-semibold transition-colors ${
-                date.isSame(selectedDate, "day")
-                ? "bg-yellow-300 text-black"
-                : "border border-yellow-100/80 text-yellow-400 hover:bg-yellow-300 hover:text-black"
-            }`}
+              key={date}
+              onClick={() => setSelectedDate(date)}
+              className={`px-6 py-3 rounded-lg text-lg font-semibold transition-colors ${
+                date === selectedDate
+                  ? "bg-yellow-300 text-black"
+                  : "border border-yellow-100/80 text-yellow-400 hover:bg-yellow-300 hover:text-black"
+              }`}
             >
-            {date.format("DD/MM")} <br /> {capitalize(date.format("dddd"))}
+              <div className="text-xl font-bold">{dateObj.format("DD/MM")}</div>
+              <div className="text-sm">
+                {isToday ? "Hôm nay" : capitalize(dateObj.format("dddd"))}
+              </div>
             </button>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Dòng DANH SÁCH RẠP + Dropdown chọn tỉnh */}
-      <div className="flex items-center justify-between mb-4 max-w-3xl mx-auto">
+      {/* DANH SÁCH RẠP + Dropdown chọn rạp */}
+      <div className="flex items-center justify-between mb-4 max-w-6xl mx-auto">
         <span className="text-white font-bold text-3xl">DANH SÁCH RẠP</span>
-        <select
-            value={selectedProvince}
-            onChange={(e) => setSelectedProvince(e.target.value)}
-            className="bg-transparent border border-yellow-400/60 text-white font-semibold px-4 py-2 rounded-md 
+        {uniqueTheaters.length > 1 && (
+          <select
+            value={selectedTheater}
+            onChange={(e) => setSelectedTheater(e.target.value)}
+            className="bg-purple-900/50 border border-yellow-400/60 text-yellow-300 font-semibold px-4 py-2 rounded-md 
                     focus:outline-none focus:ring-2 focus:ring-yellow-400/60"
-        >
-            {provinces.map((p) => (
-            <option 
-                key={p.id} 
-                value={p.id} 
-                className="bg-transparent text-black"
-            >
-                {p.name}
+          >
+            <option value="" className="bg-purple-900 text-yellow-300">
+              Tất cả rạp
             </option>
+            {uniqueTheaters.map((theater) => (
+              <option
+                key={theater}
+                value={theater}
+                className="bg-purple-900 text-yellow-300"
+              >
+                {theater}
+              </option>
             ))}
-        </select>
+          </select>
+        )}
       </div>
 
       {/* Khung chứa THÔNG TIN RẠP + LỊCH CHIẾU */}
-      <div className="rounded-xl p-6 shadow-lg max-w-3xl mx-auto mb-8">
-        {theatersWithShowtimes.length === 0 ? (
-          <p className="text-white text-center">Hiện chưa có lịch chiếu trong khu vực này.</p>
+      <div className="rounded-xl p-6 shadow-lg max-w-6xl mx-auto mb-8">
+        {Object.keys(theaterGroups).length === 0 ? (
+          <p className="text-white text-center">
+            Hiện chưa có lịch chiếu trong ngày này.
+          </p>
         ) : (
-          theatersWithShowtimes.map((theater) => {
-            const theaterShowtimes = getShowtimesByTheaterAndDate(theater.id);
+          Object.entries(theaterGroups).map(([theaterName, showtimes]) => {
+            // Group by room within each theater
+            const roomGroups: { [roomName: string]: ShowtimeResponse[] } = {};
+            showtimes.forEach((st) => {
+              if (!roomGroups[st.roomName]) {
+                roomGroups[st.roomName] = [];
+              }
+              roomGroups[st.roomName].push(st);
+            });
+
             return (
               <div
-                key={theater.id}
-                className="bg-gray-900/70 border border-yellow-600/30 rounded-lg p-5 mb-5 shadow-inner transition-transform hover:scale-[1.01]"
+                key={theaterName}
+                className="bg-purple-900/50 border border-yellow-600/30 rounded-lg p-5 mb-5 shadow-inner"
               >
                 <h3 className="text-xl font-bold text-yellow-400 mb-1">
-                  {theater.name} ({theater.provinceName})
+                  {theaterName}
                 </h3>
-                <p className="text-white text-sm mb-3">{theater.address}</p>
-                {loading ? (
-                  <p className="text-white">Đang tải...</p>
-                ) : theaterShowtimes.length > 0 ? (
-                  <div className="flex flex-wrap gap-3">
-                    {theaterShowtimes.map((st) => {
-                      const isPast = dayjs(st.endTime).isBefore(dayjs()); // kiểm tra đã kết thúc
-                      return (
-                        <span
-                            key={st.id}
-                            onClick={() => {
-                              if (isPast) return;
-                              setSelectedShowtime(st); // chọn lịch chiếu
-                              onSelectShowtime?.(st); // truyền showtime ra ngoài để báo cho MovieDetailPage biết
-                            }}
-                            className={`px-4 py-2 rounded-md transition-colors ${
-                                        isPast
-                                            ? "text-gray-500 border border-gray-400/50 cursor-not-allowed bg-[#2a2a2a]"
-                                            : "text-yellow-100 border border-yellow-400 hover:bg-yellow-400 hover:text-black cursor-pointer"
-                                        }`} >
-                            {dayjs(st.startTime).format("HH:mm")}
-                        </span>
-                      );
-                    })}
+                <p className="text-white text-sm mb-3">
+                  Tầng 6, TTTM Satra Võ Văn Kiệt, 1466 Võ Văn Kiệt, Phường 1,
+                  Quận 6, TPHCM
+                </p>
+
+                {/* Show showtimes grouped by room type */}
+                {Object.entries(roomGroups).map(([roomName, roomShowtimes]) => (
+                  <div key={roomName} className="mb-4">
+                    <h4 className="text-white font-semibold mb-2">
+                      {roomName}
+                    </h4>
+                    <div className="flex flex-wrap gap-3">
+                      {roomShowtimes
+                        .filter((st) => {
+                          // Chỉ hiển thị nếu startTime > thời gian hiện tại
+                          return dayjs(st.startTime).isAfter(dayjs());
+                        })
+                        .sort(
+                          (a, b) =>
+                            dayjs(a.startTime).valueOf() -
+                            dayjs(b.startTime).valueOf()
+                        )
+                        .map((st) => {
+                          const isSelected = selectedShowtime?.id === st.id;
+                          return (
+                            <button
+                              key={st.id}
+                              onClick={() => {
+                                setSelectedShowtime(st);
+                                onSelectShowtime?.(st);
+                              }}
+                              className={`px-4 py-2 rounded-md border transition-colors ${
+                                isSelected
+                                  ? "bg-yellow-400 text-black border-yellow-400"
+                                  : "text-white border-white hover:bg-yellow-400 hover:text-black hover:border-yellow-400 cursor-pointer"
+                              }`}
+                            >
+                              {dayjs(st.startTime).format("HH:mm")}
+                            </button>
+                          );
+                        })}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-yellow-100">Hiện chưa có lịch chiếu</p>
-                )}
+                ))}
               </div>
             );
           })
         )}
       </div>
 
-      {/* Hiển thị Booking Step khi đã chọn lịch chiếu */}
+      {/* Hiển thị Booking khi đã chọn lịch chiếu */}
       {selectedShowtime && (
-        <div className="mt-10 max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-white">
-            Chọn vé cho lịch chiếu: {dayjs(selectedShowtime.startTime).format("HH:mm, DD/MM/YYYY")}
+        <div className="mt-10 max-w-6xl mx-auto">
+          <div className="bg-purple-900/30 rounded-xl p-6 mb-8">
+            <h2 className="text-2xl font-bold text-yellow-400 mb-2">
+              Thông tin suất chiếu đã chọn
+            </h2>
+            <p className="text-white">
+              <strong>Rạp:</strong> {selectedShowtime.theaterName}
+            </p>
+            <p className="text-white">
+              <strong>Phòng:</strong> {selectedShowtime.roomName}
+            </p>
+            <p className="text-white">
+              <strong>Giờ chiếu:</strong>{" "}
+              {dayjs(selectedShowtime.startTime).format("HH:mm, DD/MM/YYYY")}
+            </p>
+          </div>
+          {/* Chọn loại vé */}
+          <h2 className="text-4xl font-extrabold mb-6 text-center text-white">
+            CHỌN LOẠI VÉ
           </h2>
-          <BookingStep />
+          <SelectTicket onTicketChange={() => {}} />
+          {/* Sơ đồ chỗ ngồi */}
+          <h2 className="text-4xl font-extrabold mb-6 mt-12 text-center text-white">
+            CHỌN GHẾ
+          </h2>
+          <SelectSeat
+            showtimeId={selectedShowtime.id}
+            onSeatSelect={() => {}}
+          />{" "}
+          {/* Chọn bắp nước */}
+          <h2 className="text-4xl font-extrabold mb-6 mt-12 text-center text-white">
+            CHỌN BẮP NƯỚC
+          </h2>
+          <SelectCombo onComboSelect={() => {}} />
         </div>
       )}
     </div>

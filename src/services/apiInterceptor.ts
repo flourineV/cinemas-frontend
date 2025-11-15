@@ -26,10 +26,12 @@ export const applyInterceptors = (client: AxiosInstance): AxiosInstance => {
           `API Error: ${error.response.status}`,
           error.response.data
         );
-        if (error.response.status === 401) {
-          localStorage.removeItem("accessToken");
-          window.location.href = "/";
-        }
+        // Removed auto-redirect on 401 to allow guest access to public pages
+        // Components should handle 401 errors appropriately
+        // if (error.response.status === 401) {
+        //   localStorage.removeItem("accessToken");
+        //   window.location.href = "/";
+        // }
       } else {
         console.error("Network error:", error.message);
       }

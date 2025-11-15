@@ -9,8 +9,15 @@ export default function AppRouter() {
     <Routes>
       {/* Public routes with PublicRoute wrapper */}
       {publicRoutes.map(({ path, element }) => {
-        // render /login and /signup with GuestRoute
-        if (path === "/login" || path === "/signup") {
+        // Các trang mở cho tất cả mọi người (guest và user đã login)
+        if (
+          path === "/" ||
+          path === "/about" ||
+          path === "/promotions" ||
+          path === "/login" ||
+          path === "/signup" ||
+          path.startsWith("/movies")
+        ) {
           return (
             <Route
               key={path}

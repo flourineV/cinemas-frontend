@@ -1,90 +1,164 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { showtimeSeatService } from "@/services/showtime/showtimeSeatService";
+import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
 
 interface SelectSeatProps {
+  showtimeId: string;
   onSeatSelect: (seats: string[]) => void;
 }
 
-// Chỉ tới hàng N
-const ROWS = ["A","B","C","D","E","F","G","H","J","K","L","M","N"];
-const COLS = 15;
-
-// Giả lập dữ liệu ghế đã đặt và ghế đôi
-const RESERVED_SEATS = ["D7","F8","M12"];
-const DOUBLE_SEATS = ["N5","N6","N7","N8","N9","N10"];
-
-const SelectSeat: React.FC<SelectSeatProps> = ({ onSeatSelect }) => {
+const SelectSeat: React.FC<SelectSeatProps> = ({
+  showtimeId,
+  onSeatSelect,
+}) => {
+  const [seats, setSeats] = useState<ShowtimeSeatResponse[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleSeat = (seatId: string) => {
-    if (RESERVED_SEATS.includes(seatId)) return;
+  // Fetch seats data - chỉ cần 1 API call
+  useEffect(() => {
+    const fetchSeats = async () => {
+      try {
+        setLoading(true);
+
+        // Lấy layout và trạng thái ghế từ 1 API duy nhất
+        const layout = await showtimeSeatService.getSeatsByShowtime(showtimeId);
+
+        console.log("🎬 Showtime Layout Response:", layout);
+        console.log("📊 Status distribution:", {
+          total: layout.totalSeats,
+          rows: layout.totalRows,
+          columns: layout.totalColumns,
+          available: layout.seats.filter((s) => s.status === "AVAILABLE")
+            .length,
+          locked: layout.seats.filter((s) => s.status === "LOCKED").length,
+          booked: layout.seats.filter((s) => s.status === "BOOKED").length,
+        });
+
+        setSeats(layout.seats);
+      } catch (error) {
+        console.error("❌ Error fetching seats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSeats();
+  }, [showtimeId]);
+
+  // Group seats by row - extract row from seatNumber (A01, B05, etc.)
+  const groupedSeats: { [row: string]: ShowtimeSeatResponse[] } = {};
+  seats.forEach((seat) => {
+    const row = seat.seatNumber.charAt(0); // Extract 'A' from 'A01'
+    if (!groupedSeats[row]) {
+      groupedSeats[row] = [];
+    }
+    groupedSeats[row].push(seat);
+  });
+
+  // Sort rows alphabetically
+  const rows = Object.keys(groupedSeats).sort();
+
+  const toggleSeat = (seat: ShowtimeSeatResponse) => {
+    // Không cho chọn ghế đã đặt hoặc đang bị khóa
+    if (seat.status === "BOOKED" || seat.status === "LOCKED") return;
+
     setSelectedSeats((prev) => {
-      const updated = prev.includes(seatId)
-        ? prev.filter((s) => s !== seatId)
-        : [...prev, seatId];
+      const updated = prev.includes(seat.seatId)
+        ? prev.filter((s) => s !== seat.seatId)
+        : [...prev, seat.seatId];
       onSeatSelect(updated);
       return updated;
     });
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center py-10">
+        <p className="text-white text-xl">Đang tải sơ đồ ghế...</p>
+      </div>
+    );
+  }
+
+  if (seats.length === 0) {
+    return (
+      <div className="flex justify-center py-10">
+        <p className="text-white text-xl">Không có dữ liệu ghế.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex gap-4 flex-wrap justify-center">
+    <div className="flex flex-col items-center">
       {/* Màn hình cong */}
       <div className="relative w-[80%] h-12 flex justify-center mb-6">
         <div className="absolute top-0 w-full border-t-4 border-white rounded-full h-10"></div>
-        <span className="absolute top-10 text-sm opacity-80">Màn hình</span>
+        <span className="absolute top-10 text-sm opacity-80 text-white">
+          Màn hình
+        </span>
       </div>
 
-      {/* Khu ghế */}
+      {/* Khu ghế - Dynamic theo data từ API */}
       <div className="space-y-3">
-        {ROWS.map((row) => (
-          <div key={row} className="flex gap-3 justify-center items-center">
-            <span className="w-4 text-xs text-gray-300">{row}</span>
-            {Array.from({ length: COLS }).map((_, i) => {
-              const seatId = `${row}${i + 1}`;
-              const isReserved = RESERVED_SEATS.includes(seatId);
-              const isSelected = selectedSeats.includes(seatId);
-              const isDouble = DOUBLE_SEATS.includes(seatId);
+        {rows.map((row) => {
+          // Sort seats in row by column number extracted from seatNumber
+          const rowSeats = groupedSeats[row].sort((a, b) => {
+            const colA = parseInt(a.seatNumber.substring(1)); // Extract '01' from 'A01'
+            const colB = parseInt(b.seatNumber.substring(1));
+            return colA - colB;
+          });
 
-              return (
-                <div
-                  key={seatId}
-                  onClick={() => toggleSeat(seatId)}
-                  className={`w-10 h-10 flex items-center justify-center text-[11px] rounded-md font-semibold transition-all duration-200 select-none
-                    ${
-                      isReserved
-                        ? "bg-gray-600 text-gray-300 cursor-not-allowed"
-                        : isSelected
-                        ? "bg-yellow-400 text-black cursor-pointer scale-105"
-                        : isDouble
-                        ? "bg-pink-300 text-black cursor-pointer hover:bg-pink-400"
-                        : "bg-white text-black hover:bg-yellow-200 cursor-pointer"
-                    }`}
-                >
-                  {seatId}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+          return (
+            <div key={row} className="flex gap-3 justify-center items-center">
+              <span className="w-8 text-xs text-gray-300 font-semibold">
+                {row}
+              </span>
+              {rowSeats.map((seat) => {
+                const isSelected = selectedSeats.includes(seat.seatId);
+                const isBooked = seat.status === "BOOKED";
+                const isLocked = seat.status === "LOCKED";
+
+                return (
+                  <div
+                    key={seat.seatId}
+                    onClick={() => toggleSeat(seat)}
+                    className={`w-10 h-10 flex items-center justify-center text-[10px] rounded-md font-semibold transition-all duration-200 select-none
+                      ${
+                        isBooked
+                          ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                          : isLocked
+                            ? "bg-orange-500 text-white cursor-not-allowed opacity-70"
+                            : isSelected
+                              ? "bg-yellow-400 text-black cursor-pointer scale-105"
+                              : "bg-white text-black hover:bg-yellow-200 cursor-pointer"
+                      }`}
+                  >
+                    {seat.seatNumber}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       {/* Ghi chú màu */}
-      <div className="flex gap-6 mt-8 text-sm">
+      <div className="flex gap-4 mt-8 text-sm flex-wrap justify-center text-white">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-white rounded-md"></div>
+          <div className="w-5 h-5 bg-white rounded-md border border-gray-300"></div>
           <span>Ghế thường</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-pink-300 rounded-md"></div>
-          <span>Ghế đôi (2 người)</span>
+          <div className="w-5 h-5 bg-yellow-400 rounded-md"></div>
+          <span>Ghế đang chọn</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-yellow-400 rounded-md"></div>
-          <span>Ghế chọn</span>
+          <div className="w-5 h-5 bg-orange-500 rounded-md"></div>
+          <span>Đang giữ chỗ</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 bg-gray-600 rounded-md"></div>
-          <span>Ghế đã đặt</span>
+          <span>Đã đặt</span>
         </div>
       </div>
     </div>

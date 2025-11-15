@@ -19,7 +19,7 @@ export const movieManagementService = {
     sortBy?: string;
     sortType?: string;
   }): Promise<PageResponse<MovieSummary>> => {
-    const res = await movieClient.get("/", {
+    const res = await movieClient.get("", {
       params: {
         keyword,
         status,

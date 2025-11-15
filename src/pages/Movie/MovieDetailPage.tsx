@@ -16,7 +16,7 @@ import Layout from "../../components/layout/Layout";
 import { getPosterUrl } from "../../utils/getPosterUrl";
 import { movieService } from "@/services/movie/movieService";
 import type { MovieDetail } from "@/types/movie/movie.type";
-import BookingSummaryBar from "@/pages/Booking/BookingSummaryBar"; 
+import BookingSummaryBar from "@/pages/Booking/BookingSummaryBar";
 import type { ShowtimeResponse } from "@/types/showtime/showtime.type";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -29,7 +29,8 @@ export default function MovieDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBookingBar, setShowBookingBar] = useState(false);
-  const [selectedShowtime, setSelectedShowtime] = useState<ShowtimeResponse | null>(null);
+  const [selectedShowtime, setSelectedShowtime] =
+    useState<ShowtimeResponse | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -183,19 +184,14 @@ export default function MovieDetailPage() {
 
         {/* --- Lịch chiếu của phim --- */}
         <div className="mt-12">
-          <MovieShowtime movieId={movie.id} 
-                         onSelectShowtime={(st) => {
-                            setShowBookingBar(true);
-                            setSelectedShowtime(st);
-                          }} />
+          <MovieShowtime
+            movieId={movie.id}
+            onSelectShowtime={(st) => {
+              setShowBookingBar(true);
+              setSelectedShowtime(st);
+            }}
+          />
         </div>
-
-        <BookingSummaryBar
-          movieTitle={movie.title}
-          cinemaName={selectedShowtime?.theaterName || ""}
-          totalPrice={0}
-          isVisible={showBookingBar}
-        />
       </main>
     </Layout>
   );

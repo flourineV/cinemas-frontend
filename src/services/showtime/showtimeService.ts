@@ -2,21 +2,22 @@ import { showtimeClient } from "@/services/apiClient"; // ông sửa lại path 
 import type {
   ShowtimeRequest,
   ShowtimeResponse,
+  MovieShowtimeResponse,
 } from "@/types/showtime/showtime.type";
 
 export const showtimeService = {
   async getAllShowtimes(): Promise<ShowtimeResponse[]> {
-    const res = await showtimeClient.get("/showtimes");
+    const res = await showtimeClient.get("");
     return res.data;
   },
 
   async getShowtimeById(id: string): Promise<ShowtimeResponse> {
-    const res = await showtimeClient.get(`/showtimes/${id}`);
+    const res = await showtimeClient.get(`/${id}`);
     return res.data;
   },
 
-  async getShowtimesByMovie(movieId: string): Promise<ShowtimeResponse[]> {
-    const res = await showtimeClient.get(`/showtimes/by-movie/${movieId}`);
+  async getShowtimesByMovie(movieId: string): Promise<MovieShowtimeResponse> {
+    const res = await showtimeClient.get(`/by-movie/${movieId}`);
     return res.data;
   },
 
@@ -25,14 +26,14 @@ export const showtimeService = {
     startDate: string,
     endDate: string
   ): Promise<ShowtimeResponse[]> {
-    const res = await showtimeClient.get(`/showtimes/by-theater`, {
+    const res = await showtimeClient.get(`/by-theater`, {
       params: { theaterId, startDate, endDate },
     });
     return res.data;
   },
 
   async createShowtime(payload: ShowtimeRequest): Promise<ShowtimeResponse> {
-    const res = await showtimeClient.post("/showtimes", payload);
+    const res = await showtimeClient.post("", payload);
     return res.data;
   },
 
@@ -40,11 +41,11 @@ export const showtimeService = {
     id: string,
     payload: ShowtimeRequest
   ): Promise<ShowtimeResponse> {
-    const res = await showtimeClient.put(`/showtimes/${id}`, payload);
+    const res = await showtimeClient.put(`/${id}`, payload);
     return res.data;
   },
 
   async deleteShowtime(id: string): Promise<void> {
-    await showtimeClient.delete(`/showtimes/${id}`);
+    await showtimeClient.delete(`/${id}`);
   },
 };

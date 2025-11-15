@@ -1,3 +1,4 @@
+// src/app/(admin)/AdminDashboard.tsx  (hoặc đường dẫn file bạn đang dùng)
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import Layout from "../../../components/layout/Layout";
@@ -6,6 +7,7 @@ import { useAuthStore } from "@/stores/authStore";
 import OverviewCards from "@/components/admin/accounts/OverviewUserCards";
 import UserRegistrationChart from "@/components/admin/accounts/UserRegistrationChart";
 import UserManagementTable from "@/components/admin/accounts/UserManagementTable";
+import MovieManagementTable from "@/components/admin/movies/MovieManagementTable";
 
 type Tab = {
   id: string;
@@ -223,12 +225,16 @@ const AdminDashboard: React.FC = () => {
             )}
 
             {activeTab === "reports" && (
-              <div className="bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-yellow-100">
-                <h3 className="text-xl font-semibold mb-2">Báo cáo & Export</h3>
-                <p className="text-sm text-yellow-100/80">
-                  Công cụ xuất báo cáo, lịch biểu, filters.
-                </p>
-              </div>
+              <section
+                id="panel-reports"
+                role="tabpanel"
+                aria-labelledby="tab-reports"
+              >
+                <h2 className="text-2xl font-light mb-6 text-yellow-300">
+                  Quản lý phim
+                </h2>
+                <MovieManagementTable />
+              </section>
             )}
 
             {activeTab === "settings" && (
@@ -242,7 +248,9 @@ const AdminDashboard: React.FC = () => {
 
             {activeTab === "promotions" && (
               <div className="bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-yellow-100">
-                <h3 className="text-xl font-semibold mb-2">Khuyến mãi</h3>
+                <h3 className="text-xl text-yellow-100 font-semibold mb-2">
+                  Khuyến mãi
+                </h3>
                 <p className="text-sm text-yellow-100/80">
                   Quản lý mã giảm giá, chương trình marketing.
                 </p>

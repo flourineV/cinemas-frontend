@@ -11,3 +11,10 @@ export interface UpdateSeatStatusRequest {
   seatId: string;
   status: SeatStatus;
 }
+
+export interface ShowtimeSeatsLayoutResponse {
+  totalSeats: number;
+  totalRows: number;
+  totalColumns: number;
+  seats: ShowtimeSeatResponse[];
+}

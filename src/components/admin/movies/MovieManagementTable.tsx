@@ -17,6 +17,7 @@ import Swal from "sweetalert2";
 import { movieManagementService } from "@/services/movie/movieManagementService";
 import type { MovieSummary, MovieDetail } from "@/types/movie/movie.type";
 import type { GetMoviesParams } from "@/types/movie/stats.type";
+import type { PageResponse } from "@/types/PageResponse";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useOutsideClick } from "@/hooks/useOutsideClick";
 import { Badge } from "@/components/ui/Badge";
@@ -51,10 +52,13 @@ export default function MovieManagementTable(): React.JSX.Element {
     isStatusDropdownOpen
   );
 
-  // modal state for view/edit
+  // modal state: previewMovie = MovieSummary shown immediately;
+  // modalMovie = MovieDetail, loaded lazily when entering edit mode
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [previewMovie, setPreviewMovie] = useState<MovieSummary | null>(null);
   const [modalMovie, setModalMovie] = useState<MovieDetail | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   // fetch movies
   const fetchMovies = async (page = 1, showSkeleton = false) => {
@@ -77,16 +81,16 @@ export default function MovieManagementTable(): React.JSX.Element {
         sortType: "ASC",
       };
 
-      // call service
-      const res = await movieManagementService.adminList(params);
-      // service returns a PageResponse<MovieSummary>
-      const items = res?.data ?? res?.content ?? res ?? [];
-      // try to shape paging robustly
-      const pageNum = (res as any)?.page ?? page;
-      const totalPages = (res as any)?.totalPages ?? 1;
-      const totalElements = (res as any)?.totalElements ?? items?.length ?? 0;
+      // movieManagementService.adminList trả PageResponse<MovieSummary>
+      const pageResp: PageResponse<MovieSummary> =
+        await movieManagementService.adminList(params);
 
-      setMovies(items as MovieSummary[]);
+      const items = pageResp.data ?? [];
+      const pageNum = pageResp.page ?? page;
+      const totalPages = pageResp.totalPages ?? 1;
+      const totalElements = pageResp.totalElements ?? items.length ?? 0;
+
+      setMovies(items);
       setPaging({
         page: pageNum,
         totalPages: totalPages,
@@ -156,35 +160,48 @@ export default function MovieManagementTable(): React.JSX.Element {
     }
   }
 
-  async function openViewModal(id: string) {
-    try {
-      setIsModalOpen(true);
-      setIsEditMode(false);
-      const data = await movieManagementService.getByUuid(id);
-      setModalMovie(data);
-    } catch (err) {
-      console.error(err);
-      setIsModalOpen(false);
-      Swal.fire({
-        icon: "error",
-        title: "Không thể tải thông tin phim",
-        background: "#0b1020",
-        color: "#fff",
-      });
-    }
+  // open modal quickly using MovieSummary (no API call)
+  function openModalWithSummary(summary: MovieSummary) {
+    setPreviewMovie(summary);
+    setModalMovie(null); // clear any previously loaded detail
+    setIsEditMode(false);
+    setIsModalOpen(true);
+    setIsDetailLoading(false);
   }
 
   function closeModal() {
     setIsModalOpen(false);
+    setPreviewMovie(null);
     setModalMovie(null);
     setIsEditMode(false);
+    setIsDetailLoading(false);
   }
 
-  function openEditMode() {
-    setIsEditMode(true);
+  // when user wants to edit, fetch full MovieDetail lazily (if not already)
+  async function openEditMode() {
+    if (!previewMovie) return;
+    if (modalMovie) {
+      setIsEditMode(true);
+      return;
+    }
+
+    try {
+      setIsDetailLoading(true);
+      const detail = await movieManagementService.getByUuid(
+        String(previewMovie.id)
+      );
+      setModalMovie(detail);
+      setIsEditMode(true);
+    } catch (err) {
+      console.error("load detail error", err);
+      Swal.fire({ icon: "error", title: "Không thể tải chi tiết phim" });
+    } finally {
+      setIsDetailLoading(false);
+    }
   }
 
   async function submitMovieUpdate() {
+    // if editing, modalMovie must contain details
     if (!modalMovie) return;
     try {
       await movieManagementService.updateMovie(modalMovie.id, modalMovie);
@@ -197,7 +214,21 @@ export default function MovieManagementTable(): React.JSX.Element {
         color: "#fff",
       });
       setIsEditMode(false);
+      // refresh list and update previewMovie if open
       fetchMovies(paging.page);
+      // reflect updated title/status in preview if present
+      setPreviewMovie((prev) =>
+        prev && modalMovie
+          ? {
+              ...prev,
+              title: modalMovie.title,
+              posterUrl: modalMovie.posterUrl,
+              time: modalMovie.time,
+              genres: modalMovie.genres,
+              status: (modalMovie as any).status,
+            }
+          : prev
+      );
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -232,8 +263,14 @@ export default function MovieManagementTable(): React.JSX.Element {
         color: "#fff",
       });
       fetchMovies(paging.page);
-      if (modalMovie && modalMovie.id === id) {
-        // refresh modal content
+
+      // if previewing the same movie, update preview quickly
+      if (previewMovie && String(previewMovie.id) === String(id)) {
+        setPreviewMovie({ ...previewMovie, status: status as any });
+      }
+
+      // if modalMovie loaded and same id, refresh detail
+      if (modalMovie && String(modalMovie.id) === String(id)) {
         const refreshed = await movieManagementService.getByUuid(id);
         setModalMovie(refreshed);
       }
@@ -262,10 +299,10 @@ export default function MovieManagementTable(): React.JSX.Element {
       m.id,
       m.tmdbId,
       m.title,
-      m.status,
+      String((m as any).status ?? ""),
       m.time,
       (m.genres || []).join("|"),
-      m.releaseDate ?? "",
+      (m as any).releaseDate ?? "",
     ]);
     const csv = [headers, ...rows]
       .map((r) =>
@@ -319,7 +356,9 @@ export default function MovieManagementTable(): React.JSX.Element {
                   {STATUS_LABELS[selectedStatus] ?? selectedStatus}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform ${isStatusDropdownOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 transition-transform ${
+                    isStatusDropdownOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
@@ -334,7 +373,11 @@ export default function MovieManagementTable(): React.JSX.Element {
                           setIsStatusDropdownOpen(false);
                           setPaging((p) => ({ ...p, page: 1 }));
                         }}
-                        className={`block w-full text-left px-4 py-2 text-sm transition-colors ${selectedStatus === key ? "text-yellow-300 bg-black/50 font-semibold" : "text-yellow-100/80 hover:bg-black/40"}`}
+                        className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                          selectedStatus === key
+                            ? "text-yellow-300 bg-black/50 font-semibold"
+                            : "text-yellow-100/80 hover:bg-black/40"
+                        }`}
                       >
                         {label}
                       </button>
@@ -404,8 +447,10 @@ export default function MovieManagementTable(): React.JSX.Element {
               ) : (
                 movies.map((m) => (
                   <tr
-                    key={m.id}
-                    className={`transition duration-150 ${isRefreshing ? "opacity-60 pointer-events-none" : ""} hover:bg-black/40`}
+                    key={String(m.id)}
+                    className={`transition duration-150 ${
+                      isRefreshing ? "opacity-60 pointer-events-none" : ""
+                    } hover:bg-black/40`}
                   >
                     <td className="px-6 py-3 text-base text-yellow-100 text-left truncate">
                       <div className="flex flex-col">
@@ -433,14 +478,16 @@ export default function MovieManagementTable(): React.JSX.Element {
                     <td className="px-6 py-3 text-center">
                       <Badge
                         type="AccountStatus"
-                        value={m.status ?? "-"}
-                        raw={m.status ?? undefined}
+                        value={String((m as any).status ?? "-")}
+                        raw={(m as any).status ?? undefined}
                       />
                     </td>
 
                     <td className="px-6 py-3 text-center text-base text-yellow-100 truncate">
-                      {m.releaseDate
-                        ? new Date(m.releaseDate).toLocaleDateString("vi-VN")
+                      {(m as any).releaseDate
+                        ? new Date((m as any).releaseDate).toLocaleDateString(
+                            "vi-VN"
+                          )
                         : "-"}
                     </td>
 
@@ -448,7 +495,7 @@ export default function MovieManagementTable(): React.JSX.Element {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           title="Xem"
-                          onClick={() => openViewModal(m.id)}
+                          onClick={() => openModalWithSummary(m)}
                           className="px-2 py-1 rounded text-base text-white flex items-center gap-2"
                         >
                           <Eye size={14} /> Xem
@@ -457,11 +504,12 @@ export default function MovieManagementTable(): React.JSX.Element {
                         <button
                           title="Đổi trạng thái"
                           onClick={() => {
+                            const current = String((m as any).status ?? "");
                             const next =
-                              m.status === "nowPlaying"
+                              current === "nowPlaying"
                                 ? "archived"
                                 : "nowPlaying";
-                            changeStatus(m.id, next);
+                            changeStatus(String(m.id), next);
                           }}
                           className="px-2 py-1 rounded text-base text-yellow-300 flex items-center gap-2"
                         >
@@ -470,7 +518,7 @@ export default function MovieManagementTable(): React.JSX.Element {
 
                         <button
                           title="Xóa"
-                          onClick={() => onDelete(m.id)}
+                          onClick={() => onDelete(String(m.id))}
                           className="px-2 py-1 rounded text-base text-red-400"
                         >
                           <Trash2 size={14} />
@@ -494,7 +542,11 @@ export default function MovieManagementTable(): React.JSX.Element {
             <button
               onClick={goToPrevPage}
               disabled={paging.page <= 1 || isRefreshing}
-              className={`p-2 rounded-md transition ${paging.page <= 1 || isRefreshing ? "text-yellow-100/50 cursor-not-allowed" : "text-yellow-100 hover:bg-black/40"}`}
+              className={`p-2 rounded-md transition ${
+                paging.page <= 1 || isRefreshing
+                  ? "text-yellow-100/50 cursor-not-allowed"
+                  : "text-yellow-100 hover:bg-black/40"
+              }`}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -502,7 +554,11 @@ export default function MovieManagementTable(): React.JSX.Element {
             <button
               onClick={goToNextPage}
               disabled={paging.page >= paging.totalPages || isRefreshing}
-              className={`p-2 rounded-md transition ${paging.page >= paging.totalPages || isRefreshing ? "text-yellow-100/50 cursor-not-allowed" : "text-yellow-100 hover:bg-black/40"}`}
+              className={`p-2 rounded-md transition ${
+                paging.page >= paging.totalPages || isRefreshing
+                  ? "text-yellow-100/50 cursor-not-allowed"
+                  : "text-yellow-100 hover:bg-black/40"
+              }`}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -510,8 +566,8 @@ export default function MovieManagementTable(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Modal: view / edit */}
-      {isModalOpen && modalMovie && (
+      {/* Modal: preview + edit (lazy load detail) */}
+      {isModalOpen && (previewMovie || modalMovie) && (
         <div
           role="dialog"
           aria-modal="true"
@@ -547,45 +603,64 @@ export default function MovieManagementTable(): React.JSX.Element {
 
             {/* form */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Title */}
               <div>
                 <label className="block text-sm text-white/80">Tiêu đề</label>
                 <input
-                  value={modalMovie.title}
+                  value={
+                    isEditMode
+                      ? (modalMovie?.title ?? "")
+                      : (previewMovie?.title ?? "")
+                  }
                   disabled={!isEditMode}
                   onChange={(e) =>
-                    setModalMovie({ ...modalMovie, title: e.target.value })
+                    setModalMovie((prev) =>
+                      prev ? { ...prev, title: e.target.value } : prev
+                    )
                   }
                   className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
                 />
               </div>
 
+              {/* TMDB ID */}
               <div>
                 <label className="block text-sm text-white/80">TMDB ID</label>
                 <input
-                  value={modalMovie.tmdbId}
+                  value={String(
+                    isEditMode
+                      ? (modalMovie?.tmdbId ?? "")
+                      : (previewMovie?.tmdbId ?? "")
+                  )}
                   disabled
                   className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
                 />
               </div>
 
+              {/* Time */}
               <div>
                 <label className="block text-sm text-white/80">
                   Thời lượng (phút)
                 </label>
                 <input
                   type="number"
-                  value={modalMovie.time ?? ""}
+                  value={
+                    isEditMode
+                      ? (modalMovie?.time ?? "")
+                      : (previewMovie?.time ?? "")
+                  }
                   disabled={!isEditMode}
                   onChange={(e) =>
-                    setModalMovie({
-                      ...modalMovie,
-                      time: Number(e.target.value) || 0,
-                    })
+                    setModalMovie((prev) =>
+                      prev
+                        ? { ...prev, time: Number(e.target.value) || 0 }
+                        : prev
+                    )
                   }
                   className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
                 />
               </div>
 
+              {/* Release date */}
               <div>
                 <label className="block text-sm text-white/80">
                   Ngày phát hành
@@ -593,48 +668,67 @@ export default function MovieManagementTable(): React.JSX.Element {
                 <input
                   type="date"
                   value={
-                    modalMovie.releaseDate
-                      ? modalMovie.releaseDate.split("T")[0]
-                      : ""
+                    isEditMode
+                      ? (modalMovie as any)?.releaseDate
+                        ? (modalMovie as any).releaseDate.split("T")[0]
+                        : ""
+                      : (previewMovie as any)?.releaseDate
+                        ? (previewMovie as any).releaseDate.split("T")[0]
+                        : ""
                   }
                   disabled={!isEditMode}
                   onChange={(e) =>
-                    setModalMovie({
-                      ...modalMovie,
-                      releaseDate: e.target.value,
-                    })
+                    setModalMovie((prev) =>
+                      prev ? { ...prev, releaseDate: e.target.value } : prev
+                    )
                   }
                   className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
                 />
               </div>
 
+              {/* Genres */}
               <div className="md:col-span-2">
                 <label className="block text-sm text-white/80">
                   Thể loại (phân cách bằng dấu phẩy)
                 </label>
                 <input
-                  value={(modalMovie.genres || []).join(", ")}
+                  value={
+                    isEditMode
+                      ? (modalMovie?.genres || []).join(", ")
+                      : (previewMovie?.genres || []).join(", ")
+                  }
                   disabled={!isEditMode}
                   onChange={(e) =>
-                    setModalMovie({
-                      ...modalMovie,
-                      genres: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
+                    setModalMovie((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            genres: e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          }
+                        : prev
+                    )
                   }
                   className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
                 />
               </div>
 
+              {/* Overview */}
               <div className="md:col-span-2">
                 <label className="block text-sm text-white/80">Mô tả</label>
                 <textarea
-                  value={modalMovie.overview ?? ""}
+                  value={
+                    isEditMode
+                      ? (modalMovie?.overview ?? "")
+                      : (previewMovie?.title ?? "")
+                  }
                   disabled={!isEditMode}
                   onChange={(e) =>
-                    setModalMovie({ ...modalMovie, overview: e.target.value })
+                    setModalMovie((prev) =>
+                      prev ? { ...prev, overview: e.target.value } : prev
+                    )
                   }
                   className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white h-24"
                 />
@@ -664,8 +758,11 @@ export default function MovieManagementTable(): React.JSX.Element {
                   <button
                     onClick={() =>
                       changeStatus(
-                        modalMovie.id,
-                        modalMovie.status === "nowPlaying"
+                        String(previewMovie?.id ?? modalMovie?.id ?? ""),
+                        String(
+                          (previewMovie as any)?.status ??
+                            (modalMovie as any)?.status
+                        ) === "nowPlaying"
                           ? "archived"
                           : "nowPlaying"
                       )

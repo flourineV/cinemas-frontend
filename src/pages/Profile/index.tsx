@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Layout from "../../components/layout/Layout";
 import { userProfileService } from "@/services/userprofile/userProfileService";
-import type { UserProfileResponse } from "@/services/userprofile/userProfileService";
+import type { UserProfileResponse } from "@/types/userprofile/userprofile.type";
 import { useAuthStore } from "../../stores/authStore";
 import { User, Camera, Calendar } from "lucide-react";
 import { FaChevronDown } from "react-icons/fa";
@@ -34,18 +34,22 @@ const InputField = ({
   type?: string;
 }) => {
   const isDate = type === "date";
-  const displayValue = value === null || value === undefined ? "" : value.toString();
+  const displayValue =
+    value === null || value === undefined ? "" : value.toString();
   const displayPlaceholder = disabled && !displayValue;
 
   const baseClass = `p-2 border rounded-md text-white focus:ring-yellow-500 focus:border-yellow-500`;
-  const disabledClass = "border-gray-600 bg-slate-700 text-gray-300 cursor-default";
+  const disabledClass =
+    "border-gray-600 bg-slate-700 text-gray-300 cursor-default";
   const enabledClass = "border-yellow-500 bg-slate-800";
 
   const displayedInputValue = (() => {
     if (displayPlaceholder) return "Chưa có";
     if (isDate && disabled && displayValue) {
       const date = new Date(displayValue);
-      return isNaN(date.getTime()) ? displayValue : date.toLocaleDateString("vi-VN");
+      return isNaN(date.getTime())
+        ? displayValue
+        : date.toLocaleDateString("vi-VN");
     }
     return displayValue;
   })();
@@ -60,7 +64,9 @@ const InputField = ({
           type={inputType}
           name={name}
           value={isDate && !disabled ? displayValue : displayedInputValue}
-          placeholder={displayPlaceholder ? "Chưa có" : `Nhập ${label.toLowerCase()}`}
+          placeholder={
+            displayPlaceholder ? "Chưa có" : `Nhập ${label.toLowerCase()}`
+          }
           onChange={onChange}
           className={`${baseClass} w-full ${disabled ? disabledClass : enabledClass}`}
           disabled={disabled}
@@ -94,12 +100,16 @@ const GenderDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = GENDER_OPTIONS.find((opt) => opt.value === value);
 
-  const handleSelect = (option: typeof GENDER_OPTIONS[0]) => {
+  const handleSelect = (option: (typeof GENDER_OPTIONS)[0]) => {
     onChange({ name, value: option.value });
     setIsOpen(false);
   };
 
-  const displayLabel = selectedOption ? selectedOption.label : disabled ? "Chưa có" : "Chọn giới tính";
+  const displayLabel = selectedOption
+    ? selectedOption.label
+    : disabled
+      ? "Chưa có"
+      : "Chọn giới tính";
 
   if (disabled) {
     return (
@@ -162,8 +172,10 @@ const GenderDropdown = ({
 const Profile = () => {
   const { user, signout } = useAuthStore();
 
-  const [initialProfile, setInitialProfile] = useState<UserProfileResponse | null>(null);
-  const [editableProfile, setEditableProfile] = useState<UserProfileResponse | null>(null);
+  const [initialProfile, setInitialProfile] =
+    useState<UserProfileResponse | null>(null);
+  const [editableProfile, setEditableProfile] =
+    useState<UserProfileResponse | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -192,7 +204,13 @@ const Profile = () => {
     setEditableProfile((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleDropdownChange = ({ name, value }: { name: string; value: string }) => {
+  const handleDropdownChange = ({
+    name,
+    value,
+  }: {
+    name: string;
+    value: string;
+  }) => {
     setEditableProfile((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
@@ -217,7 +235,10 @@ const Profile = () => {
 
     setIsSaving(true);
     try {
-      const updatedData = await userProfileService.updateProfile(user.id, dataToUpdate);
+      const updatedData = await userProfileService.updateProfile(
+        user.id,
+        dataToUpdate
+      );
       alert("Thông tin đã được lưu thành công!");
       setInitialProfile(updatedData);
       setEditableProfile(updatedData);
@@ -348,26 +369,80 @@ const Profile = () => {
             <div className="space-y-4 mb-8 border-b border-gray-600 pb-6">
               <h3 className="text-xl font-semibold mb-3">Thông tin cơ bản:</h3>
 
-              <InputField label="Họ và tên" value={profile.fullName} name="fullName" onChange={handleInputChange} disabled={!isEditing} />
-              <InputField label="Ngày sinh" value={profile.dateOfBirth} name="dateOfBirth" onChange={handleInputChange} disabled={!isEditing} type="date" />
-              <GenderDropdown label="Giới tính" value={profile.gender} name="gender" onChange={handleDropdownChange} disabled={!isEditing} />
-              <InputField label="Số điện thoại" value={profile.phoneNumber} name="phoneNumber" onChange={handleInputChange} disabled={!isEditing} />
-              <InputField label="Email" value={profile.email} name="email" onChange={handleInputChange} disabled={true} />
-              <InputField label="CCCD/CMND" value={profile.nationalId} name="nationalId" onChange={handleInputChange} disabled={!isEditing} />
-              <InputField label="Địa chỉ" value={profile.address} name="address" onChange={handleInputChange} disabled={!isEditing} />
+              <InputField
+                label="Họ và tên"
+                value={profile.fullName}
+                name="fullName"
+                onChange={handleInputChange}
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Ngày sinh"
+                value={profile.dateOfBirth}
+                name="dateOfBirth"
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                type="date"
+              />
+              <GenderDropdown
+                label="Giới tính"
+                value={profile.gender}
+                name="gender"
+                onChange={handleDropdownChange}
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Số điện thoại"
+                value={profile.phoneNumber}
+                name="phoneNumber"
+                onChange={handleInputChange}
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Email"
+                value={profile.email}
+                name="email"
+                onChange={handleInputChange}
+                disabled={true}
+              />
+              <InputField
+                label="CCCD/CMND"
+                value={profile.nationalId}
+                name="nationalId"
+                onChange={handleInputChange}
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Địa chỉ"
+                value={profile.address}
+                name="address"
+                onChange={handleInputChange}
+                disabled={!isEditing}
+              />
 
               <div className="flex justify-end pt-2 space-x-4">
                 {isEditing ? (
                   <>
-                    <button onClick={handleCancel} className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50" disabled={isSaving}>
+                    <button
+                      onClick={handleCancel}
+                      className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50"
+                      disabled={isSaving}
+                    >
                       Hủy
                     </button>
-                    <button onClick={handleSaveInfo} className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50" disabled={isSaving}>
+                    <button
+                      onClick={handleSaveInfo}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50"
+                      disabled={isSaving}
+                    >
                       {isSaving ? "Đang lưu..." : "Lưu"}
                     </button>
                   </>
                 ) : (
-                  <button onClick={handleEdit} className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-md transition">
+                  <button
+                    onClick={handleEdit}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-md transition"
+                  >
                     Chỉnh sửa
                   </button>
                 )}
@@ -375,7 +450,10 @@ const Profile = () => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <button onClick={handleChangePassword} className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition">
+              <button
+                onClick={handleChangePassword}
+                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition"
+              >
                 Đổi mật khẩu
               </button>
             </div>

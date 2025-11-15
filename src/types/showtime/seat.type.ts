@@ -3,7 +3,7 @@ export interface SeatRequest {
   seatNumber: string;
   rowLabel: string;
   columnIndex: number;
-  type: string; // NORMAL | VIP | COUPLE
+  type: string;
 }
 
 export interface SeatResponse {

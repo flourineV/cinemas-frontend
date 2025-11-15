@@ -4,15 +4,23 @@ export interface ShowtimeRequest {
   roomId: string;
   startTime: string;
   endTime: string;
-  price: number;
 }
 
 export interface ShowtimeResponse {
   id: string;
   movieId: string;
   theaterName: string;
+  roomId: string;
   roomName: string;
-  startTime: string;
-  endTime: string;
-  price: number;
+  startTime: string; // ISO date-time
+  endTime: string; // ISO date-time
+}
+
+export interface ShowtimesByDate {
+  [date: string]: ShowtimeResponse[];
+}
+
+export interface MovieShowtimeResponse {
+  availableDates: string[]; // ["2025-11-16", "2025-11-17", ...]
+  showtimesByDate: ShowtimesByDate;
 }

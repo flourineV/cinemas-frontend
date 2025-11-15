@@ -2,15 +2,15 @@ import { showtimeClient } from "../apiClient";
 
 import type {
   SeatStatus,
-  UpdateSeatStatusRequest,
   ShowtimeSeatResponse,
+  ShowtimeSeatsLayoutResponse,
 } from "@/types/showtime/showtimeSeat.type";
 
 export const showtimeSeatService = {
   getSeatsByShowtime: async (
     showtimeId: string
-  ): Promise<ShowtimeSeatResponse[]> => {
-    const res = await showtimeClient.get<ShowtimeSeatResponse[]>(
+  ): Promise<ShowtimeSeatsLayoutResponse> => {
+    const res = await showtimeClient.get<ShowtimeSeatsLayoutResponse>(
       `/${showtimeId}/seats`
     );
     return res.data;
