@@ -4,6 +4,7 @@ import type {
   ShowtimeResponse,
   MovieShowtimeResponse,
 } from "@/types/showtime/showtime.type";
+import { mockShowtimeData } from "@/mocks/mockShowtime";
 
 export const showtimeService = {
   async getAllShowtimes(): Promise<ShowtimeResponse[]> {
@@ -17,8 +18,13 @@ export const showtimeService = {
   },
 
   async getShowtimesByMovie(movieId: string): Promise<MovieShowtimeResponse> {
-    const res = await showtimeClient.get(`/by-movie/${movieId}`);
-    return res.data;
+    try {
+      const res = await showtimeClient.get(`/by-movie/${movieId}`);
+      return res.data;
+    } catch (err) {
+      console.warn("⚠️ BE không chạy — dùng mock showtime để debug UI.");
+      return mockShowtimeData;
+    }
   },
 
   async getShowtimesByTheaterAndDate(

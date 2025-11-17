@@ -262,7 +262,9 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
           <h2 className="text-4xl font-extrabold mb-6 text-center text-white">
             CHỌN LOẠI VÉ
           </h2>
-          <SelectTicket onTicketChange={() => {}} />
+          <SelectTicket 
+            seatType="NORMAL" // mặc định loại ghế là NORMAL khi chọn loại vé
+            onTicketChange={() => {}} />
           {/* Sơ đồ chỗ ngồi */}
           <h2 className="text-4xl font-extrabold mb-6 mt-12 text-center text-white">
             CHỌN GHẾ
