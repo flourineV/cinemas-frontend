@@ -45,3 +45,17 @@ export const bookingClient: AxiosInstance = applyInterceptors(
     headers: { "Content-Type": "application/json" },
   })
 );
+
+export const fnbClient: AxiosInstance = applyInterceptors(
+  axios.create({
+    baseURL: `${baseURL}/fnb`,
+    headers: { "Content-Type": "application/json" },
+  })
+);
+
+export const pricingClient: AxiosInstance = applyInterceptors(
+  axios.create({
+    baseURL: `${baseURL}/pricing`,
+    headers: { "Content-Type": "application/json" },
+  })
+);
