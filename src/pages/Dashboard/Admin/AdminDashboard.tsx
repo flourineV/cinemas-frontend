@@ -8,6 +8,7 @@ import OverviewCards from "@/components/admin/accounts/OverviewUserCards";
 import UserRegistrationChart from "@/components/admin/accounts/UserRegistrationChart";
 import UserManagementTable from "@/components/admin/accounts/UserManagementTable";
 import MovieManagementTable from "@/components/admin/movies/MovieManagementTable";
+import ShowtimeManagement from "@/components/admin/showtimes/ShowtimeManagement";
 
 type Tab = {
   id: string;
@@ -238,12 +239,13 @@ const AdminDashboard: React.FC = () => {
             )}
 
             {activeTab === "settings" && (
-              <div className="bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-yellow-100">
-                <h3 className="text-xl font-semibold mb-2">Cài đặt hệ thống</h3>
-                <p className="text-sm text-yellow-100/80">
-                  Quản lý cấu hình hệ thống, permission...
-                </p>
-              </div>
+              <section
+                id="panel-settings"
+                role="tabpanel"
+                aria-labelledby="tab-settings"
+              >
+                <ShowtimeManagement />
+              </section>
             )}
 
             {activeTab === "promotions" && (

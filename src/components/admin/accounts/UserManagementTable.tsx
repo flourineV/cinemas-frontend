@@ -1,15 +1,12 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Search,
   Trash2,
   Edit2,
-  Save,
   ChevronLeft,
   ChevronRight,
-  Eye,
   Loader2,
-  ChevronDown,
   Download,
 } from "lucide-react";
 import Swal from "sweetalert2";
@@ -17,8 +14,8 @@ import Swal from "sweetalert2";
 import { userAdminService } from "@/services/auth/userService";
 import type { UserListResponse, GetUsersParams } from "@/types/auth/stats.type";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useOutsideClick } from "@/hooks/useOutsideClick";
 import { Badge } from "@/components/ui/Badge";
+import { CustomDropdown } from "@/components/ui/CustomDropdown";
 
 /* Local label maps — purely UI text */
 const ROLE_LABELS: Record<string, string> = {
@@ -49,31 +46,11 @@ export default function UserManagementTable(): React.JSX.Element {
   const [selectedStatus, setSelectedStatus] = useState<"Tất cả" | string>(
     "Tất cả"
   );
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
   // modal state for updating role
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [modalUser, setModalUser] = useState<UserListResponse | null>(null);
   const [modalRole, setModalRole] = useState<string>("");
-
-  // role dropdown inside modal (mirrors status dropdown style)
-  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
-  const roleDropdownRef = useRef<HTMLDivElement | null>(null);
-
-  // dropdown outside click via hook
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
-  useOutsideClick(
-    dropdownRef,
-    () => setIsStatusDropdownOpen(false),
-    isStatusDropdownOpen
-  );
-
-  // close role dropdown when clicking outside modal's role dropdown
-  useOutsideClick(
-    roleDropdownRef,
-    () => setIsRoleDropdownOpen(false),
-    isRoleDropdownOpen
-  );
 
   // fetch users (keeps same data shape as your service expects)
   const fetchUsers = async (page = 1, showSkeleton = false) => {
@@ -183,7 +160,6 @@ export default function UserManagementTable(): React.JSX.Element {
     setModalUser(u);
     setModalRole(u.role ?? "");
     setIsRoleModalOpen(true);
-    setIsRoleDropdownOpen(false);
   }
 
   // close role modal
@@ -191,7 +167,6 @@ export default function UserManagementTable(): React.JSX.Element {
     setIsRoleModalOpen(false);
     setModalUser(null);
     setModalRole("");
-    setIsRoleDropdownOpen(false);
   }
 
   // submit role update from modal: show confirm then call API
@@ -319,53 +294,21 @@ export default function UserManagementTable(): React.JSX.Element {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsStatusDropdownOpen((s) => !s)}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium
-                         bg-black/40 border border-yellow-400/40 rounded-lg text-white
-                         hover:bg-black/50"
-              >
-                <span className="whitespace-nowrap">
-                  {selectedStatus === "Tất cả"
-                    ? "Tất cả"
-                    : (STATUS_LABELS[selectedStatus] ?? selectedStatus)}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    isStatusDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {isStatusDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black/60 backdrop-blur-md border border-yellow-400/40 z-20 animate-fadeIn">
-                  <div className="py-1">
-                    {[
-                      ["Tất cả", "Tất cả"],
-                      ...Object.entries(STATUS_LABELS),
-                    ].map(([key, label]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setSelectedStatus(key);
-                          setIsStatusDropdownOpen(false);
-                          setPaging((p) => ({ ...p, page: 1 }));
-                        }}
-                        className={`block w-full text-left px-4 py-2 text-sm transition-colors
-                          ${
-                            selectedStatus === key
-                              ? "text-yellow-300 bg-black/50 font-semibold"
-                              : "text-yellow-100/80 hover:bg-black/40"
-                          }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <CustomDropdown
+              options={[
+                { value: "Tất cả", label: "Tất cả" },
+                ...Object.entries(STATUS_LABELS).map(([key, label]) => ({
+                  value: key,
+                  label: label,
+                })),
+              ]}
+              value={selectedStatus}
+              onChange={(value) => {
+                setSelectedStatus(value);
+                setPaging((p) => ({ ...p, page: 1 }));
+              }}
+              placeholder="Tất cả"
+            />
 
             <button
               onClick={() => exportCurrentCSV()}
@@ -416,8 +359,8 @@ export default function UserManagementTable(): React.JSX.Element {
             className="min-w-full divide-y divide-yellow-400/80 table-fixed"
             style={{ tableLayout: "fixed", width: "100%" }}
           >
-            <thead className="sticky top-0 z-10 border-b border-yellow-400/70">
-              <tr className="bg-black/40 backdrop-blur-sm">
+            <thead className="sticky top-0 z-10 border-b border-yellow-400/40 bg-yellow-500/20 text-yellow-300 uppercase">
+              <tr className="">
                 <th className="w-[150px] px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
                   Người dùng
                 </th>
@@ -584,55 +527,18 @@ export default function UserManagementTable(): React.JSX.Element {
               Chọn role
             </label>
 
-            {/* role dropdown styled like status dropdown */}
-            <div className="relative" ref={roleDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsRoleDropdownOpen((s) => !s)}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/40 text-white"
-              >
-                <span>
-                  {modalRole
-                    ? (ROLE_LABELS[modalRole] ?? modalRole)
-                    : "-- Chọn role --"}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${isRoleDropdownOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {isRoleDropdownOpen && (
-                <div className="absolute left-0 right-0 mt-2 rounded-md shadow-lg bg-black/60 backdrop-blur-md border border-yellow-400/40 z-20 animate-fadeIn">
-                  <div className="py-1">
-                    <button
-                      key={"empty"}
-                      onClick={() => {
-                        setModalRole("");
-                        setIsRoleDropdownOpen(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm transition-colors
-                        ${modalRole === "" ? "text-yellow-300 bg-black/50 font-semibold" : "text-yellow-100/80 hover:bg-black/40"}`}
-                    >
-                      -- Chọn role --
-                    </button>
-
-                    {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setModalRole(key);
-                          setIsRoleDropdownOpen(false);
-                        }}
-                        className={`block w-full text-left px-4 py-2 text-sm transition-colors
-                          ${modalRole === key ? "text-yellow-300 bg-black/50 font-semibold" : "text-yellow-100/80 hover:bg-black/40"}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <CustomDropdown
+              options={[
+                { value: "", label: "-- Chọn role --" },
+                ...Object.entries(ROLE_LABELS).map(([key, label]) => ({
+                  value: key,
+                  label: label,
+                })),
+              ]}
+              value={modalRole}
+              onChange={setModalRole}
+              placeholder="-- Chọn role --"
+            />
 
             <div className="flex items-center justify-end gap-3 mt-4">
               <button

@@ -8,6 +8,8 @@ import About from "@/pages/About";
 import Promotions from "@/pages/Promotions";
 import Profile from "@/pages/Profile";
 import MovieDetailPage from "@/pages/Movie/MovieDetailPage";
+import NowPlayingPage from "@/pages/Movie/NowPlayingPage";
+import UpcomingPage from "@/pages/Movie/UpcomingPage";
 import AdminDashboard from "@/pages/Dashboard/Admin/AdminDashboard";
 import ManagerDashboard from "@/pages/Dashboard/Manager/ManagerDashboard";
 import StaffDashboard from "@/pages/Dashboard/Staff/StaffDashboard";
@@ -18,6 +20,8 @@ export const publicRoutes = [
   { path: "/", element: <Home /> },
   { path: "/about", element: <About /> },
   { path: "/promotions", element: <Promotions /> },
+  { path: "/movies/now-playing", element: <NowPlayingPage /> },
+  { path: "/movies/upcoming", element: <UpcomingPage /> },
   { path: "/movies/:id", element: <MovieDetailPage /> },
   { path: "/login", element: <SignIn /> },
   { path: "/signup", element: <SignUp /> },

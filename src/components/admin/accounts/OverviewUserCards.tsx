@@ -21,7 +21,8 @@ const StatCard: React.FC<StatCardProps> = ({ value, label }) => {
         border border-yellow-400/40 
         rounded-2xl p-5 shadow-2xl
         transition-all duration-300
-        hover:bg-black/70 hover:border-yellow-400/40
+        hover:bg-yellow-500/30 hover:border-yellow-400/40
+        bg-yellow-500/20
       "
     >
       <p className="text-2xl font-bold text-yellow-300">{displayValue}</p>

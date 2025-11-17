@@ -1,9 +1,15 @@
-import { showtimeClient } from "@/services/apiClient"; // ông sửa lại path nếu khác
+// src/services/showtimeService.ts
+import { showtimeClient } from "@/services/apiClient"; // sửa path nếu khác
 import type {
   ShowtimeRequest,
   ShowtimeResponse,
+  ShowtimeDetailResponse,
   MovieShowtimeResponse,
+  BatchShowtimeRequest,
+  BatchShowtimeResponse,
+  ShowtimeConflictResponse,
 } from "@/types/showtime/showtime.type";
+import type { PageResponse } from "@/types/PageResponse"; // nếu bạn dùng tên khác/path khác thì chỉnh lại
 
 export const showtimeService = {
   async getAllShowtimes(): Promise<ShowtimeResponse[]> {
@@ -32,8 +38,26 @@ export const showtimeService = {
     return res.data;
   },
 
+  async getShowtimesByRoomAndDateRange(
+    roomId: string,
+    start: string,
+    end: string
+  ): Promise<ShowtimeResponse[]> {
+    const res = await showtimeClient.get(`/by-room`, {
+      params: { roomId, start, end },
+    });
+    return res.data;
+  },
+
   async createShowtime(payload: ShowtimeRequest): Promise<ShowtimeResponse> {
     const res = await showtimeClient.post("", payload);
+    return res.data;
+  },
+
+  async createShowtimesBatch(
+    payload: BatchShowtimeRequest
+  ): Promise<BatchShowtimeResponse> {
+    const res = await showtimeClient.post("/batch", payload);
     return res.data;
   },
 
@@ -47,5 +71,41 @@ export const showtimeService = {
 
   async deleteShowtime(id: string): Promise<void> {
     await showtimeClient.delete(`/${id}`);
+  },
+
+  /**
+   * Get all available showtimes (admin/manager). Supports pagination & filters.
+   * params:
+   *  - filters: object containing optional provinceId, theaterId, roomId, movieId, showtimeId
+   *  - page, size, sortBy, sortType
+   */
+  async getAllAvailableShowtimes(
+    filters: {
+      provinceId?: string;
+      theaterId?: string;
+      roomId?: string;
+      movieId?: string;
+      showtimeId?: string;
+    } = {},
+    page = 1,
+    size = 10,
+    sortBy?: string,
+    sortType?: "asc" | "desc"
+  ): Promise<PageResponse<ShowtimeDetailResponse>> {
+    const params: Record<string, any> = { page, size, ...filters };
+    if (sortBy) params.sortBy = sortBy;
+    if (sortType) params.sortType = sortType;
+    const res = await showtimeClient.get("/available", { params });
+    return res.data;
+  },
+
+  /**
+   * Validate a showtime for conflicts (server returns ShowtimeConflictResponse)
+   */
+  async validateShowtime(
+    payload: unknown /* ValidateShowtimeRequest type if exists */
+  ): Promise<ShowtimeConflictResponse> {
+    const res = await showtimeClient.post("/validate", payload);
+    return res.data;
   },
 };

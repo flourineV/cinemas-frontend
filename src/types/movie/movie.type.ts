@@ -1,14 +1,19 @@
+export type MovieStatus = "NOW_PLAYING" | "UPCOMING" | "ARCHIVED";
+
 export interface MovieSummary {
   id: string;
   tmdbId: number;
   title: string;
   posterUrl: string;
   age: string;
-  status: string;
+  status: MovieStatus;
   time: number;
   spokenLanguages: string[];
   genres: string[];
   trailer: string;
+  startDate?: string;
+  endDate?: string;
+  popularity?: number;
 }
 
 export interface MovieDetail {
@@ -26,4 +31,7 @@ export interface MovieDetail {
   overview: string;
   trailer: string;
   posterUrl: string;
+  startDate?: string;
+  endDate?: string;
+  popularity?: number;
 }
