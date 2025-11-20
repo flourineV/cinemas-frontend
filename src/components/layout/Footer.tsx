@@ -3,7 +3,10 @@ import { SiZalo } from "react-icons/si";
 
 const Footer = () => {
   return (
-    <footer className="bg-white/5 backdrop-blur-lg border-t border-gray-700 text-gray-300">
+    <footer
+      id="footer"
+      className="bg-white/5 backdrop-blur-lg border-t border-gray-700 text-gray-300"
+    >
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8">
         {/* Logo + mô tả */}
         <div className="col-span-1 lg:col-span-2">

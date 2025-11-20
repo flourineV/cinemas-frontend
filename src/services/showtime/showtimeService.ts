@@ -8,6 +8,7 @@ import type {
   BatchShowtimeRequest,
   BatchShowtimeResponse,
   ShowtimeConflictResponse,
+  TheaterShowtimesResponse,
 } from "@/types/showtime/showtime.type";
 import type { PageResponse } from "@/types/PageResponse"; // nếu bạn dùng tên khác/path khác thì chỉnh lại
 
@@ -24,6 +25,26 @@ export const showtimeService = {
 
   async getShowtimesByMovie(movieId: string): Promise<MovieShowtimeResponse> {
     const res = await showtimeClient.get(`/by-movie/${movieId}`);
+    return res.data;
+  },
+
+  async getTheaterShowtimesByProvinceAndDate(
+    provinceId: string,
+    date: string
+  ): Promise<TheaterShowtimesResponse[]> {
+    const res = await showtimeClient.get(`/by-province-and-date`, {
+      params: { provinceId, date },
+    });
+    return res.data;
+  },
+
+  async getTheaterShowtimesByMovieAndProvince(
+    movieId: string,
+    provinceId: string
+  ): Promise<TheaterShowtimesResponse[]> {
+    const res = await showtimeClient.get(`/by-movie-and-province`, {
+      params: { movieId, provinceId },
+    });
     return res.data;
   },
 
@@ -106,6 +127,42 @@ export const showtimeService = {
     payload: unknown /* ValidateShowtimeRequest type if exists */
   ): Promise<ShowtimeConflictResponse> {
     const res = await showtimeClient.post("/validate", payload);
+    return res.data;
+  },
+};
+
+// Seat Lock Service
+export const seatLockService = {
+  /**
+   * Lock seats for a showtime
+   */
+  async lockSeats(
+    payload: import("@/types/showtime/showtime.type").SeatLockRequest
+  ): Promise<import("@/types/showtime/showtime.type").SeatLockResponse[]> {
+    const res = await showtimeClient.post("/seat-lock/lock", payload);
+    return res.data;
+  },
+
+  /**
+   * Release locked seats
+   */
+  async releaseSeats(
+    payload: import("@/types/showtime/showtime.type").SeatReleaseRequest
+  ): Promise<import("@/types/showtime/showtime.type").SeatLockResponse[]> {
+    const res = await showtimeClient.post("/seat-lock/release", payload);
+    return res.data;
+  },
+
+  /**
+   * Get seat lock status
+   */
+  async getSeatStatus(
+    showtimeId: string,
+    seatId: string
+  ): Promise<import("@/types/showtime/showtime.type").SeatLockResponse> {
+    const res = await showtimeClient.get("/seat-lock/status", {
+      params: { showtimeId, seatId },
+    });
     return res.data;
   },
 };

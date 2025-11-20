@@ -1,8 +1,10 @@
 export type SeatStatus = "AVAILABLE" | "LOCKED" | "BOOKED";
+export type SeatType = "NORMAL" | "VIP" | "COUPLE";
 
 export interface ShowtimeSeatResponse {
   seatId: string;
   seatNumber: string;
+  type: SeatType;
   status: SeatStatus;
 }
 

@@ -5,17 +5,25 @@ import type { SeatPriceResponse } from "@/types/pricing/seatprice.type";
 interface SelectTicketProps {
   seatType: string; // ghế được chọn từ booking, mặc định là NORMAL
   onTicketChange: (tickets: Record<string, number>) => void;
+  selectedSeats: string[];
 }
 
 const TICKET_LABELS: Record<string, string> = {
   ADULT: "Người lớn",
   CHILD: "Trẻ em",
-  STUDENT: "Học sinh/Sinh viên",
+  STUDENT: "HSSV-U22",
+  COUPLE: "Đôi",
 };
 
-const SelectTicket: React.FC<SelectTicketProps> = ({ seatType, onTicketChange }) => {
+const SelectTicket: React.FC<SelectTicketProps> = ({
+  seatType,
+  onTicketChange,
+  selectedSeats,
+}) => {
   const [tickets, setTickets] = useState<SeatPriceResponse[]>([]);
-  const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
+  const [selectedTickets, setSelectedTickets] = useState<
+    Record<string, number>
+  >({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,7 +31,11 @@ const SelectTicket: React.FC<SelectTicketProps> = ({ seatType, onTicketChange })
       setLoading(true);
       try {
         const allPrices = await pricingService.getAllSeatPrices();
-        setTickets(allPrices.filter(t => t.seatType === seatType));
+        // Lọc lấy giá cho NORMAL và COUPLE (không lấy VIP)
+        const normalPrices = allPrices.filter(
+          (t) => t.seatType === "NORMAL" || t.seatType === "COUPLE"
+        );
+        setTickets(normalPrices);
       } catch (err) {
         console.error("Không lấy được dữ liệu ticket:", err);
         setTickets([]);
@@ -32,38 +44,94 @@ const SelectTicket: React.FC<SelectTicketProps> = ({ seatType, onTicketChange })
       }
     };
     fetchTickets();
-  }, [seatType]);
+  }, []); // Không còn dependency vào seatType
 
-  const handleChange = (ticketType: string, delta: number) => {
-    setSelectedTickets(prev => {
-      const newCount = Math.max((prev[ticketType] || 0) + delta, 0);
-      const updated = { ...prev, [ticketType]: newCount };
+  const handleChange = (
+    seatType: string,
+    ticketType: string,
+    delta: number
+  ) => {
+    const key = `${seatType}-${ticketType}`;
+    setSelectedTickets((prev) => {
+      const newCount = Math.max((prev[key] || 0) + delta, 0);
+      const updated = { ...prev, [key]: newCount };
       onTicketChange(updated);
       return updated;
     });
   };
 
-  if (loading) return <p className="text-white text-center mt-6">Đang tải loại vé...</p>;
-  if (!tickets.length) return <p className="text-white text-center mt-6">Loại vé không tồn tại.</p>;
+  if (loading)
+    return <p className="text-white text-center mt-6">Đang tải loại vé...</p>;
+  if (!tickets.length)
+    return (
+      <p className="text-white text-center mt-6">Loại vé không tồn tại.</p>
+    );
 
   return (
-    <div className="flex gap-4 flex-wrap justify-center">
-      {tickets.map(ticket => (
-        <div key={`${ticket.seatType}-${ticket.ticketType}`} 
-             className="border border-yellow-100/80 bg-zinc-900/40 p-4 rounded-xl w-48 shadow-md flex flex-col items-center">
-          <div className="font-bold text-lg text-white mb-2">{TICKET_LABELS[ticket.ticketType] || ticket.ticketType}</div>
-          <div className="text-yellow-400 font-semibold mb-3">{Number(ticket.basePrice).toLocaleString()} VNĐ</div>
-          <div className="flex gap-2 mt-auto mb-2 justify-center items-center">
-            <button  
-              className="px-2 py-1 bg-red-600 rounded text-white"
-              onClick={() => handleChange(ticket.ticketType, -1)}>-</button>
-            <span className="text-white">{selectedTickets[ticket.ticketType] || 0}</span>
-            <button 
-              className="px-2 py-1 bg-green-600 rounded text-white"
-              onClick={() => handleChange(ticket.ticketType, 1)}>+</button>
+    // container fixed 2 columns, giới hạn max width, căn giữa
+    <div className="grid grid-cols-2 gap-8 w-full max-w-3xl mx-auto">
+      {tickets.slice(0, 4).map((ticket) => {
+        // slice(0,4) để chắc chắn 2x2
+        const key = `${ticket.seatType}-${ticket.ticketType}`;
+        const count = selectedTickets[key] || 0;
+
+        return (
+          <div
+            key={key}
+            // aspect-square giữ card vuông; flex-col + justify-between để bố trí nội dung
+            className="border border-yellow-800 bg-zinc-900/40 rounded-xl shadow-md flex flex-col justify-between items-center pb-7 pt-5"
+          >
+            {/* header: title + seat type */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-baseline gap-2 justify-center">
+                <span className="font-semibold text-lg text-white">
+                  {TICKET_LABELS[ticket.ticketType] || ticket.ticketType}
+                </span>
+                <span className="text-gray-400 text-md">
+                  ({ticket.seatType === "COUPLE" ? "Đôi" : "Đơn"})
+                </span>
+              </div>
+              <div className="text-yellow-400 font-semibold text-lg text-center pt-2">
+                {Number(ticket.basePrice).toLocaleString()} VNĐ
+              </div>
+            </div>
+
+            {/* controls - đặt ở đáy card */}
+            <div className="w-full flex items-center justify-center gap-4 pt-5">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  aria-label={`Giảm số lượng ${ticket.ticketType}`}
+                  onClick={() =>
+                    handleChange(ticket.seatType, ticket.ticketType, -1)
+                  }
+                  disabled={count <= 0}
+                  className={`w-9 h-9 flex items-center justify-center rounded-full 
+                    transition transform active:scale-95 focus:outline-none
+                    ${count <= 0 ? "bg-zinc-800/60 text-zinc-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 text-white"}`}
+                >
+                  <span className="text-lg font-bold select-none pb-1">-</span>
+                </button>
+
+                <div className="min-w-[36px] px-2 py-1 bg-zinc-800 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium">{count}</span>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label={`Tăng số lượng ${ticket.ticketType}`}
+                  onClick={() =>
+                    handleChange(ticket.seatType, ticket.ticketType, 1)
+                  }
+                  className="w-9 h-9 flex items-center justify-center rounded-full bg-green-600 hover:bg-green-700 text-white transition transform active:scale-95 focus:outline-none"
+                >
+                  <span className="text-lg font-bold select-none pb-1">+</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

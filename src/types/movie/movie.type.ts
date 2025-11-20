@@ -21,6 +21,7 @@ export interface MovieDetail {
   tmdbId: number;
   title: string;
   age: string;
+  status: MovieStatus;
   genres: string[];
   time: number;
   country: string;

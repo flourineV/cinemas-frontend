@@ -60,3 +60,45 @@ export interface MovieShowtimeResponse {
   availableDates: string[];
   showtimesByDate: ShowtimesByDate;
 }
+
+export interface ShowtimeInfo {
+  showtimeId: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface TheaterShowtimesResponse {
+  theaterId: string;
+  theaterName: string;
+  theaterAddress: string;
+  showtimes: ShowtimeInfo[];
+}
+
+// Seat Lock Types
+export interface SeatSelectionDetail {
+  seatId: string;
+  seatType: "NORMAL" | "VIP" | "COUPLE";
+  ticketType: "ADULT" | "CHILD" | "STUDENT";
+}
+
+export interface SeatLockRequest {
+  userId?: string;
+  guestName?: string;
+  guestEmail?: string;
+  showtimeId: string;
+  selectedSeats: SeatSelectionDetail[];
+}
+
+export interface SeatLockResponse {
+  showtimeId: string;
+  seatId: string;
+  status: "LOCKED" | "AVAILABLE" | "ALREADY_LOCKED";
+  ttl: number; // seconds remaining until expiration
+}
+
+export interface SeatReleaseRequest {
+  showtimeId: string;
+  seatIds: string[];
+  bookingId?: string;
+  reason?: string;
+}

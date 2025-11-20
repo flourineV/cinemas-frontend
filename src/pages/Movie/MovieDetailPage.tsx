@@ -181,6 +181,8 @@ export default function MovieDetailPage() {
         <div className="mt-12">
           <MovieShowtime
             movieId={movie.id}
+            movieTitle={movie.title}
+            movieStatus={movie.status}
             onSelectShowtime={(st) => {
               setShowBookingBar(true);
               setSelectedShowtime(st);
