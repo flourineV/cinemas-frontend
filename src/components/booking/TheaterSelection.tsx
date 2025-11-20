@@ -6,12 +6,14 @@ import dayjs from "dayjs";
 import "dayjs/locale/vi";
 dayjs.locale("vi");
 
-interface ShowtimeListProps {
+interface TheaterSelectionProps {
   movie?: { id: string; title: string };
 }
 
-export default function ShowtimeList({ movie }: ShowtimeListProps) {
-  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+export default function TheaterSelection({ movie }: TheaterSelectionProps) {
+  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>(
+    []
+  );
   const [selectedProvinceId, setSelectedProvinceId] = useState<string>("");
 
   const [theaters, setTheaters] = useState<any[]>([]);
@@ -22,11 +24,13 @@ export default function ShowtimeList({ movie }: ShowtimeListProps) {
 
   useEffect(() => {
     const today = new Date();
-    setDays([0, 1, 2].map(i => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      return d;
-    }));
+    setDays(
+      [0, 1, 2].map((i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        return d;
+      })
+    );
   }, []);
 
   useEffect(() => {
@@ -41,7 +45,8 @@ export default function ShowtimeList({ movie }: ShowtimeListProps) {
   useEffect(() => {
     if (!selectedProvinceId) return;
     const fetchTheaters = async () => {
-      const res = await theaterService.getTheatersByProvince(selectedProvinceId);
+      const res =
+        await theaterService.getTheatersByProvince(selectedProvinceId);
       setTheaters(res);
     };
     fetchTheaters();
@@ -71,7 +76,7 @@ export default function ShowtimeList({ movie }: ShowtimeListProps) {
 
       {/* --- Chọn ngày --- */}
       <div className="flex justify-center gap-4 mb-8">
-        {days.map(d => {
+        {days.map((d) => {
           const isSelected = d.toDateString() === selectedDate.toDateString();
           return (
             <button
@@ -97,8 +102,12 @@ export default function ShowtimeList({ movie }: ShowtimeListProps) {
           onChange={(e) => setSelectedProvinceId(e.target.value)}
           className="border border-yellow-400 text-yellow-300 bg-transparent px-4 py-2 rounded-md font-semibold"
         >
-          {provinces.map(p => (
-            <option key={p.id} value={p.id} className="bg-[#1a1446] text-yellow-300">
+          {provinces.map((p) => (
+            <option
+              key={p.id}
+              value={p.id}
+              className="bg-[#1a1446] text-yellow-300"
+            >
               {p.name}
             </option>
           ))}
@@ -107,8 +116,10 @@ export default function ShowtimeList({ movie }: ShowtimeListProps) {
 
       {/* --- Danh sách rạp --- */}
       <div className="max-w-5xl mx-auto space-y-6 px-4">
-        {theaters.map(theater => {
-          const theaterShowtimes = showtimes.filter(st => st.theaterId === theater.id);
+        {theaters.map((theater) => {
+          const theaterShowtimes = showtimes.filter(
+            (st) => st.theaterId === theater.id
+          );
           if (theaterShowtimes.length === 0) return null;
 
           return (

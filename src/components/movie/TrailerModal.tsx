@@ -2,23 +2,25 @@ import { useState } from "react";
 import ReactDOM from "react-dom";
 
 interface TrailerModalProps {
-  trailerUrl: string;   // link trailer YouTube từ API
+  trailerUrl: string; // link trailer YouTube từ API
   buttonLabel?: string; // text nút, mặc định là "Trailer"
 }
 
-export default function TrailerModal({ trailerUrl, buttonLabel = "Trailer" }: TrailerModalProps) {
+export default function TrailerModal({
+  trailerUrl,
+  buttonLabel = "Trailer",
+}: TrailerModalProps) {
   const [open, setOpen] = useState(false);
 
   if (!trailerUrl) {
-    return null; // Hoặc return <></> để không hiển thị component
-  }
+    return null; // Hoặc return <></> để không hiển thị component
+  } // Convert link watch?v=... → embed/...
 
-  // Convert link watch?v=... → embed/...
-  const embedUrl = trailerUrl.includes("watch?v=")
-    ? trailerUrl.replace("watch?v=", "embed/")
-    : trailerUrl;
+  const embedUrl = trailerUrl.includes("watch?v=")
+    ? trailerUrl.replace("watch?v=", "embed/")
+    : trailerUrl;
 
- const modalContent = (
+  const modalContent = (
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]"
       onClick={() => setOpen(false)} // click ra ngoài để đóng
@@ -46,13 +48,13 @@ export default function TrailerModal({ trailerUrl, buttonLabel = "Trailer" }: Tr
       </div>
     </div>
   );
-    
+
   return (
     <>
       {/* Nút mở trailer */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center justify-center border border-white/50 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-white/10 w-1/2"
+        className="flex items-center justify-center border border-yellow-700 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-white/10 w-1/2"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

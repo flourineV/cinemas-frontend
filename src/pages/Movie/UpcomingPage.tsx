@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { movieService } from "@/services/movie/movieService";
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import { Link } from "react-router-dom";
 import type { MovieSummary } from "@/types/movie/movie.type";
-import TrailerModal from "@/components/ui/TrailerModal";
+import TrailerModal from "@/components/movie/TrailerModal";
 import { MapPin, Clock, Globe, ShieldAlert } from "lucide-react";
-import { formatTitle, formatGenres, formatSpokenLanguages } from "@/utils/format";
+import {
+  formatTitle,
+  formatGenres,
+  formatSpokenLanguages,
+} from "@/utils/format";
 
 const UpcomingPage = () => {
   const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
@@ -21,7 +26,12 @@ const UpcomingPage = () => {
 
   return (
     <Layout>
-      <section className="w-full max-w-7xl mx-auto mt-12 px-4 text-white">
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-7xl mx-auto mt-12 px-4 text-white"
+      >
         <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-400 text-center mb-8">
           PHIM SẮP CHIẾU
         </h1>
@@ -30,10 +40,19 @@ const UpcomingPage = () => {
           <p className="text-center text-gray-400">Đang tải phim...</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-10">
-            {upcoming.map((movie) => (
-              <div key={movie.id} className="group relative flex flex-col transition">
+            {upcoming.map((movie, index) => (
+              <motion.div
+                key={movie.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className="group relative flex flex-col transition"
+              >
                 {/* Poster */}
-                <Link to={`/movies/${movie.id}`} className="group relative flex flex-col transition">
+                <Link
+                  to={`/movies/${movie.id}`}
+                  className="group relative flex flex-col transition"
+                >
                   <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
                     <img
                       src={getPosterUrl(movie.posterUrl)}
@@ -42,18 +61,24 @@ const UpcomingPage = () => {
                     />
                     {/* Overlay info khi hover */}
                     <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center p-4 text-left">
-                      <h3 className="text-lg font-bold text-white mb-2">{formatTitle(movie.title)}</h3>
+                      <h3 className="text-lg font-bold text-white mb-2">
+                        {formatTitle(movie.title)}
+                      </h3>
                       <p className="text-xs font-light mb-1 flex items-center text-white">
-                        <MapPin size={14} className="mr-2 text-red-500" /> {formatGenres(movie.genres)}
+                        <MapPin size={14} className="mr-2 text-red-500" />{" "}
+                        {formatGenres(movie.genres)}
                       </p>
                       <p className="text-xs font-light mb-1 flex items-center text-white">
-                        <Clock size={14} className="mr-2 text-red-500" /> {movie.time}’
+                        <Clock size={14} className="mr-2 text-red-500" />{" "}
+                        {movie.time}’
                       </p>
                       <p className="text-xs font-light mb-1 flex items-center text-white">
-                        <Globe size={14} className="mr-2 text-red-500" /> {formatSpokenLanguages(movie.spokenLanguages)}
+                        <Globe size={14} className="mr-2 text-red-500" />{" "}
+                        {formatSpokenLanguages(movie.spokenLanguages)}
                       </p>
                       <p className="text-xs font-light flex items-center text-white">
-                        <ShieldAlert size={14} className="mr-2 text-red-500" /> {movie.age}
+                        <ShieldAlert size={14} className="mr-2 text-red-500" />{" "}
+                        {movie.age}
                       </p>
                     </div>
                   </div>
@@ -70,16 +95,21 @@ const UpcomingPage = () => {
                     movie.trailer ? "justify-start" : "justify-center"
                   }`}
                 >
-                  {movie.trailer && <TrailerModal trailerUrl={movie.trailer} buttonLabel="Trailer" />}
+                  {movie.trailer && (
+                    <TrailerModal
+                      trailerUrl={movie.trailer}
+                      buttonLabel="Trailer"
+                    />
+                  )}
                   <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
                     ĐẶT VÉ
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
-      </section>
+      </motion.section>
     </Layout>
   );
 };

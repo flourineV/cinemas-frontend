@@ -84,7 +84,7 @@ export function CustomDropdown({
       {isOpen &&
         createPortal(
           <div
-            className="absolute bg-black/60 backdrop-blur-md border border-yellow-400/40 rounded-md shadow-lg z-50 overflow-hidden"
+            className="absolute bg-black/60 rounded-md backdrop-blur-md border border-yellow-400/40 rounded-md shadow-lg z-50 overflow-hidden"
             style={{
               top: position.top,
               left: position.left,

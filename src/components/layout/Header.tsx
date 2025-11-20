@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { User, ChevronDown, Search } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "../../stores/authStore";
@@ -6,11 +6,22 @@ import { useAuthStore } from "../../stores/authStore";
 const Header = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { user, signout } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/search?keyword=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
 
   const handleLogout = async () => {
     signout();
+    navigate("/");
   };
 
   return (
@@ -30,33 +41,51 @@ const Header = () => {
           <nav className="hidden md:flex items-center space-x-6">
             <Link
               to="/about"
-              className="text-base hover:text-yellow-400 transition-colors"
+              className={`text-base transition-colors ${
+                location.pathname === "/about"
+                  ? "text-yellow-400 font-semibold"
+                  : "hover:text-yellow-400"
+              }`}
             >
               Giới thiệu
             </Link>
             <Link
               to="/showtime"
-              className="text-base hover:text-yellow-400 transition-colors"
+              className={`text-base transition-colors ${
+                location.pathname === "/showtime"
+                  ? "text-yellow-400 font-semibold"
+                  : "hover:text-yellow-400"
+              }`}
             >
               Lịch chiếu
             </Link>
             <Link
               to="/promotions"
-              className="text-base hover:text-yellow-400 transition-colors"
+              className={`text-base transition-colors ${
+                location.pathname === "/promotions"
+                  ? "text-yellow-400 font-semibold"
+                  : "hover:text-yellow-400"
+              }`}
             >
               Khuyến mãi
             </Link>
           </nav>
 
           {/* Search Bar */}
-          <div className="hidden lg:flex items-center bg-white rounded-full px-4 py-2 min-w-[300px]">
-            <input
-              type="text"
-              placeholder="Tìm phim, rạp..."
-              className="flex-1 bg-white text-black text-sm outline-none"
-            />
-            <Search className="w-4 h-4 text-black" />
-          </div>
+          <form onSubmit={handleSearch} className="hidden lg:flex items-center">
+            <div className="flex items-center bg-white rounded-full px-4 py-2 min-w-[300px]">
+              <input
+                type="text"
+                placeholder="Tìm phim, rạp..."
+                className="flex-1 bg-white text-black text-sm outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <button type="submit" className="flex items-center">
+                <Search className="w-4 h-4 text-black" />
+              </button>
+            </div>
+          </form>
 
           {/* User Section */}
           <div className="flex items-center space-x-8">
