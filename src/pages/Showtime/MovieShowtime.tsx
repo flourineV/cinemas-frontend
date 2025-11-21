@@ -11,6 +11,7 @@ import type { ProvinceResponse } from "@/types/showtime/province.type";
 import SelectSeat from "@/components/booking/SelectSeat";
 import SelectTicket from "@/components/booking/SelectTicket";
 import BookingSummaryBar from "@/components/booking/BookingSummaryBar";
+import { useGuestSessionContext } from "@/contexts/GuestSessionContext";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 
@@ -45,6 +46,19 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   >({});
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
+
+  // Initialize guest session
+  const { guestSessionId, isLoggedIn, getUserOrGuestId } =
+    useGuestSessionContext();
+
+  // Log session info for debugging
+  useEffect(() => {
+    if (isLoggedIn) {
+      console.log("👤 User is logged in");
+    } else {
+      console.log("👻 Guest session ID:", guestSessionId);
+    }
+  }, [isLoggedIn, guestSessionId]);
 
   // Fetch provinces
   useEffect(() => {
