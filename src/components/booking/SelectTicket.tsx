@@ -52,12 +52,10 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
     delta: number
   ) => {
     const key = `${seatType}-${ticketType}`;
-    setSelectedTickets((prev) => {
-      const newCount = Math.max((prev[key] || 0) + delta, 0);
-      const updated = { ...prev, [key]: newCount };
-      onTicketChange(updated);
-      return updated;
-    });
+    const newCount = Math.max((selectedTickets[key] || 0) + delta, 0);
+    const updated = { ...selectedTickets, [key]: newCount };
+    setSelectedTickets(updated);
+    onTicketChange(updated);
   };
 
   if (loading)

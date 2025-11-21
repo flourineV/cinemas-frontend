@@ -2,27 +2,34 @@ import { v4 as uuidv4 } from "uuid";
 
 const GUEST_SESSION_KEY = "guest_session_id";
 
+const isUserLoggedIn = (): boolean => {
+  const token = localStorage.getItem("accessToken");
+  const user = localStorage.getItem("user");
+  return !!(token && user);
+};
+
+const getOrCreateGuestSession = (): string => {
+  const isLoggedIn = isUserLoggedIn();
+
+  if (isLoggedIn) {
+    return "";
+  }
+
+  let guestSessionId = localStorage.getItem(GUEST_SESSION_KEY);
+
+  if (!guestSessionId) {
+    guestSessionId = uuidv4();
+    localStorage.setItem(GUEST_SESSION_KEY, guestSessionId);
+    console.log("🆕 Created new guest session:", guestSessionId);
+  } else {
+    console.log("♻️ Using existing guest session:", guestSessionId);
+  }
+
+  return guestSessionId;
+};
+
 export const guestSessionUtils = {
-  getOrCreateGuestSession(): string {
-    const isLoggedIn = this.isUserLoggedIn();
-
-    if (isLoggedIn) {
-      return "";
-    }
-
-    let guestSessionId = localStorage.getItem(GUEST_SESSION_KEY);
-
-    if (!guestSessionId) {
-      // Generate new guest session ID
-      guestSessionId = uuidv4();
-      localStorage.setItem(GUEST_SESSION_KEY, guestSessionId);
-      console.log("Created new guest session:", guestSessionId);
-    } else {
-      console.log("Using existing guest session:", guestSessionId);
-    }
-
-    return guestSessionId;
-  },
+  getOrCreateGuestSession,
 
   getGuestSession(): string | null {
     return localStorage.getItem(GUEST_SESSION_KEY);
@@ -30,18 +37,13 @@ export const guestSessionUtils = {
 
   clearGuestSession(): void {
     localStorage.removeItem(GUEST_SESSION_KEY);
-    console.log("Cleared guest session");
+    console.log("🗑️ Cleared guest session");
   },
 
-  isUserLoggedIn(): boolean {
-    const token = localStorage.getItem("accessToken");
-    const user = localStorage.getItem("user");
-
-    return !!(token && user);
-  },
+  isUserLoggedIn,
 
   getUserOrGuestId(): { userId?: string; guestSessionId?: string } {
-    if (this.isUserLoggedIn()) {
+    if (isUserLoggedIn()) {
       const user = localStorage.getItem("user");
       if (user) {
         try {
@@ -53,6 +55,6 @@ export const guestSessionUtils = {
       }
     }
 
-    return { guestSessionId: this.getOrCreateGuestSession() };
+    return { guestSessionId: getOrCreateGuestSession() };
   },
 };

@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { showtimeSeatService } from "@/services/showtime/showtimeSeatService";
+import { seatLockService } from "@/services/showtime/seatLockService";
+import { useSeatLockWebSocket } from "@/hooks/useSeatLockWebSocket";
+import { useGuestSessionContext } from "@/contexts/GuestSessionContext";
 import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
+import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
 
 interface SelectSeatProps {
   showtimeId: string;
@@ -16,6 +20,31 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
   const [seats, setSeats] = useState<ShowtimeSeatResponse[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getUserOrGuestId } = useGuestSessionContext();
+
+  // Handle WebSocket seat lock updates
+  const handleSeatLockUpdate = useCallback((data: SeatLockResponse) => {
+    console.log("🔔 Seat lock update received:", data);
+
+    // Update seat status in real-time
+    setSeats((prevSeats) =>
+      prevSeats.map((seat) =>
+        seat.seatId === data.seatId
+          ? {
+              ...seat,
+              status: data.status === "LOCKED" ? "LOCKED" : "AVAILABLE",
+            }
+          : seat
+      )
+    );
+  }, []);
+
+  // WebSocket connection
+  useSeatLockWebSocket({
+    showtimeId,
+    onSeatLockUpdate: handleSeatLockUpdate,
+    enabled: true,
+  });
 
   // 1. Fetch dữ liệu ghế
   useEffect(() => {
@@ -75,7 +104,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     return { normalCount, coupleCount };
   }, [selectedTickets]);
 
-  // 5. Xử lý chọn ghế với validation
+  // 5. Xử lý chọn ghế với validation và seat lock
   const toggleSeat = async (seat: ShowtimeSeatResponse) => {
     if (seat.status === "BOOKED" || seat.status === "LOCKED") return;
 
@@ -85,13 +114,34 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     // Import Swal
     const Swal = (await import("sweetalert2")).default;
 
-    // Nếu đang bỏ chọn ghế, cho phép
+    // Get user or guest identity
+    const identity = getUserOrGuestId();
+
+    // Nếu đang bỏ chọn ghế, unlock và cho phép
     if (isCurrentlySelected) {
-      setSelectedSeats((prev) => {
-        const updated = prev.filter((s) => s !== seat.seatId);
-        onSeatSelect(updated);
-        return updated;
-      });
+      try {
+        // Unlock seat
+        await seatLockService.unlockSingleSeat(
+          showtimeId,
+          seat.seatId,
+          identity.userId,
+          identity.guestSessionId
+        );
+
+        setSelectedSeats((prev) => {
+          const updated = prev.filter((s) => s !== seat.seatId);
+          onSeatSelect(updated);
+          return updated;
+        });
+      } catch (error) {
+        console.error("Failed to unlock seat:", error);
+        await Swal.fire({
+          icon: "error",
+          title: "Lỗi",
+          text: "Không thể bỏ chọn ghế. Vui lòng thử lại!",
+          confirmButtonColor: "#eab308",
+        });
+      }
       return;
     }
 
@@ -154,12 +204,53 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
       }
     }
 
-    // Cho phép chọn ghế
-    setSelectedSeats((prev) => {
-      const updated = [...prev, seat.seatId];
-      onSeatSelect(updated);
-      return updated;
-    });
+    // Cho phép chọn ghế - Lock seat trước
+    try {
+      // Determine ticket type based on selected tickets
+      let ticketType: "ADULT" | "CHILD" | "STUDENT" = "ADULT";
+      const ticketEntries = Object.entries(selectedTickets);
+      if (ticketEntries.length > 0) {
+        const firstTicket = ticketEntries[0][0].split("-")[1] as
+          | "ADULT"
+          | "CHILD"
+          | "STUDENT";
+        ticketType = firstTicket;
+      }
+
+      // Lock seat via API
+      const lockResponse = await seatLockService.lockSingleSeat({
+        ...identity,
+        showtimeId,
+        selectedSeat: {
+          seatId: seat.seatId,
+          seatType: seat.type,
+          ticketType,
+        },
+      });
+
+      if (lockResponse.status === "LOCKED") {
+        setSelectedSeats((prev) => {
+          const updated = [...prev, seat.seatId];
+          onSeatSelect(updated);
+          return updated;
+        });
+      } else if (lockResponse.status === "ALREADY_LOCKED") {
+        await Swal.fire({
+          icon: "warning",
+          title: "Ghế đã được giữ",
+          text: "Ghế này đã được người khác chọn. Vui lòng chọn ghế khác!",
+          confirmButtonColor: "#eab308",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to lock seat:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể chọn ghế. Vui lòng thử lại!",
+        confirmButtonColor: "#eab308",
+      });
+    }
   };
 
   if (loading) {

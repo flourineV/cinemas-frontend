@@ -1,12 +1,33 @@
-export interface SeatLockRequest {
-  id: string;
+export interface SeatSelectionDetail {
   seatId: string;
-  bookingId: string;
+  seatType: "NORMAL" | "VIP" | "COUPLE";
+  ticketType: "ADULT" | "CHILD" | "STUDENT";
+}
+
+export interface SingleSeatLockRequest {
+  userId?: string;
+  guestSessionId?: string;
+  showtimeId: string;
+  selectedSeat: SeatSelectionDetail;
+}
+
+export interface SeatLockRequest {
+  userId?: string;
+  guestSessionId?: string;
+  showtimeId: string;
+  selectedSeats: SeatSelectionDetail[];
 }
 
 export interface SeatLockResponse {
   showtimeId: string;
   seatId: string;
-  status: string;
-  ttl: number;
+  status: "LOCKED" | "AVAILABLE" | "ALREADY_LOCKED";
+  ttl: number; // seconds remaining until expiration
+}
+
+export interface SeatReleaseRequest {
+  showtimeId: string;
+  seatIds: string[];
+  bookingId?: string;
+  reason?: string;
 }

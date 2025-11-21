@@ -12,6 +12,8 @@ import SelectSeat from "@/components/booking/SelectSeat";
 import SelectTicket from "@/components/booking/SelectTicket";
 import BookingSummaryBar from "@/components/booking/BookingSummaryBar";
 import { useGuestSessionContext } from "@/contexts/GuestSessionContext";
+import { useSeatLockWebSocket } from "@/hooks/useSeatLockWebSocket";
+import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 
@@ -59,6 +61,20 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
       console.log("👻 Guest session ID:", guestSessionId);
     }
   }, [isLoggedIn, guestSessionId]);
+
+  // Handle WebSocket seat lock updates
+  const handleSeatLockUpdate = (data: SeatLockResponse) => {
+    console.log("🔔 Seat lock update:", data);
+    // This will be handled by SelectSeat component
+    // You can add additional logic here if needed
+  };
+
+  // WebSocket connection for seat lock updates
+  useSeatLockWebSocket({
+    showtimeId: selectedShowtime?.id || null,
+    onSeatLockUpdate: handleSeatLockUpdate,
+    enabled: !!selectedShowtime,
+  });
 
   // Fetch provinces
   useEffect(() => {
