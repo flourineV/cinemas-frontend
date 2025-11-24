@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom"; 
 import { motion } from "framer-motion";
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { provinceService } from "@/services/showtime/provinceService";
@@ -14,6 +15,7 @@ import BookingSummaryBar from "@/components/booking/BookingSummaryBar";
 import { useGuestSessionContext } from "@/contexts/GuestSessionContext";
 import { useSeatLockWebSocket } from "@/hooks/useSeatLockWebSocket";
 import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
+import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 
@@ -46,7 +48,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   const [selectedTickets, setSelectedTickets] = useState<
     Record<string, number>
   >({});
-  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [selectedSeats, setSelectedSeats] = useState<ShowtimeSeatResponse[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
   // Initialize guest session
@@ -223,6 +225,38 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
     );
   }
 
+  const navigate = useNavigate();
+
+  const handleSubmitBooking = () => {
+  if (!selectedShowtime) {
+    alert("Bạn chưa chọn lịch chiếu!");
+    return;
+  }
+  if (selectedSeats.length === 0) {
+    alert("Bạn chưa chọn ghế!");
+    return;
+  }
+  const totalTickets = Object.values(selectedTickets).reduce((a, b) => a + b, 0);
+  if (totalTickets === 0) {
+    alert("Bạn chưa chọn loại vé!");
+    return;
+  }
+
+  // Tạo data lưu tạm cho trang checkout
+  const bookingData = {
+    movieId,
+    movieTitle,
+    showtime: selectedShowtime,
+    seats: selectedSeats,
+    tickets: selectedTickets,
+    totalPrice,
+  };
+  localStorage.setItem("PENDING_BOOKING", JSON.stringify(bookingData));
+
+  // Điều hướng sang trang thanh toán
+  navigate("/checkout");
+};
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -339,8 +373,8 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
                                     id: st.showtimeId,
                                     movieId: movieId,
                                     theaterName: theater.theaterName,
-                                    roomId: "", // Not provided by new API
-                                    roomName: "", // Not provided by new API
+                                    roomId: st.roomId, 
+                                    roomName: st.roomName, 
                                     startTime: st.startTime,
                                     endTime: st.endTime,
                                   };
@@ -393,6 +427,11 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
           >
             CHỌN GHẾ
           </h2>
+          {selectedShowtime?.roomName && (
+               <p className="text-2xl text-yellow-200 font-light text-center">
+                {selectedShowtime.roomName}
+              </p>
+          )}
           <div className="pt-10 pb-36">
             <SelectSeat
               showtimeId={selectedShowtime.id}
@@ -411,6 +450,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
         })`}
         totalPrice={totalPrice}
         isVisible={!!selectedShowtime}
+        onSubmit={handleSubmitBooking}  
       />
     </motion.div>
   );

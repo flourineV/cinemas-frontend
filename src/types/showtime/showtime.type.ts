@@ -63,6 +63,8 @@ export interface MovieShowtimeResponse {
 
 export interface ShowtimeInfo {
   showtimeId: string;
+  roomId: string;
+  roomName: string;
   startTime: string;
   endTime: string;
 }

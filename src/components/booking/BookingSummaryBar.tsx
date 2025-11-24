@@ -5,6 +5,7 @@ interface BookingSummaryBarProps {
   cinemaName: string;
   totalPrice: number;
   isVisible: boolean;
+  onSubmit: () => void;
 }
 
 const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
@@ -12,6 +13,7 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
   cinemaName,
   totalPrice,
   isVisible,
+  onSubmit,
 }) => {
   const [isSticky, setIsSticky] = useState(true);
   const [topPosition, setTopPosition] = useState(0);
@@ -82,7 +84,9 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
             </div>
 
             {/* Hàng 2: Nút Đặt vé (full width) */}
-            <button className="w-full h-11 mb-3 bg-yellow-200 hover:bg-yellow-400 text-black font-bold py-3 rounded-md uppercase tracking-wide transition-colors shadow-md">
+            <button 
+              onClick={onSubmit} 
+              className="w-full h-11 mb-3 bg-yellow-200 hover:bg-yellow-400 text-black font-bold py-3 rounded-md uppercase tracking-wide transition-colors shadow-md">
               ĐẶT VÉ
             </button>
           </div>

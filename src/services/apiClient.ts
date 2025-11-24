@@ -59,3 +59,10 @@ export const pricingClient: AxiosInstance = applyInterceptors(
     headers: { "Content-Type": "application/json" },
   })
 );
+
+export const promotionClient: AxiosInstance = applyInterceptors(
+  axios.create({
+    baseURL: `${baseURL}/promotions`,
+    headers: { "Content-Type": "application/json" },
+  })
+);

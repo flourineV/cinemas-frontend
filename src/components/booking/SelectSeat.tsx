@@ -8,7 +8,7 @@ import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
 
 interface SelectSeatProps {
   showtimeId: string;
-  onSeatSelect: (seats: string[]) => void;
+  onSeatSelect: (seats: ShowtimeSeatResponse[]) => void;
   selectedTickets: Record<string, number>;
 }
 
@@ -18,7 +18,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
   selectedTickets,
 }) => {
   const [seats, setSeats] = useState<ShowtimeSeatResponse[]>([]);
-  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [selectedSeats, setSelectedSeats] = useState<ShowtimeSeatResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const { getUserOrGuestId } = useGuestSessionContext();
 
@@ -108,7 +108,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
   const toggleSeat = async (seat: ShowtimeSeatResponse) => {
     if (seat.status === "BOOKED" || seat.status === "LOCKED") return;
 
-    const isCurrentlySelected = selectedSeats.includes(seat.seatId);
+    const isCurrentlySelected = selectedSeats.includes(seat);
     const isCoupleSeat = seat.type === "COUPLE";
 
     // Import Swal
@@ -129,7 +129,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         );
 
         setSelectedSeats((prev) => {
-          const updated = prev.filter((s) => s !== seat.seatId);
+          const updated = prev.filter((s) => s.seatId !== seat.seatId);
           onSeatSelect(updated);
           return updated;
         });
@@ -146,15 +146,8 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     }
 
     // Đếm số ghế đơn và ghế đôi đã chọn
-    const selectedNormalSeats = selectedSeats.filter((seatId) => {
-      const s = seats.find((seat) => seat.seatId === seatId);
-      return s && s.type !== "COUPLE";
-    }).length;
-
-    const selectedCoupleSeats = selectedSeats.filter((seatId) => {
-      const s = seats.find((seat) => seat.seatId === seatId);
-      return s && s.type === "COUPLE";
-    }).length;
+    const selectedNormalSeats = selectedSeats.filter(seat => seat.type !== "COUPLE").length;
+    const selectedCoupleSeats = selectedSeats.filter(seat => seat.type === "COUPLE").length;
 
     // Validation: Nếu chọn ghế đôi
     if (isCoupleSeat) {
@@ -230,7 +223,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
 
       if (lockResponse.status === "LOCKED") {
         setSelectedSeats((prev) => {
-          const updated = [...prev, seat.seatId];
+          const updated = [...prev, seat];
           onSeatSelect(updated);
           return updated;
         });
@@ -324,7 +317,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
               {/* Container chứa các ghế */}
               <div className="flex gap-4">
                 {rowSeats.map((seat, index) => {
-                  const isSelected = selectedSeats.includes(seat.seatId);
+                  const isSelected = selectedSeats.includes(seat);
                   const isBooked = seat.status === "BOOKED";
                   const isLocked = seat.status === "LOCKED";
                   const isCouple = seat.type === "COUPLE";

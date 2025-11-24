@@ -13,6 +13,7 @@ import UpcomingPage from "@/pages/Movie/UpcomingPage";
 import AdminDashboard from "@/pages/Dashboard/Admin/AdminDashboard";
 import ManagerDashboard from "@/pages/Dashboard/Manager/ManagerDashboard";
 import StaffDashboard from "@/pages/Dashboard/Staff/StaffDashboard";
+import CheckoutPage from "@/pages/Checkout/CheckoutPage";
 
 import { UserRole } from "@/constants/UserRole";
 
@@ -28,6 +29,7 @@ export const publicRoutes = [
   { path: "/reset-password", element: <ResetPassword /> },
   { path: "/redirect-reset", element: <RedirectReset /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
+  { path: "/checkout", element: <CheckoutPage /> },
 ];
 
 export const protectedRoutes = [
