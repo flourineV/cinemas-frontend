@@ -1,0 +1,63 @@
+export interface SeatSelectionDetail {
+  seatId: string; // UUID
+  ticketTypeId?: string; // UUID (Optional - tuỳ logic backend có cần ko)
+  price?: number; // BigDecimal
+}
+
+// Map từ: CreateBookingRequest.java
+export interface CreateBookingRequest {
+  showtimeId: string; // UUID
+  selectedSeats: SeatSelectionDetail[];
+  guestName?: string;
+  guestEmail?: string;
+  userId?: string; // UUID
+  guestSessionId?: string; // UUID
+}
+
+// Inner class từ FinalizeBookingRequest
+export interface CalculatedFnbItemDto {
+  fnbItemId: string; // UUID
+  quantity: number;
+  unitPrice: number; // BigDecimal
+  totalFnbItemPrice: number; // BigDecimal
+}
+
+// Map từ: FinalizeBookingRequest.java
+export interface FinalizeBookingRequest {
+  fnbItems: CalculatedFnbItemDto[];
+  promotionCode?: string;
+  refundVoucherCode?: string;
+  useLoyaltyDiscount: boolean;
+}
+
+// Map từ: BookingSeatResponse (Giả định structure)
+export interface BookingSeatResponse {
+  id: string;
+  seatNumber: string;
+  seatType: string;
+  price: number;
+}
+
+// Map từ: BookingResponse.java
+export interface BookingResponse {
+  bookingId: string; // UUID
+  bookingCode: string;
+  userId?: string; // UUID
+  showtimeId: string; // UUID
+  guestName?: string;
+  guestEmail?: string;
+
+  status: string; // PENDING, CONFIRMED, CANCELLED...
+
+  totalPrice: number; // BigDecimal
+  discountAmount: number;
+  finalPrice: number;
+
+  paymentMethod?: string;
+  transactionId?: string;
+
+  seats: BookingSeatResponse[];
+
+  createdAt: string; // LocalDateTime -> string ISO
+  updatedAt: string;
+}

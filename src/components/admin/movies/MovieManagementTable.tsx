@@ -9,48 +9,43 @@ import {
   ChevronRight,
   Eye,
   Loader2,
-  ChevronDown,
   Download,
 } from "lucide-react";
 import Swal from "sweetalert2";
 
 import { movieManagementService } from "@/services/movie/movieManagementService";
-import type { MovieSummary, MovieDetail } from "@/types/movie/movie.type";
+import type {
+  MovieSummary,
+  MovieDetail,
+  MovieStatus,
+} from "@/types/movie/movie.type";
 import type { GetMoviesParams } from "@/types/movie/stats.type";
 import type { PageResponse } from "@/types/PageResponse";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useOutsideClick } from "@/hooks/useOutsideClick";
-import { Badge } from "@/components/ui/Badge";
-
-const STATUS_LABELS: Record<string, string> = {
-  ALL: "Tất cả",
-  nowPlaying: "Đang chiếu",
-  upcoming: "Sắp chiếu",
-  archived: "Lưu trữ",
-};
+import { GENRES_OPTIONS } from "@/constants/MovieGenres";
 
 const ITEMS_PER_PAGE = 10;
 
-export default function MovieManagementTable(): React.JSX.Element {
+interface MovieManagementTableProps {
+  status: MovieStatus;
+  title: string;
+}
+
+export default function MovieManagementTable({
+  status,
+  title,
+}: MovieManagementTableProps): React.JSX.Element {
   const [movies, setMovies] = useState<MovieSummary[]>([]);
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // search + debounce + filters
+  // search + debounce
   const [searchTerm, setSearchTerm] = useState<string>("");
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  const [selectedStatus, setSelectedStatus] = useState<
-    keyof typeof STATUS_LABELS | string
-  >("ALL");
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
-  useOutsideClick(
-    dropdownRef,
-    () => setIsStatusDropdownOpen(false),
-    isStatusDropdownOpen
-  );
+  // genres filter
+  const [selectedGenre, setSelectedGenre] = useState<string>("Tất cả");
 
   // modal state: previewMovie = MovieSummary shown immediately;
   // modalMovie = MovieDetail, loaded lazily when entering edit mode
@@ -73,9 +68,10 @@ export default function MovieManagementTable(): React.JSX.Element {
           debouncedSearch && debouncedSearch.length > 0
             ? debouncedSearch
             : undefined,
-        status:
-          selectedStatus && selectedStatus !== "ALL"
-            ? selectedStatus
+        status,
+        genres:
+          selectedGenre && selectedGenre !== "Tất cả"
+            ? selectedGenre
             : undefined,
         sortBy: "title",
         sortType: "ASC",
@@ -108,14 +104,14 @@ export default function MovieManagementTable(): React.JSX.Element {
   useEffect(() => {
     fetchMovies(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [debouncedSearch, selectedGenre]);
 
   useEffect(() => {
     if (!loading) {
       fetchMovies(paging.page, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStatus, debouncedSearch, paging.page]);
+  }, [paging.page]);
 
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing)
@@ -240,10 +236,10 @@ export default function MovieManagementTable(): React.JSX.Element {
     }
   }
 
-  async function changeStatus(id: string, status: string) {
+  async function changeStatus(id: string, newStatus: string) {
     const confirm = await Swal.fire({
       title: "Xác nhận đổi trạng thái?",
-      text: `Đổi trạng thái phim thành "${STATUS_LABELS[status] ?? status}"`,
+      text: `Đổi trạng thái phim thành "${newStatus}"`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Đổi",
@@ -253,7 +249,7 @@ export default function MovieManagementTable(): React.JSX.Element {
     if (!confirm.isConfirmed) return;
 
     try {
-      await movieManagementService.changeStatus(id, status);
+      await movieManagementService.changeStatus(id, newStatus);
       Swal.fire({
         icon: "success",
         title: "Đổi trạng thái thành công",
@@ -293,16 +289,18 @@ export default function MovieManagementTable(): React.JSX.Element {
       "status",
       "time",
       "genres",
-      "releaseDate",
+      "startDate",
+      "endDate",
     ];
     const rows = movies.map((m) => [
       m.id,
       m.tmdbId,
       m.title,
-      String((m as any).status ?? ""),
+      m.status ?? "",
       m.time,
       (m.genres || []).join("|"),
-      (m as any).releaseDate ?? "",
+      m.startDate ?? "",
+      m.endDate ?? "",
     ]);
     const csv = [headers, ...rows]
       .map((r) =>
@@ -313,7 +311,7 @@ export default function MovieManagementTable(): React.JSX.Element {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `movies_page_${paging.page}.csv`;
+    a.download = `movies_${status.toLowerCase()}_page_${paging.page}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -321,8 +319,13 @@ export default function MovieManagementTable(): React.JSX.Element {
   // skeleton
   if (loading) {
     return (
-      <div className="text-center text-gray-400 py-10">
-        Đang tải danh sách phim...
+      <div className="bg-black/60 backdrop-blur-md border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent mb-4">
+          {title}
+        </h2>
+        <div className="text-center text-gray-400 py-10">
+          Đang tải danh sách phim...
+        </div>
       </div>
     );
   }
@@ -347,45 +350,20 @@ export default function MovieManagementTable(): React.JSX.Element {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsStatusDropdownOpen((s) => !s)}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-black/40 border border-yellow-400/40 rounded-lg text-white hover:bg-black/50"
-              >
-                <span className="whitespace-nowrap">
-                  {STATUS_LABELS[selectedStatus] ?? selectedStatus}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    isStatusDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {isStatusDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black/60 backdrop-blur-md border border-yellow-400/40 z-20 animate-fadeIn">
-                  <div className="py-1">
-                    {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setSelectedStatus(key);
-                          setIsStatusDropdownOpen(false);
-                          setPaging((p) => ({ ...p, page: 1 }));
-                        }}
-                        className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                          selectedStatus === key
-                            ? "text-yellow-300 bg-black/50 font-semibold"
-                            : "text-yellow-100/80 hover:bg-black/40"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <select
+              value={selectedGenre}
+              onChange={(e) => {
+                setSelectedGenre(e.target.value);
+                setPaging((p) => ({ ...p, page: 1 }));
+              }}
+              className="px-3 py-2 text-sm font-medium bg-black/40 border border-yellow-400/40 rounded-lg text-white hover:bg-black/50 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            >
+              {GENRES_OPTIONS.map((genre) => (
+                <option key={genre} value={genre}>
+                  {genre}
+                </option>
+              ))}
+            </select>
 
             <button
               onClick={() => exportCurrentCSV()}
@@ -409,26 +387,23 @@ export default function MovieManagementTable(): React.JSX.Element {
             style={{ tableLayout: "fixed", width: "100%" }}
           >
             <thead className="sticky top-0 z-10 border-b border-yellow-400/70">
-              <tr className="bg-black/40 backdrop-blur-sm">
-                <th className="w-[220px] px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
+              <tr className="bg-yellow-500/20 text-yellow-300">
+                <th className="w-[240px] px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
                   Phim
                 </th>
                 <th className="w-[90px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
                   TMDB
                 </th>
-                <th className="w-[130px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                <th className="w-[110px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
                   Thời lượng
                 </th>
                 <th className="w-[140px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
                   Thể loại
                 </th>
-                <th className="w-[140px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
-                  Trạng thái
+                <th className="w-[190px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                  Thời gian chiếu
                 </th>
-                <th className="w-[140px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
-                  Release
-                </th>
-                <th className="w-[160px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                <th className="w-[160px] px-6 py-3 text-right text-sm font-bold text-yellow-400 uppercase">
                   Thao tác
                 </th>
               </tr>
@@ -438,7 +413,7 @@ export default function MovieManagementTable(): React.JSX.Element {
               {movies.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="text-center py-10 text-yellow-100 italic text-base"
                   >
                     Không có dữ liệu
@@ -457,9 +432,6 @@ export default function MovieManagementTable(): React.JSX.Element {
                         <span className="font-semibold text-yellow-300 truncate text-base">
                           {m.title}
                         </span>
-                        <span className="text-sm text-yellow-100/70 truncate">
-                          {m.posterUrl ? "Has poster" : "No poster"}
-                        </span>
                       </div>
                     </td>
 
@@ -471,49 +443,30 @@ export default function MovieManagementTable(): React.JSX.Element {
                       {m.time ? `${m.time}ʼ` : "-"}
                     </td>
 
-                    <td className="px-6 py-3 text-center text-base text-yellow-100 truncate">
-                      {(m.genres || []).join(", ")}
-                    </td>
-
-                    <td className="px-6 py-3 text-center">
-                      <Badge
-                        type="AccountStatus"
-                        value={String((m as any).status ?? "-")}
-                        raw={(m as any).status ?? undefined}
-                      />
+                    <td className="px-6 py-3 text-center text-base text-yellow-100">
+                      {(m.genres || []).map((g, i) => (
+                        <div key={i}>{g}</div>
+                      ))}
                     </td>
 
                     <td className="px-6 py-3 text-center text-base text-yellow-100 truncate">
-                      {(m as any).releaseDate
-                        ? new Date((m as any).releaseDate).toLocaleDateString(
-                            "vi-VN"
-                          )
+                      {m.startDate
+                        ? m.endDate
+                          ? `${new Date(m.startDate).toLocaleDateString("vi-VN")} - ${new Date(
+                              m.endDate
+                            ).toLocaleDateString("vi-VN")}`
+                          : `${new Date(m.startDate).toLocaleDateString("vi-VN")} - ...`
                         : "-"}
                     </td>
 
-                    <td className="px-6 py-3 text-center text-base font-medium">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="px-6 py-3 text-right text-base font-medium">
+                      <div className="flex items-right justify-end gap-2">
                         <button
-                          title="Xem"
+                          title=""
                           onClick={() => openModalWithSummary(m)}
                           className="px-2 py-1 rounded text-base text-white flex items-center gap-2"
                         >
-                          <Eye size={14} /> Xem
-                        </button>
-
-                        <button
-                          title="Đổi trạng thái"
-                          onClick={() => {
-                            const current = String((m as any).status ?? "");
-                            const next =
-                              current === "nowPlaying"
-                                ? "archived"
-                                : "nowPlaying";
-                            changeStatus(String(m.id), next);
-                          }}
-                          className="px-2 py-1 rounded text-base text-yellow-300 flex items-center gap-2"
-                        >
-                          <Edit2 size={14} /> Đổi trạng thái
+                          <Edit2 size={20} />
                         </button>
 
                         <button
@@ -521,7 +474,7 @@ export default function MovieManagementTable(): React.JSX.Element {
                           onClick={() => onDelete(String(m.id))}
                           className="px-2 py-1 rounded text-base text-red-400"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </td>

@@ -14,6 +14,8 @@ import dayjs from "dayjs";
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { provinceService } from "@/services/showtime/provinceService";
 import { theaterService } from "@/services/showtime/theaterService";
+import { roomService } from "@/services/showtime/roomService";
+import { movieManagementService } from "@/services/movie/movieManagementService";
 import type { ShowtimeDetailResponse } from "@/types/showtime/showtime.type";
 import type { PageResponse } from "@/types/PageResponse";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -37,7 +39,14 @@ export default function ShowtimeTable({
   const debouncedSearch = useDebounce(searchTerm, 500);
   const [provinceFilter, setProvinceFilter] = useState<string>("");
   const [theaterFilter, setTheaterFilter] = useState<string>("");
+  const [roomFilter, setRoomFilter] = useState<string>("");
+  const [movieFilter, setMovieFilter] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<string>("");
+  const [timeFilter, setTimeFilter] = useState<string>("");
+
   const [filterTheaters, setFilterTheaters] = useState<any[]>([]);
+  const [filterRooms, setFilterRooms] = useState<any[]>([]);
+  const [filterMovies, setFilterMovies] = useState<any[]>([]);
 
   const [provinces, setProvinces] = useState<any[]>([]);
 
@@ -49,6 +58,10 @@ export default function ShowtimeTable({
       const filters = {
         provinceId: provinceFilter || undefined,
         theaterId: theaterFilter || undefined,
+        roomId: roomFilter || undefined,
+        movieId: movieFilter || undefined,
+        date: dateFilter || undefined,
+        time: timeFilter || undefined,
         showtimeId: debouncedSearch || undefined,
       };
 
@@ -86,6 +99,14 @@ export default function ShowtimeTable({
       try {
         const provincesRes = await provinceService.getAllProvinces();
         setProvinces(provincesRes);
+
+        // Load all movies for filter
+        const moviesRes = await movieManagementService.adminList({
+          page: 1,
+          size: 1000,
+          status: "NOW_PLAYING",
+        });
+        setFilterMovies(moviesRes.data ?? []);
       } catch (err) {
         console.error("Error loading dropdown data", err);
       }
@@ -103,7 +124,15 @@ export default function ShowtimeTable({
       fetchShowtimes(paging.page, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provinceFilter, theaterFilter, debouncedSearch]);
+  }, [
+    provinceFilter,
+    theaterFilter,
+    roomFilter,
+    movieFilter,
+    dateFilter,
+    timeFilter,
+    debouncedSearch,
+  ]);
 
   useEffect(() => {
     if (refreshTrigger) {
@@ -118,9 +147,21 @@ export default function ShowtimeTable({
     } else {
       setFilterTheaters([]);
       setTheaterFilter("");
+      setFilterRooms([]);
+      setRoomFilter("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provinceFilter]);
+
+  useEffect(() => {
+    if (theaterFilter) {
+      loadRoomsForFilter(theaterFilter);
+    } else {
+      setFilterRooms([]);
+      setRoomFilter("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theaterFilter]);
 
   const loadTheatersForFilter = async (provinceId: string) => {
     try {
@@ -129,6 +170,15 @@ export default function ShowtimeTable({
       setFilterTheaters(theatersRes);
     } catch (err) {
       console.error("Error loading filter theaters", err);
+    }
+  };
+
+  const loadRoomsForFilter = async (theaterId: string) => {
+    try {
+      const roomsRes = await roomService.getRoomsByTheaterId(theaterId);
+      setFilterRooms(roomsRes);
+    } catch (err) {
+      console.error("Error loading filter rooms", err);
     }
   };
 
@@ -186,11 +236,12 @@ export default function ShowtimeTable({
 
   return (
     <div className="bg-black/60 backdrop-blur-md border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white">
-      <h2 className="text-xl font-bold text-yellow-400 mb-4">
-        Danh sách lịch chiếu
+      <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent mb-6">
+        Quản lý lịch chiếu
       </h2>
 
-      <div className="flex flex-col md:flex-row gap-3 mb-4">
+      {/* Filters Row 1: Search, Province, Theater, Room */}
+      <div className="flex flex-col md:flex-row gap-3 mb-3">
         <div className="flex items-center flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/70" />
           <input
@@ -214,6 +265,7 @@ export default function ShowtimeTable({
           onChange={(value) => {
             setProvinceFilter(value);
             setTheaterFilter("");
+            setRoomFilter("");
             setPaging((p) => ({ ...p, page: 1 }));
           }}
           placeholder="Tất cả tỉnh/thành"
@@ -227,11 +279,69 @@ export default function ShowtimeTable({
           value={theaterFilter}
           onChange={(value) => {
             setTheaterFilter(value);
+            setRoomFilter("");
             setPaging((p) => ({ ...p, page: 1 }));
           }}
           placeholder="Tất cả rạp"
           disabled={!provinceFilter}
         />
+
+        <CustomDropdown
+          options={[
+            { value: "", label: "Tất cả phòng" },
+            ...filterRooms.map((r) => ({ value: r.id, label: r.name })),
+          ]}
+          value={roomFilter}
+          onChange={(value) => {
+            setRoomFilter(value);
+            setPaging((p) => ({ ...p, page: 1 }));
+          }}
+          placeholder="Tất cả phòng"
+          disabled={!theaterFilter}
+        />
+      </div>
+
+      {/* Filters Row 2: Movie, Date, Time */}
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <CustomDropdown
+          options={[
+            { value: "", label: "Tất cả phim" },
+            ...filterMovies.map((m: any) => ({ value: m.id, label: m.title })),
+          ]}
+          value={movieFilter}
+          onChange={(value) => {
+            setMovieFilter(value);
+            setPaging((p) => ({ ...p, page: 1 }));
+          }}
+          placeholder="Tất cả phim"
+        />
+
+        <div className="flex items-center relative flex-1">
+          <input
+            type="date"
+            className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value);
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Chọn ngày chiếu"
+          />
+        </div>
+
+        <div className="flex items-center relative flex-1">
+          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/70" />
+          <input
+            type="time"
+            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            value={timeFilter}
+            onChange={(e) => {
+              setTimeFilter(e.target.value);
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Chọn giờ chiếu"
+          />
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-yellow-400/40 relative">

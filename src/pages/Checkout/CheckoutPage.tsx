@@ -1,56 +1,143 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import { useNavigate, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import Swal from "sweetalert2";
+import Layout from "@/components/layout/Layout";
 
 import SelectComboStep from "@/components/checkout/SelectComboStep";
 import CustomerInfoStep from "@/components/checkout/CustomerInfoStep";
 import PaymentStep from "@/components/checkout/PaymentStep";
 import ConfirmStep from "@/components/checkout/ConfirmStep";
 import BookingSummary from "@/components/checkout/BookingSummary";
+
 import type { SelectedComboItem } from "@/components/checkout/SelectComboStep";
 import type { PromotionResponse } from "@/types/promotion/promotion.type";
 
+const STEPS = [
+  { id: 1, label: "KHÁCH HÀNG" },
+  { id: 2, label: "BẮP NƯỚC" },
+  { id: 3, label: "THANH TOÁN" },
+  { id: 4, label: "XÁC NHẬN" },
+];
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const [booking, setBooking] = useState<any>(null);
+  const location = useLocation();
+
+  const [booking, setBooking] = useState<any>(null); // Booking chính thức
+  const [pendingData, setPendingData] = useState<any>(null); // Draft cho Guest
+
   const [activeStep, setActiveStep] = useState(1);
-  const [selectedCombos, setSelectedCombos] = useState<Record<string, SelectedComboItem>>({});
+  const [selectedCombos, setSelectedCombos] = useState<
+    Record<string, SelectedComboItem>
+  >({});
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [paymentMethod, setPaymentMethod] = useState("momo");
   const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const [appliedPromo, setAppliedPromo] = useState<PromotionResponse | null>(
+    null
+  );
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-  // Promo
-  const [appliedPromo, setAppliedPromo] = useState<PromotionResponse | null>(null);
-
-  // Lấy booking và user
+  // --- 1. NHẬN DỮ LIỆU ---
   useEffect(() => {
-    const saved = localStorage.getItem("PENDING_BOOKING");
-    if (!saved) {
+    const stateData = location.state;
+    if (!stateData) {
       navigate("/");
       return;
     }
-    setBooking(JSON.parse(saved));
 
-    const user = localStorage.getItem("USER_INFO");
-    if (user) {
+    if (stateData.booking) {
+      // === CASE A: User (Đã có booking) ===
+      setBooking(stateData.booking);
       setUserLoggedIn(true);
-      setCustomer(JSON.parse(user));
+      setActiveStep(2); // Nhảy Step 2
+
+      setupTTL(stateData.ttl, stateData.ttlTimestamp);
+
+      // Auto-fill customer info từ booking response
+      if (stateData.booking.guestName) {
+        setCustomer((prev) => ({
+          ...prev,
+          name: stateData.booking.guestName,
+          email: stateData.booking.guestEmail || "",
+        }));
+      }
+    } else if (stateData.pendingData) {
+      // === CASE B: Guest (Chưa có booking) ===
+      setPendingData(stateData.pendingData);
+      setActiveStep(1); // Ở lại Step 1
+
+      setupTTL(stateData.pendingData.ttl, stateData.pendingData.ttlTimestamp);
+
+      // Mock booking cho Summary hiển thị
+      setBooking({
+        totalPrice: stateData.pendingData.totalPrice,
+        movieTitle: stateData.pendingData.movieTitle,
+        showtime: stateData.pendingData.showtime,
+        seats: stateData.pendingData.seats.map((s: string) => ({
+          seatNumber: s,
+        })),
+      });
     }
   }, []);
 
-  // Scroll lên đầu khi step thay đổi
+  const setupTTL = (ttl: number, timestamp: number) => {
+    if (ttl && timestamp) {
+      const now = Date.now();
+      const passed = Math.floor((now - timestamp) / 1000);
+      const remaining = ttl - passed;
+      if (remaining <= 0) handleExpired();
+      else setTimeLeft(remaining);
+    }
+  };
+
+  // --- 2. XỬ LÝ KHI GUEST TẠO VÉ THÀNH CÔNG ---
+  const handleGuestBookingCreated = (createdBooking: any) => {
+    setBooking(createdBooking);
+    setPendingData(null);
+    setActiveStep(2);
+  };
+
+  // --- Logic Timer ---
+  useEffect(() => {
+    if (timeLeft === null) return;
+    if (timeLeft <= 0) {
+      handleExpired();
+      return;
+    }
+    const timer = setInterval(
+      () => setTimeLeft((p) => (p && p > 0 ? p - 1 : 0)),
+      1000
+    );
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  const handleExpired = () => {
+    Swal.fire({
+      icon: "error",
+      title: "Hết thời gian giữ ghế",
+      text: "Vui lòng thực hiện đặt vé lại!",
+      confirmButtonColor: "#d97706",
+      allowOutsideClick: false,
+    }).then(() => navigate("/"));
+  };
+
+  // --- Scroll ---
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [activeStep]);
 
-  // Tính tổng combo
-  const comboTotal = useMemo(() => {
-    return Object.values(selectedCombos).reduce((sum, c) => sum + c.qty * c.price, 0);
-  }, [selectedCombos]);
+  // --- Calculations ---
+  const comboTotal = useMemo(
+    () =>
+      Object.values(selectedCombos).reduce(
+        (sum, c) => sum + c.qty * c.price,
+        0
+      ),
+    [selectedCombos]
+  );
 
-  // Tính giá trị giảm
   const discountValue = useMemo(() => {
     if (!appliedPromo) return 0;
     const total = (booking?.totalPrice ?? 0) + comboTotal;
@@ -59,128 +146,139 @@ export default function CheckoutPage() {
       : Number(appliedPromo.discountValue);
   }, [appliedPromo, booking, comboTotal]);
 
-  // Tổng cuối cùng
   const finalTotal = useMemo(() => {
     const total = (booking?.totalPrice ?? 0) + comboTotal;
     return Math.max(total - discountValue, 0);
   }, [booking, comboTotal, discountValue]);
 
-  const [maxStepReached, setMaxStepReached] = useState(1);
-  useEffect(() => {
-    if (activeStep > maxStepReached) setMaxStepReached(activeStep);
-  }, [activeStep]);
-
-  const handleNextStep = (nextStep: number) => {
-    if (nextStep === 2 && activeStep === 1) setActiveStep(2);
-    else if (nextStep === 3 && activeStep === 2) {
-      if (!userLoggedIn && (!customer.name || !customer.email || !customer.phone)) {
-        alert("Vui lòng điền thông tin khách hàng!");
-        return;
-      }
-      setActiveStep(3);
-    } else if (nextStep === 4 && activeStep === 3) setActiveStep(4);
-  };
-
-  const handleConfirmPayment = () => {
-    const payload = {
-      ...booking,
-      combos: selectedCombos,
-      customer,
-      paymentMethod,
-      finalTotal,
-      appliedPromo,
-    };
-    localStorage.removeItem("PENDING_BOOKING");
-    localStorage.setItem("LAST_BOOKING", JSON.stringify(payload));
-    navigate("/payment-success");
-  };
-
-  const handleApplyPromo = (promo: PromotionResponse | null) => {
-    setAppliedPromo(promo);
-  };
+  // --- Navigation Handlers ---
+  const handleNextStep = () => setActiveStep((prev) => prev + 1);
+  const handlePrevStep = () => setActiveStep((prev) => Math.max(1, prev - 1));
+  const handleConfirmPayment = () => navigate("/payment-success");
 
   if (!booking) return null;
 
   return (
-    <div className="min-h-screen bg-[#0A0F24] text-white flex flex-col">
-      <Header />
-      <main className="container mx-auto px-6 py-20 flex-1">
-        <h1 className="text-4xl font-extrabold text-center text-yellow-300 mb-8">Trang Thanh toán</h1>
+    <Layout>
+      <div className="min-h-screen text-white flex flex-col pb-10">
+        <main className="container mx-auto px-4 md:px-6 mt-14 flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+            {/* LEFT COLUMN */}
+            <div className="flex flex-col space-y-8">
+              <div className="text-center lg:text-left">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-300 mb-6 uppercase tracking-tighter">
+                  THANH TOÁN
+                </h1>
+                {/* Steps Bar */}
+                <div className="flex justify-between items-start w-full">
+                  {STEPS.map((step, index) => {
+                    const isActive = activeStep === step.id;
+                    const isCompleted = activeStep > step.id;
+                    return (
+                      <React.Fragment key={step.id}>
+                        <div className="flex flex-col items-center z-10 relative flex-1">
+                          <span
+                            className={`text-2xl font-bold mb-1 transition-colors ${isActive || isCompleted ? "text-yellow-300" : "text-gray-600"}`}
+                          >
+                            {step.id}
+                          </span>
+                          <span
+                            className={`text-[10px] md:text-xs font-bold uppercase text-center transition-colors ${isActive || isCompleted ? "text-yellow-300" : "text-gray-500"}`}
+                          >
+                            {step.label}
+                          </span>
+                        </div>
+                        {index < STEPS.length - 1 && (
+                          <div className="flex-1 h-[2px] mt-4 relative">
+                            <div className="absolute top-0 left-0 w-full h-full bg-gray-700"></div>
+                            <motion.div
+                              initial={{ width: "0%" }}
+                              animate={{ width: isCompleted ? "100%" : "0%" }}
+                              transition={{ duration: 0.5 }}
+                              className="absolute top-0 left-0 h-full bg-yellow-300"
+                            />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
 
-        {/* Step Buttons */}
-        <div className="max-w-4xl mx-auto mb-8 flex items-center justify-between gap-4">
-          {[1,2,3,4].map(step => {
-            const disabled = step > maxStepReached;
-            return (
-              <button key={step} 
-                onClick={() => !disabled && setActiveStep(step)}
-                className={`w-full text-sm py-3 rounded-2xl font-semibold transition-all
-                  ${activeStep===step ? "bg-yellow-400 text-black shadow-md" : "bg-transparent border border-yellow-700 text-yellow-200"}
-                  ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                disabled={disabled}
-              >
-                {step===1?"1 - Chọn bắp nước":step===2?"2 - Thông tin khách hàng":step===3?"3 - Thanh toán":"4 - Xác nhận"}
-              </button>
-            )
-          })}
-        </div>
+              {/* Dynamic Content */}
+              <div className="rounded-xl min-h-[400px]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeStep}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {activeStep === 1 && (
+                      <CustomerInfoStep
+                        customer={customer}
+                        setCustomer={setCustomer}
+                        onNext={handleNextStep}
+                        userLoggedIn={userLoggedIn}
+                        // Props for Guest
+                        pendingRequestData={pendingData?.requestData}
+                        onBookingCreated={handleGuestBookingCreated}
+                      />
+                    )}
+                    {activeStep === 2 && (
+                      <SelectComboStep
+                        selectedCombos={selectedCombos}
+                        setSelectedCombos={setSelectedCombos}
+                        onNext={handleNextStep}
+                        onPrev={handlePrevStep}
+                        movieId={booking.movieId || pendingData?.movieTitle} // Fallback safe
+                      />
+                    )}
+                    {activeStep === 3 && (
+                      <PaymentStep
+                        paymentMethod={paymentMethod}
+                        setPaymentMethod={setPaymentMethod}
+                        appliedPromo={appliedPromo}
+                        onApplyPromo={setAppliedPromo}
+                        onNext={handleNextStep}
+                        onPrev={handlePrevStep}
+                      />
+                    )}
+                    {activeStep === 4 && (
+                      <ConfirmStep
+                        booking={booking}
+                        comboTotal={comboTotal}
+                        finalTotal={finalTotal}
+                        appliedPromo={appliedPromo}
+                        discountValue={discountValue}
+                        onPrev={handlePrevStep}
+                        onConfirm={handleConfirmPayment}
+                      />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <AnimatePresence mode="wait">
-              {activeStep === 1 && (
-                <SelectComboStep
-                  selectedCombos={selectedCombos}
-                  setSelectedCombos={setSelectedCombos}
-                  onNext={() => handleNextStep(2)}
-                  movieId={booking.movieId}
-                />
-              )}
-              {activeStep === 2 && (
-                <CustomerInfoStep
-                  customer={customer}
-                  setCustomer={setCustomer}
-                  onNext={() => handleNextStep(3)}
-                  onPrev={() => setActiveStep(1)}
-                  userLoggedIn={userLoggedIn}
-                />
-              )}
-              {activeStep === 3 && (
-                <PaymentStep
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                  appliedPromo={appliedPromo}
-                  onApplyPromo={handleApplyPromo}
-                  onNext={() => handleNextStep(4)}
-                  onPrev={() => setActiveStep(2)}
-                />
-              )}
-              {activeStep === 4 && (
-                <ConfirmStep
+            {/* RIGHT COLUMN */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-4">
+                <BookingSummary
                   booking={booking}
+                  selectedCombos={selectedCombos}
                   comboTotal={comboTotal}
-                  finalTotal={finalTotal}
                   appliedPromo={appliedPromo}
                   discountValue={discountValue}
-                  onPrev={() => setActiveStep(3)}
-                  onConfirm={handleConfirmPayment}
+                  finalTotal={finalTotal}
+                  goToStep={setActiveStep}
+                  ttl={timeLeft}
                 />
-              )}
-            </AnimatePresence>
+              </div>
+            </div>
           </div>
-
-          <BookingSummary
-            booking={booking}
-            selectedCombos={selectedCombos}
-            comboTotal={comboTotal}
-            appliedPromo={appliedPromo}
-            discountValue={discountValue}
-            finalTotal={finalTotal}
-            goToStep={handleNextStep}
-          />
-        </div>
-      </main>
-      <Footer />
-    </div>
+        </main>
+      </div>
+    </Layout>
   );
 }

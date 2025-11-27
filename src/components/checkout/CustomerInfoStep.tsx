@@ -1,56 +1,55 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
+import { bookingService } from "@/services/booking/booking.service";
+import type { CreateBookingRequest } from "@/types/booking/booking.type";
 
 interface Props {
   customer: { name: string; email: string; phone: string };
   setCustomer: (val: { name: string; email: string; phone: string }) => void;
   onNext: () => void;
-  onPrev: () => void;
   userLoggedIn: boolean;
+
+  // New props for Guest flow
+  pendingRequestData?: CreateBookingRequest;
+  onBookingCreated?: (booking: any) => void;
 }
 
 const CustomerInfoStep: React.FC<Props> = ({
   customer,
   setCustomer,
   onNext,
-  onPrev,
   userLoggedIn,
+  pendingRequestData,
+  onBookingCreated,
 }) => {
-  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<any>({});
+  const [agreeAge, setAgreeAge] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
-  // Skip if logged in
+  // Skip if logged in (Though CheckoutPage handles this, keep it safe)
   useEffect(() => {
     if (userLoggedIn) onNext();
   }, [userLoggedIn, onNext]);
 
-  // Realtime validation
-  useEffect(() => {
-    const newErrors: typeof errors = {};
-    if (customer.name && customer.name.trim().length === 0) newErrors.name = "Họ và tên là bắt buộc";
-    if (customer.email && !/^[\w.-]+@[\w.-]+\.\w+$/.test(customer.email)) newErrors.email = "Email không hợp lệ";
-    if (customer.phone && !/^\d{9,11}$/.test(customer.phone)) newErrors.phone = "Số điện thoại không hợp lệ";
-    setErrors(newErrors);
-  }, [customer]);
-
   const validateAll = async () => {
-    const newErrors: typeof errors = {};
-    if (!customer.name.trim()) newErrors.name = "Họ và tên là bắt buộc";
-    if (!customer.email.trim()) newErrors.email = "Email là bắt buộc";
-    else if (!/^[\w.-]+@[\w.-]+\.\w+$/.test(customer.email)) newErrors.email = "Email không hợp lệ";
-    if (!customer.phone.trim()) newErrors.phone = "Số điện thoại là bắt buộc";
-    else if (!/^\d{9,11}$/.test(customer.phone)) newErrors.phone = "Số điện thoại không hợp lệ";
-    setErrors(newErrors);
+    const newErrors: any = {};
+    if (!customer.name?.trim()) newErrors.name = "Họ và tên là bắt buộc";
+    if (!customer.email?.trim()) newErrors.email = "Email là bắt buộc";
+    else if (!/^[\w.-]+@[\w.-]+\.\w+$/.test(customer.email))
+      newErrors.email = "Email không hợp lệ";
+    if (!customer.phone?.trim()) newErrors.phone = "Số điện thoại là bắt buộc";
+    else if (!/^\d{9,11}$/.test(customer.phone))
+      newErrors.phone = "Số điện thoại không hợp lệ";
 
+    if (!agreeAge) newErrors.ageAgree = "Bạn cần xác nhận đúng độ tuổi";
+    if (!agreeTerms) newErrors.terms = "Bạn cần đồng ý điều khoản";
+
+    setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       await Swal.fire({
         icon: "warning",
         title: "Thông tin chưa hợp lệ",
-        html: `
-          ${newErrors.name ? `<p>- ${newErrors.name}</p>` : ""}
-          ${newErrors.email ? `<p>- ${newErrors.email}</p>` : ""}
-          ${newErrors.phone ? `<p>- ${newErrors.phone}</p>` : ""}
-        `,
         confirmButtonColor: "#eab308",
       });
       return false;
@@ -58,61 +57,159 @@ const CustomerInfoStep: React.FC<Props> = ({
     return true;
   };
 
-  const handleNext = async () => {
-    if (await validateAll()) onNext();
+  const handleProcess = async () => {
+    const isValid = await validateAll();
+    if (!isValid) return;
+
+    // === LOGIC GỌI API CHO GUEST ===
+    if (pendingRequestData && onBookingCreated) {
+      try {
+        Swal.fire({
+          title: "Đang khởi tạo vé...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
+
+        const finalRequest: CreateBookingRequest = {
+          ...pendingRequestData,
+          guestName: customer.name,
+          guestEmail: customer.email,
+          // guestPhone: customer.phone, // Uncomment nếu API Backend có field phone
+        };
+
+        const bookingResponse =
+          await bookingService.createBooking(finalRequest);
+
+        Swal.close();
+
+        // Notify Parent
+        onBookingCreated(bookingResponse);
+      } catch (error) {
+        console.error(error);
+        Swal.fire("Lỗi", "Không thể tạo đơn hàng. Vui lòng thử lại", "error");
+      }
+    } else {
+      // Normal flow (shouldn't happen for Guest in this specific logic but good fallback)
+      onNext();
+    }
   };
 
   return (
     <motion.div
-      key="step2"
+      key="customer-step"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.35 }}
-      className="space-y-4"
+      className="space-y-6"
     >
-      <h2 className="text-2xl font-bold text-yellow-300">Thông tin khách hàng</h2>
-      <p className="text-sm text-gray-300">Nhập thông tin người nhận vé (dùng để liên hệ & xác nhận).</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <div className="space-y-4">
         <div>
-          <label className="text-sm text-gray-300">
+          <label className="text-md font-bold text-white block">
             Họ và tên <span className="text-red-500">*</span>
           </label>
           <input
             value={customer.name}
             onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-            className={`w-full bg-zinc-800 p-3 rounded mt-2 ${errors.name ? "border border-red-500" : ""}`}
+            className={`w-full bg-white text-black p-3 rounded mt-2 focus:outline-none ${errors.name ? "border border-red-500" : ""}`}
             placeholder="Nguyễn Văn A"
           />
         </div>
         <div>
-          <label className="text-sm text-gray-300">
+          <label className="text-md font-bold text-white block">
             Email <span className="text-red-500">*</span>
           </label>
           <input
             value={customer.email}
-            onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-            className={`w-full bg-zinc-800 p-3 rounded mt-2 ${errors.email ? "border border-red-500" : ""}`}
+            onChange={(e) =>
+              setCustomer({ ...customer, email: e.target.value })
+            }
+            className={`w-full bg-white text-black p-3 rounded mt-2 focus:outline-none ${errors.email ? "border border-red-500" : ""}`}
             placeholder="email@example.com"
           />
         </div>
-        <div className="md:col-span-2">
-          <label className="text-sm text-gray-300">
+        <div>
+          <label className="text-md font-bold text-white block">
             Số điện thoại <span className="text-red-500">*</span>
           </label>
           <input
             value={customer.phone}
-            onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-            className={`w-full bg-zinc-800 p-3 rounded mt-2 ${errors.phone ? "border border-red-500" : ""}`}
+            onChange={(e) =>
+              setCustomer({ ...customer, phone: e.target.value })
+            }
+            className={`w-full bg-white text-black p-3 rounded mt-2 focus:outline-none ${errors.phone ? "border border-red-500" : ""}`}
             placeholder="09xx xxx xxx"
           />
         </div>
       </div>
 
-      <div className="flex justify-between mt-6">
-        <button onClick={onPrev} className="bg-gray-700 py-2 px-5 rounded-md">Quay lại</button>
-        <button onClick={handleNext} className="bg-yellow-400 text-black font-bold py-2 px-6 rounded-md">Tiếp theo</button>
+      <div className="space-y-3 mt-2">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="peer sr-only"
+            checked={agreeAge}
+            onChange={(e) => setAgreeAge(e.target.checked)}
+          />
+          <div
+            className={`h-5 w-5 border rounded-sm flex items-center justify-center transition-all ${agreeAge ? "bg-yellow-700 border-yellow-400" : "bg-transparent border-white"} ${errors.ageAgree && !agreeAge ? "border-red-500 animate-pulse" : ""}`}
+          >
+            {agreeAge && (
+              <svg
+                className="w-3.5 h-3.5 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            )}
+          </div>
+          <span className="text-sm text-gray-200">
+            Đảm bảo mua vé đúng số tuổi quy định.
+          </span>
+        </label>
+
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="peer sr-only"
+            checked={agreeTerms}
+            onChange={(e) => setAgreeTerms(e.target.checked)}
+          />
+          <div
+            className={`h-5 w-5 border rounded-sm flex items-center justify-center transition-all ${agreeTerms ? "bg-yellow-400 border-yellow-400" : "bg-transparent border-white"} ${errors.terms && !agreeTerms ? "border-red-500 animate-pulse" : ""}`}
+          >
+            {agreeTerms && (
+              <svg
+                className="w-3.5 h-3.5 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            )}
+          </div>
+          <span className="text-sm text-gray-200">
+            Đồng ý với điều khoản của Cinestar.
+          </span>
+        </label>
+      </div>
+
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={handleProcess}
+          className="bg-yellow-400 text-black font-bold py-2 px-6 rounded-md hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg"
+        >
+          Tiếp tục
+        </button>
       </div>
     </motion.div>
   );

@@ -20,21 +20,18 @@ const TABS: Tab[] = [
   {
     id: "accounts",
     label: "Tài khoản",
-    description: "Quản lý người dùng & role",
   },
-  { id: "overview", label: "Quản lý hồ sơ", description: "Thống kê hệ thống" },
-  { id: "reports", label: "Quản lý phim", description: "Xuất báo cáo / CSV" },
+  { id: "overview", label: "Quản lý hồ sơ" },
+  { id: "reports", label: "Quản lý phim" },
   {
-    id: "settings",
+    id: "showtimes",
     label: "Quản lý lịch chiếu",
-    description: "Cấu hình chung",
   },
   {
-    id: "promotions",
-    label: "Thống kê thanh toán",
-    description: "Quản lý mã & khuyến mãi",
+    id: "bookings",
+    label: "Quản lý giao dịch & thanh toán",
   },
-  { id: "logs", label: "Quản lý dịch vụ", description: "Lịch sử hoạt động" },
+  { id: "logs", label: "Quản lý dịch vụ" },
 ];
 
 const AdminDashboard: React.FC = () => {
@@ -183,7 +180,7 @@ const AdminDashboard: React.FC = () => {
                   aria-labelledby="tab-accounts"
                 >
                   <h2 className="text-2xl font-light mb-6 text-yellow-300">
-                    Tổng quan hệ thống
+                    Tổng quan hệ thống tài khoản
                   </h2>
                   <OverviewCards />
                 </section>
@@ -232,18 +229,38 @@ const AdminDashboard: React.FC = () => {
                 aria-labelledby="tab-reports"
               >
                 <h2 className="text-2xl font-light mb-6 text-yellow-300">
-                  Quản lý phim
+                  Quản lý phim đang chiếu
                 </h2>
-                <MovieManagementTable />
+                <MovieManagementTable
+                  status="NOW_PLAYING"
+                  title="Quản lý phim đang chiếu"
+                />
+                <h2 className="text-2xl font-light mb-6 text-yellow-300 mt-10">
+                  Quản lý phim sắp chiếu
+                </h2>
+                <MovieManagementTable
+                  status="UPCOMING"
+                  title="Quản lý phim sắp chiếu"
+                />
+                <h2 className="text-2xl font-light mb-6 text-yellow-300 mt-10">
+                  Quản lý phim lưu trữ
+                </h2>
+                <MovieManagementTable
+                  status="ARCHIVED"
+                  title="Quản lý phim lưu trữ"
+                />
               </section>
             )}
 
-            {activeTab === "settings" && (
+            {activeTab === "showtimes" && (
               <section
                 id="panel-settings"
                 role="tabpanel"
                 aria-labelledby="tab-settings"
               >
+                <h2 className="text-2xl font-light mb-6 text-yellow-300">
+                  Quản lý lịch chiếu
+                </h2>
                 <ShowtimeManagement />
               </section>
             )}

@@ -11,7 +11,7 @@ export interface MovieSummary {
   spokenLanguages: string[];
   genres: string[];
   trailer: string;
-  startDate?: string;
+  startDate: string;
   endDate?: string;
   popularity?: number;
 }

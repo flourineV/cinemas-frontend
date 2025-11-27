@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { pricingService } from "@/services/pricing/pricingService";
 import type { SeatPriceResponse } from "@/types/pricing/seatprice.type";
-import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
 
 interface SelectTicketProps {
   seatType: string; // ghế được chọn từ booking, mặc định là NORMAL
   onTicketChange: (tickets: Record<string, number>) => void;
-  selectedSeats: ShowtimeSeatResponse[];
+  selectedSeats: string[]; // Array of seat IDs
 }
 
 const TICKET_LABELS: Record<string, string> = {

@@ -21,7 +21,7 @@ export interface SeatLockRequest {
 export interface SeatLockResponse {
   showtimeId: string;
   seatId: string;
-  status: "LOCKED" | "AVAILABLE" | "ALREADY_LOCKED";
+  status: "LOCKED" | "AVAILABLE" | "ALREADY_LOCKED" | "BOOKED";
   ttl: number; // seconds remaining until expiration
 }
 

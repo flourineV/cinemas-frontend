@@ -11,7 +11,6 @@ export default function ShowtimeManagement(): React.JSX.Element {
 
   return (
     <div className="space-y-6">
-      <ShowtimeForm onSuccess={handleFormSuccess} />
       <ShowtimeTable refreshTrigger={refreshTrigger} />
     </div>
   );

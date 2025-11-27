@@ -49,6 +49,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           localStorage.setItem("accessToken", jwt.accessToken ?? "");
           localStorage.setItem("refreshToken", jwt.refreshToken ?? "");
 
+          // Clear guest session when user signs up
+          localStorage.removeItem("guest_session_id");
+
           set({
             user: jwt.user,
             accessToken: jwt.accessToken,
@@ -72,6 +75,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           localStorage.setItem("accessToken", jwt.accessToken ?? "");
           localStorage.setItem("refreshToken", jwt.refreshToken ?? "");
 
+          // Clear guest session when user logs in
+          localStorage.removeItem("guest_session_id");
+
           set({
             user: jwt.user,
             accessToken: jwt.accessToken,
@@ -90,6 +96,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         authService.signout().catch(() => {});
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+
+        // Trigger guest session creation by dispatching storage event
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: "user",
+            oldValue: "something",
+            newValue: null,
+            url: window.location.href,
+          })
+        );
+
         set({
           user: null,
           accessToken: null,

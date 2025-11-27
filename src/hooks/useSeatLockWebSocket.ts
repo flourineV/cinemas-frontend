@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from "react";
+// src/hooks/useSeatLockWebSocket.ts
+import { useEffect, useRef } from "react";
 import { websocketService } from "@/services/websocket/websocketService";
 import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
 
@@ -8,9 +9,6 @@ interface UseSeatLockWebSocketProps {
   enabled?: boolean;
 }
 
-/**
- * Hook to manage WebSocket connection for seat lock updates
- */
 export const useSeatLockWebSocket = ({
   showtimeId,
   onSeatLockUpdate,
@@ -18,56 +16,53 @@ export const useSeatLockWebSocket = ({
 }: UseSeatLockWebSocketProps) => {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const isConnectingRef = useRef(false);
+  const callbackRef = useRef(onSeatLockUpdate);
 
-  const connect = useCallback(async () => {
-    if (!showtimeId || !enabled || isConnectingRef.current) return;
-
-    try {
-      isConnectingRef.current = true;
-
-      // Connect to WebSocket with showtimeId
-      await websocketService.connect(showtimeId);
-
-      // Subscribe to seat lock updates
-      unsubscribeRef.current = websocketService.subscribeSeatLock(
-        showtimeId,
-        onSeatLockUpdate
-      );
-    } catch (error) {
-      console.warn(
-        "⚠️ WebSocket connection failed (backend may not be running):",
-        error
-      );
-      // Don't throw error, just log warning
-    } finally {
-      isConnectingRef.current = false;
-    }
-  }, [showtimeId, onSeatLockUpdate, enabled]);
-
-  const disconnect = useCallback(() => {
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-    // Disconnect WebSocket completely
-    websocketService.disconnect();
-  }, []);
-
-  // Connect when showtimeId changes
+  // Update callback ref without triggering reconnect
   useEffect(() => {
-    if (showtimeId && enabled) {
-      connect();
-    }
+    callbackRef.current = onSeatLockUpdate;
+  }, [onSeatLockUpdate]);
 
-    // Cleanup on unmount or when showtimeId changes
-    return () => {
-      disconnect();
+  useEffect(() => {
+    if (!enabled || !showtimeId || isConnectingRef.current) return;
+
+    const connectAndSubscribe = async () => {
+      try {
+        isConnectingRef.current = true;
+
+        // Connect if not already connected
+        if (!websocketService.isConnected()) {
+          console.log("🔌 [Hook] Connecting WebSocket...");
+          await websocketService.connect(showtimeId);
+        }
+
+        // Subscribe with stable callback
+        unsubscribeRef.current = websocketService.subscribeSeatLock(
+          showtimeId,
+          (data) => callbackRef.current(data)
+        );
+
+        console.log("📡 [Hook] Subscribed to showtime:", showtimeId);
+      } catch (err) {
+        console.warn("⚠️ [Hook] WebSocket connection failed:", err);
+      } finally {
+        isConnectingRef.current = false;
+      }
     };
-  }, [showtimeId, enabled, connect, disconnect]);
+
+    connectAndSubscribe();
+
+    return () => {
+      // Unsubscribe on cleanup
+      if (unsubscribeRef.current) {
+        console.log("📡 [Hook] Unsubscribing...");
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
+  }, [showtimeId, enabled]);
 
   return {
-    connect,
-    disconnect,
     isConnected: websocketService.isConnected(),
   };
 };

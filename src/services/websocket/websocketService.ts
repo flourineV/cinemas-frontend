@@ -35,7 +35,8 @@ export class WebSocketService {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log("✅ WebSocket connected");
+        console.log("✅ WebSocket connected to:", wsUrl);
+        console.log("📊 Current subscriptions:", this.subscriptions.size);
         this.reconnectAttempts = 0;
         resolve();
       };
@@ -43,7 +44,12 @@ export class WebSocketService {
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("📨 WebSocket message:", data);
+          console.log("📨 WebSocket message received:", data);
+          console.log("📊 Notifying subscribers for showtime:", showtimeId);
+          console.log(
+            "📊 Number of callbacks:",
+            this.subscriptions.get(showtimeId)?.size || 0
+          );
           this.notifySubscribers(showtimeId, data);
         } catch (error) {
           console.error("❌ Error parsing WebSocket message:", error);
@@ -89,8 +95,19 @@ export class WebSocketService {
 
   /**
    * Disconnect from WebSocket server
+   * Only disconnect if no more subscribers
    */
   disconnect(): void {
+    // Check if there are still active subscribers
+    const hasSubscribers = Array.from(this.subscriptions.values()).some(
+      (callbacks) => callbacks.size > 0
+    );
+
+    if (hasSubscribers) {
+      console.log("⚠️ WebSocket has active subscribers, not disconnecting");
+      return;
+    }
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

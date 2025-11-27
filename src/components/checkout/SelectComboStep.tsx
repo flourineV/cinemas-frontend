@@ -13,10 +13,16 @@ interface Props {
   selectedCombos: Record<string, SelectedComboItem>;
   setSelectedCombos: (val: Record<string, SelectedComboItem>) => void;
   onNext: () => void;
-  movieId: string; 
+  onPrev?: () => void;
+  movieId: string;
 }
 
-const SelectComboStep: React.FC<Props> = ({ selectedCombos, setSelectedCombos, onNext, movieId }) => {
+const SelectComboStep: React.FC<Props> = ({
+  selectedCombos,
+  setSelectedCombos,
+  onNext,
+  movieId,
+}) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -33,12 +39,17 @@ const SelectComboStep: React.FC<Props> = ({ selectedCombos, setSelectedCombos, o
       className="space-y-4"
     >
       <h2 className="text-2xl font-bold text-yellow-300">Chọn bắp nước</h2>
-      <p className="text-sm text-gray-300">Chọn combo bắp nước bạn muốn thêm vào đơn hàng.</p>
+      <p className="text-sm text-gray-300">
+        Chọn combo bắp nước bạn muốn thêm vào đơn hàng.
+      </p>
       <div className="mt-4">
         <SelectCombo onComboSelect={setSelectedCombos} />
       </div>
       <div className="flex justify-between mt-6">
-        <button onClick={handleBack} className="bg-gray-700 text-white py-3 px-6 rounded-md shadow-md">
+        <button
+          onClick={handleBack}
+          className="bg-gray-700 text-white py-3 px-6 rounded-md shadow-md"
+        >
           Quay lại
         </button>
         <button

@@ -16,6 +16,7 @@ export interface GetMoviesParams {
   size?: number;
   keyword?: string;
   status?: string;
+  genres?: string;
   sortBy?: string;
   sortType?: "ASC" | "DESC";
 }

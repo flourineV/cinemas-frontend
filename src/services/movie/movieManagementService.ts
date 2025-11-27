@@ -7,6 +7,7 @@ export const movieManagementService = {
   adminList: async ({
     keyword,
     status,
+    genres,
     page = 1,
     size = 10,
     sortBy,
@@ -14,6 +15,7 @@ export const movieManagementService = {
   }: {
     keyword?: string;
     status?: string;
+    genres?: string;
     page?: number;
     size?: number;
     sortBy?: string;
@@ -23,6 +25,7 @@ export const movieManagementService = {
       params: {
         keyword,
         status,
+        genres,
         page,
         size,
         sortBy,
