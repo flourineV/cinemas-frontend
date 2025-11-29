@@ -8,7 +8,7 @@ import "dayjs/locale/vi";
 // Services & Components
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { provinceService } from "@/services/showtime/provinceService";
-import { bookingService } from "@/services/booking/booking.service";
+import { bookingService } from "@/services/booking/bookingService";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import SelectSeat from "@/components/booking/SelectSeat";
 import SelectTicket from "@/components/booking/SelectTicket";

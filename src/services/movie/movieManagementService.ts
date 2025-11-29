@@ -7,7 +7,6 @@ export const movieManagementService = {
   adminList: async ({
     keyword,
     status,
-    genres,
     page = 1,
     size = 10,
     sortBy,
@@ -15,17 +14,15 @@ export const movieManagementService = {
   }: {
     keyword?: string;
     status?: string;
-    genres?: string;
     page?: number;
     size?: number;
     sortBy?: string;
     sortType?: string;
   }): Promise<PageResponse<MovieSummary>> => {
-    const res = await movieClient.get("", {
+    const res = await movieClient.get("/advanced-search", {
       params: {
         keyword,
         status,
-        genres,
         page,
         size,
         sortBy,
@@ -53,6 +50,12 @@ export const movieManagementService = {
   },
 
   changeStatus: async (id: string, status: string): Promise<void> => {
-    await movieClient.put(`/change-status/${id}`, { status });
+    await movieClient.put(`/status/${id}`, { status });
+  },
+
+  suspendShowtimes: async (movieId: string, reason = "Movie archived") => {
+    await movieClient.post(`/suspend-by-movie/${movieId}`, null, {
+      params: { reason },
+    });
   },
 };

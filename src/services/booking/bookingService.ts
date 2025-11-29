@@ -1,8 +1,10 @@
+import type { PageResponse } from "@/types/PageResponse";
 import { bookingClient } from "../apiClient"; // <-- Đảm bảo import đúng client instance
 import type {
   CreateBookingRequest,
   FinalizeBookingRequest,
   BookingResponse,
+  BookingCriteria,
 } from "@/types/booking/booking.type";
 
 export const bookingService = {
@@ -11,6 +13,28 @@ export const bookingService = {
     data: CreateBookingRequest
   ): Promise<BookingResponse> => {
     const res = await bookingClient.post<BookingResponse>("/bookings", data);
+    return res.data;
+  },
+
+  // GET /api/bookings/statistics
+  getBookings: async (
+    criteria: BookingCriteria,
+    page = 0,
+    size = 10,
+    sortBy = "createdAt",
+    sortDir = "desc"
+  ): Promise<PageResponse<BookingResponse>> => {
+    const params = {
+      ...criteria,
+      page,
+      size,
+      sortBy,
+      sortDir,
+    };
+    const res = await bookingClient.get<PageResponse<BookingResponse>>(
+      "/statistics",
+      { params }
+    );
     return res.data;
   },
 

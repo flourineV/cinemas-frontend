@@ -9,6 +9,8 @@ import UserRegistrationChart from "@/components/admin/accounts/UserRegistrationC
 import UserManagementTable from "@/components/admin/accounts/UserManagementTable";
 import MovieManagementTable from "@/components/admin/movies/MovieManagementTable";
 import ShowtimeManagement from "@/components/admin/showtimes/ShowtimeManagement";
+import BookingManagementTable from "@/components/admin/bookings/BookingManagementTable";
+import FacilitiesManagement from "@/components/admin/facilities/FacilitiesManagement";
 
 type Tab = {
   id: string;
@@ -21,7 +23,7 @@ const TABS: Tab[] = [
     id: "accounts",
     label: "Tài khoản",
   },
-  { id: "overview", label: "Quản lý hồ sơ" },
+  { id: "facilities", label: "Quản lý cơ sở vật chất" },
   { id: "reports", label: "Quản lý phim" },
   {
     id: "showtimes",
@@ -209,17 +211,17 @@ const AdminDashboard: React.FC = () => {
               </>
             )}
 
-            {activeTab === "overview" && (
-              <div className="bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-yellow-100">
-                <h3 className="text-xl font-semibold mb-2">Tổng quan</h3>
-                <p className="text-sm text-yellow-100/80">
-                  Placeholder: tổng quan hệ thống. Thêm KPI, số liệu, quick
-                  links...
-                </p>
-                <div className="mt-6">
-                  <OverviewCards />
-                </div>
-              </div>
+            {activeTab === "facilities" && (
+              <section
+                id="panel-facilities"
+                role="tabpanel"
+                aria-labelledby="tab-facilities"
+              >
+                <h2 className="text-2xl font-light mb-6 text-yellow-300">
+                  Quản lý cơ sở vật chất
+                </h2>
+                <FacilitiesManagement />
+              </section>
             )}
 
             {activeTab === "reports" && (
@@ -229,34 +231,17 @@ const AdminDashboard: React.FC = () => {
                 aria-labelledby="tab-reports"
               >
                 <h2 className="text-2xl font-light mb-6 text-yellow-300">
-                  Quản lý phim đang chiếu
+                  Quản lý phim 
                 </h2>
-                <MovieManagementTable
-                  status="NOW_PLAYING"
-                  title="Quản lý phim đang chiếu"
-                />
-                <h2 className="text-2xl font-light mb-6 text-yellow-300 mt-10">
-                  Quản lý phim sắp chiếu
-                </h2>
-                <MovieManagementTable
-                  status="UPCOMING"
-                  title="Quản lý phim sắp chiếu"
-                />
-                <h2 className="text-2xl font-light mb-6 text-yellow-300 mt-10">
-                  Quản lý phim lưu trữ
-                </h2>
-                <MovieManagementTable
-                  status="ARCHIVED"
-                  title="Quản lý phim lưu trữ"
-                />
+                <MovieManagementTable />
               </section>
             )}
 
             {activeTab === "showtimes" && (
               <section
-                id="panel-settings"
+                id="panel-showtimes"
                 role="tabpanel"
-                aria-labelledby="tab-settings"
+                aria-labelledby="tab-showtimes"
               >
                 <h2 className="text-2xl font-light mb-6 text-yellow-300">
                   Quản lý lịch chiếu
@@ -265,15 +250,17 @@ const AdminDashboard: React.FC = () => {
               </section>
             )}
 
-            {activeTab === "promotions" && (
-              <div className="bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-yellow-100">
-                <h3 className="text-xl text-yellow-100 font-semibold mb-2">
-                  Khuyến mãi
-                </h3>
-                <p className="text-sm text-yellow-100/80">
-                  Quản lý mã giảm giá, chương trình marketing.
-                </p>
-              </div>
+            {activeTab === "bookings" && (
+                <section
+                id="panel-bookings"
+                role="tabpanel"
+                aria-labelledby="tab-bookings"
+              >
+                <h2 className="text-2xl font-light mb-6 text-yellow-300">
+                  Quản lý giao dịch & thanh toán
+                </h2>
+                <BookingManagementTable />
+              </section>
             )}
 
             {activeTab === "logs" && (
