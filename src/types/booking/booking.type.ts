@@ -1,7 +1,7 @@
 export interface SeatSelectionDetail {
-  seatId: string; // UUID
-  ticketTypeId?: string; // UUID (Optional - tuỳ logic backend có cần ko)
-  price?: number; // BigDecimal
+  seatId: string;
+  seatType: string;
+  ticketType: string;
 }
 
 // Map từ: CreateBookingRequest.java
@@ -32,9 +32,9 @@ export interface FinalizeBookingRequest {
 
 // Map từ: BookingSeatResponse (Giả định structure)
 export interface BookingSeatResponse {
-  id: string;
-  seatNumber: string;
+  seatId: string;
   seatType: string;
+  ticketType: string;
   price: number;
 }
 

@@ -3,22 +3,42 @@ import { motion } from "framer-motion";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { promotionService } from "@/services/promotion/promotionService";
+import { paymentService } from "@/services/payment/payment.service";
+import { bookingService } from "@/services/booking/booking.service";
 import type { PromotionResponse } from "@/types/promotion/promotion.type";
+import type {
+  FinalizeBookingRequest,
+  CalculatedFnbItemDto,
+} from "@/types/booking/booking.type";
 
 interface Props {
   paymentMethod: string;
   setPaymentMethod: (val: string) => void;
   appliedPromo: PromotionResponse | null;
-  onApplyPromo: (promo: PromotionResponse | null) => void; // đổi kiểu
+  onApplyPromo: (promo: PromotionResponse | null) => void;
+  bookingId: string;
+  selectedCombos: any;
+  finalTotal: number;
   onNext: () => void;
   onPrev: () => void;
 }
 
 const MySwal = withReactContent(Swal);
 
-const PaymentStep: React.FC<Props> = ({ paymentMethod, setPaymentMethod, appliedPromo, onApplyPromo, onNext, onPrev }) => {
+const PaymentStep: React.FC<Props> = ({
+  paymentMethod,
+  setPaymentMethod,
+  appliedPromo,
+  onApplyPromo,
+  bookingId,
+  selectedCombos,
+  finalTotal,
+  onNext,
+  onPrev,
+}) => {
   const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchPromotions = async () => {
@@ -61,7 +81,9 @@ const PaymentStep: React.FC<Props> = ({ paymentMethod, setPaymentMethod, applied
                   className="p-2 cursor-pointer hover:bg-yellow-400 hover:text-black rounded"
                   onClick={() => {
                     selectedPromo = p;
-                    const input = document.getElementById("promo-input") as HTMLInputElement;
+                    const input = document.getElementById(
+                      "promo-input"
+                    ) as HTMLInputElement;
                     if (input) input.value = p.code;
                   }}
                 >
@@ -74,15 +96,78 @@ const PaymentStep: React.FC<Props> = ({ paymentMethod, setPaymentMethod, applied
         </div>
       ),
       preConfirm: () => {
-        const input = document.getElementById("promo-input") as HTMLInputElement;
+        const input = document.getElementById(
+          "promo-input"
+        ) as HTMLInputElement;
         const code = input?.value || "";
-        return promotions.find(p => p.code === code) || null;
+        return promotions.find((p) => p.code === code) || null;
       },
     }).then((result) => {
       if (result.isConfirmed) {
         onApplyPromo(result.value); // trả về toàn bộ object hoặc null
       }
     });
+  };
+
+  const handlePayment = async () => {
+    if (!bookingId) {
+      await Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không tìm thấy thông tin booking. Vui lòng thử lại!",
+        confirmButtonColor: "#d97706",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      console.log("Creating payment with bookingId:", bookingId);
+
+      // Bước 1: Chuẩn bị dữ liệu FNB items
+      const fnbItems: CalculatedFnbItemDto[] = Object.values(
+        selectedCombos
+      ).map((combo) => ({
+        fnbItemId: combo.id,
+        quantity: combo.qty,
+        unitPrice: combo.price,
+        totalFnbItemPrice: combo.qty * combo.price,
+      }));
+
+      // Bước 2: Gọi API finalize booking
+      const finalizeRequest: FinalizeBookingRequest = {
+        fnbItems: fnbItems,
+        promotionCode: appliedPromo?.code,
+        useLoyaltyDiscount: false,
+      };
+
+      console.log("Finalizing booking with data:", finalizeRequest);
+      await bookingService.finalizeBooking(bookingId, finalizeRequest);
+
+      // Bước 3: Gọi API tạo ZaloPay URL
+      const response = await paymentService.createZaloPayUrl(bookingId);
+
+      if (response.return_code === 1 && response.order_url) {
+        // Chuyển hướng đến trang thanh toán ZaloPay
+        window.location.href = response.order_url;
+      } else {
+        throw new Error(
+          response.return_message || "Không thể tạo liên kết thanh toán"
+        );
+      }
+    } catch (error: any) {
+      console.error("Lỗi khi tạo thanh toán:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Lỗi thanh toán",
+        text:
+          error.message ||
+          "Không thể tạo liên kết thanh toán. Vui lòng thử lại!",
+        confirmButtonColor: "#d97706",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -94,15 +179,21 @@ const PaymentStep: React.FC<Props> = ({ paymentMethod, setPaymentMethod, applied
       transition={{ duration: 0.35 }}
       className="space-y-4"
     >
-      <h2 className="text-2xl font-bold text-yellow-300">Phương thức thanh toán</h2>
-      <p className="text-sm text-gray-300">Chọn một phương thức để hoàn tất thanh toán.</p>
+      <h2 className="text-2xl font-bold text-yellow-300">
+        Phương thức thanh toán
+      </h2>
+      <p className="text-sm text-gray-300">
+        Chọn một phương thức để hoàn tất thanh toán.
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
         {["momo", "card", "visa"].map((method) => (
           <label
             key={method}
             className={`p-4 rounded-lg border cursor-pointer ${
-              paymentMethod === method ? "bg-yellow-400 text-black" : "bg-zinc-800 border-zinc-700"
+              paymentMethod === method
+                ? "bg-yellow-400 text-black"
+                : "bg-zinc-800 border-zinc-700"
             }`}
           >
             <input
@@ -113,17 +204,27 @@ const PaymentStep: React.FC<Props> = ({ paymentMethod, setPaymentMethod, applied
               onChange={() => setPaymentMethod(method)}
             />
             <div className="font-semibold">
-              {method === "momo" ? "Momo" : method === "card" ? "Thẻ nội địa" : "Thẻ quốc tế"}
+              {method === "momo"
+                ? "Momo"
+                : method === "card"
+                  ? "Thẻ nội địa"
+                  : "Thẻ quốc tế"}
             </div>
             <div className="text-sm text-gray-300">
-              {method === "momo" ? "Thanh toán qua ví Momo" : method === "card" ? "Ngân hàng nội địa" : "Visa / MasterCard"}
+              {method === "momo"
+                ? "Thanh toán qua ví Momo"
+                : method === "card"
+                  ? "Ngân hàng nội địa"
+                  : "Visa / MasterCard"}
             </div>
           </label>
         ))}
       </div>
 
       <div className="mt-4">
-        <label className="text-sm text-gray-300 font-semibold">Mã giảm giá</label>
+        <label className="text-sm text-gray-300 font-semibold">
+          Mã giảm giá
+        </label>
         <div className="flex items-center mt-2 gap-2">
           <input
             value={appliedPromo?.code || ""}
@@ -142,9 +243,19 @@ const PaymentStep: React.FC<Props> = ({ paymentMethod, setPaymentMethod, applied
       </div>
 
       <div className="flex justify-between mt-6">
-        <button onClick={onPrev} className="bg-gray-700 py-2 px-5 rounded-md">Quay lại</button>
-        <button onClick={onNext} className="bg-yellow-400 text-black font-bold py-2 px-6 rounded-md">
-          Xác nhận & Thanh toán
+        <button
+          onClick={onPrev}
+          className="bg-gray-700 py-2 px-5 rounded-md"
+          disabled={isProcessing}
+        >
+          Quay lại
+        </button>
+        <button
+          onClick={handlePayment}
+          className="bg-yellow-400 text-black font-bold py-2 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isProcessing}
+        >
+          {isProcessing ? "Đang xử lý..." : "Xác nhận & Thanh toán"}
         </button>
       </div>
     </motion.div>

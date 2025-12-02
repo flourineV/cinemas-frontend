@@ -9,7 +9,7 @@ export interface FnbItemResponse {
   name: string;
   description?: string;
   unitPrice: number;
-  image?: string;
+  imageUrl: string;
 }
 
 export interface FnbCalculationItem {

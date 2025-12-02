@@ -66,3 +66,10 @@ export const promotionClient: AxiosInstance = applyInterceptors(
     headers: { "Content-Type": "application/json" },
   })
 );
+
+export const paymentClient: AxiosInstance = applyInterceptors(
+  axios.create({
+    baseURL: `${baseURL}/payments`,
+    headers: { "Content-Type": "application/json" },
+  })
+);

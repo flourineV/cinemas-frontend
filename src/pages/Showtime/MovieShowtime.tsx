@@ -25,6 +25,7 @@ import type {
 } from "@/types/showtime/showtime.type";
 import type { ProvinceResponse } from "@/types/showtime/province.type";
 import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
+import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
 import type {
   CreateBookingRequest,
   SeatSelectionDetail,
@@ -61,7 +62,10 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   const [selectedTickets, setSelectedTickets] = useState<
     Record<string, number>
   >({});
-  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  // trước: const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [selectedSeats, setSelectedSeats] = useState<ShowtimeSeatResponse[]>(
+    []
+  );
   const [totalPrice, setTotalPrice] = useState(0);
   const [seatLockTTL, setSeatLockTTL] = useState<number | null>(null);
 
@@ -209,24 +213,31 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
 
   // === LOGIC XỬ LÝ SUBMIT (ĐẶT VÉ) ===
   const prepareBookingRequest = (): CreateBookingRequest => {
-    const seatDetails: SeatSelectionDetail[] = [];
-    const ticketTypeIds: string[] = [];
-
-    // Map loại vé từ key (Format key: "SEAT_TYPE-TICKET_ID")
+    // Build ticket queues per seatType from selectedTickets
+    // selectedTickets keys format: "SEATTYPE-TICKETTYPE" e.g. "NORMAL-ADULT"
+    const ticketQueues: Record<string, string[]> = {};
     Object.entries(selectedTickets).forEach(([key, count]) => {
       const parts = key.split("-");
-      const ticketTypeId = parts[parts.length - 1];
-      for (let i = 0; i < count; i++) {
-        ticketTypeIds.push(ticketTypeId);
-      }
+      const seatType = parts[0];
+      const ticketType = parts.slice(1).join("-"); // in case ticket type contains '-'
+      ticketQueues[seatType] = ticketQueues[seatType] || [];
+      for (let i = 0; i < count; i++) ticketQueues[seatType].push(ticketType);
     });
 
-    // Map từng ghế với loại vé
-    selectedSeats.forEach((seatId, index) => {
-      seatDetails.push({
-        seatId: seatId,
-        ticketTypeId: ticketTypeIds[index] || undefined,
-      });
+    // Now map each selected seat (we have type info in selectedSeats[])
+    const seatDetails: SeatSelectionDetail[] = selectedSeats.map((seat) => {
+      // seat.type is the seatType (e.g. "NORMAL", "COUPLE", "VIP")
+      const sType = seat.type ?? "NORMAL";
+
+      // take one ticketType from queue for this seatType, fallback to ADULT
+      const queue = ticketQueues[sType] || [];
+      const ticketType = queue.length ? queue.shift()! : "ADULT";
+
+      return {
+        seatId: seat.seatId,
+        seatType: sType,
+        ticketType,
+      };
     });
 
     return {
@@ -457,7 +468,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
             <SelectTicket
               seatType="NORMAL"
               onTicketChange={setSelectedTickets}
-              selectedSeats={selectedSeats}
+              selectedSeats={selectedSeats.map((s) => s.seatId)} // giữ SelectTicket API hiện tại
             />
           </div>
 
@@ -473,7 +484,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
           <div className="pt-10 pb-36">
             <SelectSeat
               showtimeId={selectedShowtime.id}
-              onSeatSelect={setSelectedSeats}
+              onSeatSelect={setSelectedSeats} // bây giờ nhận ShowtimeSeatResponse[]
               selectedTickets={selectedTickets}
               onSeatLock={setSeatLockTTL}
             />

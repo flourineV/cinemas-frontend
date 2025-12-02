@@ -10,13 +10,13 @@ export const bookingService = {
   createBooking: async (
     data: CreateBookingRequest
   ): Promise<BookingResponse> => {
-    const res = await bookingClient.post<BookingResponse>("/bookings", data);
+    const res = await bookingClient.post<BookingResponse>("", data);
     return res.data;
   },
 
   // GET /api/bookings/{id}
   getBookingById: async (id: string): Promise<BookingResponse> => {
-    const res = await bookingClient.get<BookingResponse>(`/bookings/${id}`);
+    const res = await bookingClient.get<BookingResponse>(`/${id}`);
     return res.data;
   },
 
@@ -34,7 +34,7 @@ export const bookingService = {
     data: FinalizeBookingRequest
   ): Promise<BookingResponse> => {
     const res = await bookingClient.patch<BookingResponse>(
-      `/bookings/${id}/finalize`,
+      `/${id}/finalize`,
       data
     );
     return res.data;

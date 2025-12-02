@@ -14,10 +14,10 @@ import type { SelectedComboItem } from "@/components/checkout/SelectComboStep";
 import type { PromotionResponse } from "@/types/promotion/promotion.type";
 
 const STEPS = [
-  { id: 1, label: "KHÁCH HÀNG" },
-  { id: 2, label: "BẮP NƯỚC" },
+  { id: 1, label: "THÔNG TIN KHÁCH HÀNG" },
+  { id: 2, label: "CHỌN BẮP NƯỚC" },
   { id: 3, label: "THANH TOÁN" },
-  { id: 4, label: "XÁC NHẬN" },
+  { id: 4, label: "THÔNG TIN VÉ PHIM" },
 ];
 
 export default function CheckoutPage() {
@@ -162,15 +162,15 @@ export default function CheckoutPage() {
     <Layout>
       <div className="min-h-screen text-white flex flex-col pb-10">
         <main className="container mx-auto px-4 md:px-6 mt-14 flex-1">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-16">
             {/* LEFT COLUMN */}
-            <div className="flex flex-col space-y-8">
+            <div className="flex flex-col space-y-8 lg:col-span-2">
               <div className="text-center lg:text-left">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-300 mb-6 uppercase tracking-tighter">
                   THANH TOÁN
                 </h1>
                 {/* Steps Bar */}
-                <div className="flex justify-between items-start w-full">
+                <div className="flex justify-between items-start w-full mt-16">
                   {STEPS.map((step, index) => {
                     const isActive = activeStep === step.id;
                     const isCompleted = activeStep > step.id;
@@ -241,6 +241,9 @@ export default function CheckoutPage() {
                         setPaymentMethod={setPaymentMethod}
                         appliedPromo={appliedPromo}
                         onApplyPromo={setAppliedPromo}
+                        bookingId={booking?.id || booking?.bookingId || ""}
+                        selectedCombos={selectedCombos}
+                        finalTotal={finalTotal}
                         onNext={handleNextStep}
                         onPrev={handlePrevStep}
                       />

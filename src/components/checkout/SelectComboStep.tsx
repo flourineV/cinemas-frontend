@@ -4,6 +4,7 @@ import SelectCombo from "@/components/booking/SelectCombo";
 import { useNavigate } from "react-router-dom";
 
 export interface SelectedComboItem {
+  id: string;
   name: string;
   qty: number;
   price: number;
@@ -38,10 +39,6 @@ const SelectComboStep: React.FC<Props> = ({
       transition={{ duration: 0.35 }}
       className="space-y-4"
     >
-      <h2 className="text-2xl font-bold text-yellow-300">Chọn bắp nước</h2>
-      <p className="text-sm text-gray-300">
-        Chọn combo bắp nước bạn muốn thêm vào đơn hàng.
-      </p>
       <div className="mt-4">
         <SelectCombo onComboSelect={setSelectedCombos} />
       </div>

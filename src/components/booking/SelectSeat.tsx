@@ -15,7 +15,8 @@ import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
 
 interface SelectSeatProps {
   showtimeId: string;
-  onSeatSelect: (seatIds: string[]) => void;
+  // trước: onSeatSelect: (seatIds: string[]) => void;
+  onSeatSelect: (seats: ShowtimeSeatResponse[]) => void;
   selectedTickets: Record<string, number>;
   onSeatLock?: (ttl: number | null) => void;
 }
@@ -207,7 +208,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         );
         setSelectedSeats(updatedSeats);
         selectedSeatsRef.current = updatedSeats;
-        onSeatSelect(updatedSeats.map((s) => s.seatId));
+        onSeatSelect(updatedSeats);
       } catch (error) {
         console.error("Failed to unlock seat:", error);
       }
@@ -277,7 +278,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         const updatedSeats = [...selectedSeats, seat];
         setSelectedSeats(updatedSeats);
         selectedSeatsRef.current = updatedSeats;
-        onSeatSelect(updatedSeats.map((s) => s.seatId));
+        onSeatSelect(updatedSeats);
         if (onSeatLock) onSeatLock(lockResponse.ttl ?? null);
       } else if (lockResponse.status === "ALREADY_LOCKED") {
         await Swal.fire(
