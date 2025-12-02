@@ -7,7 +7,9 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 const PaymentResult = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"loading" | "success" | "failed">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "failed">(
+    "loading"
+  );
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -15,7 +17,7 @@ const PaymentResult = () => {
       try {
         // Lấy appTransId từ URL params (ZaloPay redirect sẽ có param này)
         const appTransId = searchParams.get("apptransid");
-        
+
         if (!appTransId) {
           setStatus("failed");
           setMessage("Không tìm thấy thông tin giao dịch");
@@ -23,12 +25,13 @@ const PaymentResult = () => {
         }
 
         // Gọi API check status
-        const response = await paymentService.checkTransactionStatus(appTransId);
+        const response =
+          await paymentService.checkTransactionStatus(appTransId);
 
         if (response.isSuccess && response.returnCode === 1) {
           setStatus("success");
           setMessage("Thanh toán thành công!");
-          
+
           // Redirect về trang booking history sau 3 giây
           setTimeout(() => {
             navigate("/profile?tab=bookings");
@@ -64,9 +67,7 @@ const PaymentResult = () => {
           {status === "success" && (
             <div className="text-center">
               <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-white mb-2">
-                {message}
-              </h1>
+              <h1 className="text-2xl font-bold text-white mb-2">{message}</h1>
               <p className="text-gray-400 mb-4">
                 Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi
               </p>

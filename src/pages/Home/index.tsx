@@ -39,7 +39,30 @@ const Home = () => {
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [catAnimation, setCatAnimation] = useState<any>(null);
   const [catInBoxAnimation, setCatInBoxAnimation] = useState<any>(null);
+  const [isVisible, setIsVisible] = useState({
+    hero: false,
+    quickBooking: false,
+    nowPlaying: false,
+    upcoming: false,
+  });
   const itemsPerSlide = 4;
+
+  // Trigger animations on mount
+  useEffect(() => {
+    setTimeout(() => setIsVisible((prev) => ({ ...prev, hero: true })), 100);
+    setTimeout(
+      () => setIsVisible((prev) => ({ ...prev, quickBooking: true })),
+      300
+    );
+    setTimeout(
+      () => setIsVisible((prev) => ({ ...prev, nowPlaying: true })),
+      500
+    );
+    setTimeout(
+      () => setIsVisible((prev) => ({ ...prev, upcoming: true })),
+      700
+    );
+  }, []);
 
   // Load cat animations
   useEffect(() => {
@@ -201,7 +224,9 @@ const Home = () => {
     <Layout>
       <div className="w-full min-h-screen pb-16 bg-gray-100">
         {/* Hero Section */}
-        <div className="relative w-full h-[70vh] overflow-hidden">
+        <div
+          className={`relative w-full h-[70vh] overflow-hidden transition-all duration-1000 ${isVisible.hero ? "opacity-100" : "opacity-0"}`}
+        >
           {/* Background Image */}
           <img
             src="/buvn.jpg"
@@ -239,11 +264,15 @@ const Home = () => {
         </div>
 
         {/* QuickBookingBar positioned below hero */}
-        <section className="relative w-full max-w-5xl mx-auto z-20 -mt-16">
+        <section
+          className={`relative w-full max-w-5xl mx-auto z-20 -mt-16 transition-all duration-1000 ${isVisible.quickBooking ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        >
           <QuickBookingBar />
         </section>
 
-        <section className="relative w-full max-w-5xl mx-auto mt-10">
+        <section
+          className={`relative w-full max-w-5xl mx-auto mt-10 transition-all duration-1000 ${isVisible.nowPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        >
           <div className="relative flex items-center justify-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
               PHIM ĐANG CHIẾU
@@ -259,7 +288,9 @@ const Home = () => {
             )}
           </div>
           {loadingNowPlaying ? (
-            <p className="text-white text-center">Đang tải phim...</p>
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+            </div>
           ) : nowPlaying.length === 0 ? (
             <p className="text-white text-center">Không có phim nào</p>
           ) : (
@@ -278,7 +309,9 @@ const Home = () => {
         </section>
 
         {/* ---------------- PHIM SẮP CHIẾU ---------------- */}
-        <section className="relative w-full max-w-5xl mx-auto mt-20">
+        <section
+          className={`relative w-full max-w-5xl mx-auto mt-20 transition-all duration-1000 ${isVisible.upcoming ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        >
           <div className="relative flex items-center justify-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
               PHIM SẮP CHIẾU
@@ -294,7 +327,9 @@ const Home = () => {
             )}
           </div>
           {loadingUpcoming ? (
-            <p className="text-white text-center">Đang tải phim...</p>
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+            </div>
           ) : upcoming.length === 0 ? (
             <p className="text-white text-center">Không có phim nào</p>
           ) : (
