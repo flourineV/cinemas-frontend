@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 
-import { bookingService } from "@/services/booking/bookingService";
+import { bookingService } from "@/services/booking/booking.service";
 import type { BookingResponse } from "@/types/booking/booking.type";
 import type { PageResponse } from "@/types/PageResponse";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -40,11 +40,17 @@ export default function BookingManagementTable(): React.JSX.Element {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  useOutsideClick(dropdownRef, () => setIsStatusDropdownOpen(false), isStatusDropdownOpen);
+  useOutsideClick(
+    dropdownRef,
+    () => setIsStatusDropdownOpen(false),
+    isStatusDropdownOpen
+  );
 
   // Modal detail
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalBooking, setModalBooking] = useState<BookingResponse | null>(null);
+  const [modalBooking, setModalBooking] = useState<BookingResponse | null>(
+    null
+  );
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   const fetchBookings = async (page = 1, showSkeleton = false) => {
@@ -61,7 +67,8 @@ export default function BookingManagementTable(): React.JSX.Element {
         sortDir: "desc",
       };
 
-      const pageResp: PageResponse<BookingResponse> = await bookingService.getBookings(params);
+      const pageResp: PageResponse<BookingResponse> =
+        await bookingService.getBookings(params);
 
       const items = pageResp.data ?? [];
       setBookings(items);
@@ -109,7 +116,12 @@ export default function BookingManagementTable(): React.JSX.Element {
     if (!confirm.isConfirmed) return;
     try {
       await bookingService.deleteBooking(id);
-      Swal.fire({ icon: "success", title: "Đã xóa", timer: 900, showConfirmButton: false });
+      Swal.fire({
+        icon: "success",
+        title: "Đã xóa",
+        timer: 900,
+        showConfirmButton: false,
+      });
       fetchBookings(paging.page);
     } catch (err) {
       console.error(err);
@@ -146,7 +158,15 @@ export default function BookingManagementTable(): React.JSX.Element {
 
   function exportCurrentCSV() {
     const headers = [
-      "id", "bookingCode", "user", "showtime", "theater", "status", "paymentMethod", "price", "createdAt"
+      "id",
+      "bookingCode",
+      "user",
+      "showtime",
+      "theater",
+      "status",
+      "paymentMethod",
+      "price",
+      "createdAt",
     ];
     const rows = bookings.map((b) => [
       b.bookingId,
@@ -174,7 +194,11 @@ export default function BookingManagementTable(): React.JSX.Element {
   }
 
   if (loading) {
-    return <div className="text-center text-gray-400 py-10">Đang tải danh sách booking...</div>;
+    return (
+      <div className="text-center text-gray-400 py-10">
+        Đang tải danh sách booking...
+      </div>
+    );
   }
 
   return (
@@ -237,42 +261,84 @@ export default function BookingManagementTable(): React.JSX.Element {
           <table className="min-w-full divide-y divide-yellow-400/80 table-fixed">
             <thead className="sticky top-0 z-10 border-b border-yellow-400/70">
               <tr className="bg-black/40 backdrop-blur-sm">
-                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">Mã booking</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">Tên khách hàng</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">Lịch chiếu</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">Rạp</th>
-                <th className="px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">Trạng thái</th>
-                <th className="px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">Phương thức thanh toán</th>
-                <th className="px-6 py-3 text-right text-sm font-bold text-yellow-400 uppercase">Tổng tiền</th>
-                <th className="px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">Hành động</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
+                  Mã booking
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
+                  Tên khách hàng
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
+                  Lịch chiếu
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
+                  Rạp
+                </th>
+                <th className="px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                  Trạng thái
+                </th>
+                <th className="px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                  Phương thức thanh toán
+                </th>
+                <th className="px-6 py-3 text-right text-sm font-bold text-yellow-400 uppercase">
+                  Tổng tiền
+                </th>
+                <th className="px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                  Hành động
+                </th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-yellow-400/40">
               {bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-yellow-100 italic text-base">
+                  <td
+                    colSpan={8}
+                    className="text-center py-10 text-yellow-100 italic text-base"
+                  >
                     Không có dữ liệu
                   </td>
                 </tr>
               ) : (
                 bookings.map((b) => (
-                  <tr key={b.bookingId} className={`transition duration-150 ${isRefreshing ? "opacity-60 pointer-events-none" : ""} hover:bg-black/40`}>
-                    <td className="px-6 py-3 text-yellow-100">{b.bookingCode}</td>
+                  <tr
+                    key={b.bookingId}
+                    className={`transition duration-150 ${isRefreshing ? "opacity-60 pointer-events-none" : ""} hover:bg-black/40`}
+                  >
+                    <td className="px-6 py-3 text-yellow-100">
+                      {b.bookingCode}
+                    </td>
                     <td className="px-6 py-3 text-yellow-100">{getName(b)}</td>
-                    <td className="px-6 py-3 text-yellow-100">{getShowtimeName(b)}</td>
-                    <td className="px-6 py-3 text-yellow-100">{getTheaterName(b)}</td>
+                    <td className="px-6 py-3 text-yellow-100">
+                      {getShowtimeName(b)}
+                    </td>
+                    <td className="px-6 py-3 text-yellow-100">
+                      {getTheaterName(b)}
+                    </td>
 
                     <td className="px-6 py-3 text-center">
-                      <Badge type="AccountStatus" value={b.status} raw={b.status} />
+                      <Badge
+                        type="AccountStatus"
+                        value={b.status}
+                        raw={b.status}
+                      />
                     </td>
-                    <td className="px-6 py-3 text-center text-yellow-100">{getPaymentMethod(b)}</td>
-                    <td className="px-6 py-3 text-right text-yellow-100">{getPrice(b)}</td>
+                    <td className="px-6 py-3 text-center text-yellow-100">
+                      {getPaymentMethod(b)}
+                    </td>
+                    <td className="px-6 py-3 text-right text-yellow-100">
+                      {getPrice(b)}
+                    </td>
                     <td className="px-6 py-3 text-center flex justify-center gap-2">
-                      <button onClick={() => openModal(b.bookingId)} className="px-2 py-1 rounded text-base text-white flex items-center gap-1">
+                      <button
+                        onClick={() => openModal(b.bookingId)}
+                        className="px-2 py-1 rounded text-base text-white flex items-center gap-1"
+                      >
                         <Eye size={14} /> Xem
                       </button>
-                      <button onClick={() => onDelete(b.bookingId)} className="px-2 py-1 rounded text-base text-red-400">
+                      <button
+                        onClick={() => onDelete(b.bookingId)}
+                        className="px-2 py-1 rounded text-base text-red-400"
+                      >
                         <Trash2 size={14} />
                       </button>
                     </td>
@@ -290,10 +356,18 @@ export default function BookingManagementTable(): React.JSX.Element {
           </span>
 
           <div className="flex items-center space-x-2">
-            <button onClick={goToPrevPage} disabled={paging.page <= 1 || isRefreshing} className={`p-2 rounded-md transition ${paging.page <= 1 || isRefreshing ? "text-yellow-100/50 cursor-not-allowed" : "text-yellow-100 hover:bg-black/40"}`}>
+            <button
+              onClick={goToPrevPage}
+              disabled={paging.page <= 1 || isRefreshing}
+              className={`p-2 rounded-md transition ${paging.page <= 1 || isRefreshing ? "text-yellow-100/50 cursor-not-allowed" : "text-yellow-100 hover:bg-black/40"}`}
+            >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={goToNextPage} disabled={paging.page >= paging.totalPages || isRefreshing} className={`p-2 rounded-md transition ${paging.page >= paging.totalPages || isRefreshing ? "text-yellow-100/50 cursor-not-allowed" : "text-yellow-100 hover:bg-black/40"}`}>
+            <button
+              onClick={goToNextPage}
+              disabled={paging.page >= paging.totalPages || isRefreshing}
+              className={`p-2 rounded-md transition ${paging.page >= paging.totalPages || isRefreshing ? "text-yellow-100/50 cursor-not-allowed" : "text-yellow-100 hover:bg-black/40"}`}
+            >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -303,25 +377,67 @@ export default function BookingManagementTable(): React.JSX.Element {
       {/* Modal */}
       {isModalOpen && modalBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal} />
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={closeModal}
+          />
 
           <div className="relative w-full max-w-3xl bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white z-10 overflow-y-auto max-h-[90vh]">
             <div className="flex items-start justify-between">
-              <h3 className="text-xl font-bold mb-3 text-yellow-400">Chi tiết booking</h3>
-              <button onClick={closeModal} className="px-3 py-2 rounded-lg text-yellow-100 hover:bg-black/40">Đóng</button>
+              <h3 className="text-xl font-bold mb-3 text-yellow-400">
+                Chi tiết booking
+              </h3>
+              <button
+                onClick={closeModal}
+                className="px-3 py-2 rounded-lg text-yellow-100 hover:bg-black/40"
+              >
+                Đóng
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputField label="Booking Code" value={modalBooking.bookingCode} disabled />
+              <InputField
+                label="Booking Code"
+                value={modalBooking.bookingCode}
+                disabled
+              />
               <InputField label="User" value={getName(modalBooking)} disabled />
-              <InputField label="Showtime" value={getShowtimeName(modalBooking)} disabled />
-              <InputField label="Theater" value={getTheaterName(modalBooking)} disabled />
+              <InputField
+                label="Showtime"
+                value={getShowtimeName(modalBooking)}
+                disabled
+              />
+              <InputField
+                label="Theater"
+                value={getTheaterName(modalBooking)}
+                disabled
+              />
               <InputField label="Status" value={modalBooking.status} disabled />
-              <InputField label="Payment Method" value={getPaymentMethod(modalBooking)} disabled />
-              <InputField label="Total Price" value={modalBooking.totalPrice} disabled />
-              <InputField label="Discount Amount" value={modalBooking.discountAmount} disabled />
-              <InputField label="Final Price" value={modalBooking.finalPrice} disabled />
-              <InputField label="Created At" value={modalBooking.createdAt} disabled />
+              <InputField
+                label="Payment Method"
+                value={getPaymentMethod(modalBooking)}
+                disabled
+              />
+              <InputField
+                label="Total Price"
+                value={modalBooking.totalPrice}
+                disabled
+              />
+              <InputField
+                label="Discount Amount"
+                value={modalBooking.discountAmount}
+                disabled
+              />
+              <InputField
+                label="Final Price"
+                value={modalBooking.finalPrice}
+                disabled
+              />
+              <InputField
+                label="Created At"
+                value={modalBooking.createdAt}
+                disabled
+              />
             </div>
           </div>
         </div>

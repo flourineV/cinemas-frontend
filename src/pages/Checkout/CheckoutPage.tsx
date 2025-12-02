@@ -243,7 +243,6 @@ export default function CheckoutPage() {
                         onApplyPromo={setAppliedPromo}
                         bookingId={booking?.id || booking?.bookingId || ""}
                         selectedCombos={selectedCombos}
-                        finalTotal={finalTotal}
                         onNext={handleNextStep}
                         onPrev={handlePrevStep}
                       />

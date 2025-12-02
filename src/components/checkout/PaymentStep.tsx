@@ -10,6 +10,7 @@ import type {
   FinalizeBookingRequest,
   CalculatedFnbItemDto,
 } from "@/types/booking/booking.type";
+import type { SelectedComboItem } from "@/components/checkout/SelectComboStep";
 
 interface Props {
   paymentMethod: string;
@@ -17,8 +18,7 @@ interface Props {
   appliedPromo: PromotionResponse | null;
   onApplyPromo: (promo: PromotionResponse | null) => void;
   bookingId: string;
-  selectedCombos: any;
-  finalTotal: number;
+  selectedCombos: Record<string, SelectedComboItem>;
   onNext: () => void;
   onPrev: () => void;
 }
@@ -32,8 +32,6 @@ const PaymentStep: React.FC<Props> = ({
   onApplyPromo,
   bookingId,
   selectedCombos,
-  finalTotal,
-  onNext,
   onPrev,
 }) => {
   const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
