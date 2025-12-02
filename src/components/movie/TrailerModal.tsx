@@ -54,7 +54,7 @@ export default function TrailerModal({
       {/* Nút mở trailer */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center justify-center border border-yellow-700 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors hover:bg-white/10 w-1/2"
+        className="flex items-center justify-center border border-gray-600 bg-black/80 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-all hover:bg-white hover:text-black shadow-md w-1/2"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

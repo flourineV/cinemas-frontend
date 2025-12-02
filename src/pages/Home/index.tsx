@@ -6,10 +6,13 @@ import {
   Clock,
   Globe,
   ShieldAlert,
+  ShieldCheck,
+  TableProperties,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import AnimatedButton from "@/components/ui/AnimatedButton";
+import Lottie from "lottie-react";
 
 // Hooks
 import { useCarousel } from "@/hooks/useCarousel";
@@ -21,8 +24,6 @@ import type { MovieSummary } from "@/types/movie/movie.type";
 // Components
 import QuickBookingBar from "../../components/home/QuickBookingBar";
 import TrailerModal from "@/components/movie/TrailerModal";
-import BannerCarousel from "@/components/home/BannerCarousel";
-
 // Utils
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import {
@@ -31,18 +32,29 @@ import {
   formatGenres,
 } from "@/utils/format";
 
-const images = [
-  "https://images.spiderum.com/sp-images/8d5590c080e311ed8a6481196edc880f.jpeg",
-  "https://cdn2.fptshop.com.vn/unsafe/Uploads/images/tin-tuc/176175/Originals/poster-film-5.jpg",
-  "https://insieutoc.vn/wp-content/uploads/2021/02/poster-ngang.jpg",
-];
-
 const Home = () => {
   const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
   const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
   const [loadingNowPlaying, setLoadingNowPlaying] = useState(true);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
+  const [catAnimation, setCatAnimation] = useState<any>(null);
+  const [catInBoxAnimation, setCatInBoxAnimation] = useState<any>(null);
   const itemsPerSlide = 4;
+
+  // Load cat animations
+  useEffect(() => {
+    fetch("/Loader cat.json")
+      .then((res) => res.json())
+      .then((data) => setCatAnimation(data))
+      .catch((err) => console.error("Failed to load cat animation:", err));
+
+    fetch("/Cat_in_Box.json")
+      .then((res) => res.json())
+      .then((data) => setCatInBoxAnimation(data))
+      .catch((err) =>
+        console.error("Failed to load cat in box animation:", err)
+      );
+  }, []);
 
   // Fetch movie data
   useEffect(() => {
@@ -67,7 +79,7 @@ const Home = () => {
           to={`/movies/${movie.id}`}
           className="relative flex flex-col transition"
         >
-          <div className="relative rounded-sm border border-yellow-700 overflow-hidden shadow-md">
+          <div className="relative rounded-sm border border-black overflow-hidden shadow-xl">
             <img
               src={getPosterUrl(movie.posterUrl)}
               alt={movie.title}
@@ -79,25 +91,37 @@ const Home = () => {
                   {formatTitle(movie.title)}
                 </h3>
                 <p className="text-xs font-light mb-1 flex items-center">
-                  <MapPin size={16} className="mr-2 text-red-500" />{" "}
+                  <TableProperties
+                    size={23}
+                    className="mr-2 text-orange-500 flex-shrink-0"
+                  />
                   {formatGenres(movie.genres)}
                 </p>
-                <p className="text-xs font-light mb-1 flex items-center">
-                  <Clock size={16} className="mr-2 text-red-500" /> {movie.time}
-                  ’
+                <p className="text-xs font-light mb-2 flex items-center">
+                  <Clock
+                    size={23}
+                    className="mr-2 text-orange-500 flex-shrink-0 "
+                  />{" "}
+                  {movie.time}’
                 </p>
-                <p className="text-xs font-light mb-1 flex items-center">
-                  <Globe size={16} className="mr-2 text-red-500" />{" "}
+                <p className="text-xs font-light mb-2 flex items-center">
+                  <Globe
+                    size={23}
+                    className="mr-2 text-orange-500 flex-shrink-0"
+                  />{" "}
                   {formatSpokenLanguages(movie.spokenLanguages)}
                 </p>
                 <p className="text-xs font-light flex items-center">
-                  <ShieldAlert size={16} className="mr-2 text-red-500" />{" "}
+                  <ShieldCheck
+                    size={23}
+                    className="mr-2 text-orange-500 flex-shrink-0"
+                  />{" "}
                   {movie.age}
                 </p>
               </div>
             </div>
           </div>
-          <div className="p-2 flex items-center justify-center text-center text-white text-base font-semibold h-[70px] uppercase">
+          <div className="p-2 flex items-center justify-center text-center text-black text-base font-extrabold h-[70px] uppercase">
             {formatTitle(movie.title)}
           </div>
         </Link>
@@ -151,13 +175,13 @@ const Home = () => {
       </div>
       <button
         onClick={carousel.prevSlide}
-        className="absolute -left-16 top-[37%] -translate-y-[45%] z-20 p-3 rounded-full text-white"
+        className="absolute -left-16 top-[37%] -translate-y-[45%] z-20 p-3 rounded-full text-black"
       >
         <ChevronLeft size={44} />
       </button>
       <button
         onClick={carousel.nextSlide}
-        className="absolute -right-16 top-[37%] -translate-y-[45%] z-20 p-3 rounded-full text-white "
+        className="absolute -right-16 top-[37%] -translate-y-[45%] z-20 p-3 rounded-full text-black"
       >
         <ChevronRight size={44} />
       </button>
@@ -166,7 +190,7 @@ const Home = () => {
           <button
             key={idx}
             onClick={() => carousel.goToSlide(idx)}
-            className={`w-2 h-2 rounded-full ${idx === carousel.currentIndex ? "bg-white" : "bg-gray-500"}`}
+            className={`w-2 h-2 rounded-full ${idx === carousel.currentIndex ? "bg-black" : "bg-gray-400"}`}
           />
         ))}
       </div>
@@ -175,20 +199,65 @@ const Home = () => {
 
   return (
     <Layout>
-      <div className="w-full min-h-screen pb-16">
-        {/* ---------------- BANNER ---------------- */}
-        <BannerCarousel images={images} />
+      <div className="w-full min-h-screen pb-16 bg-gray-100">
+        {/* Hero Section */}
+        <div className="relative w-full h-[70vh] overflow-hidden">
+          {/* Background Image */}
+          <img
+            src="/buvn.jpg"
+            alt="Cinema Background"
+            className="w-full h-full object-cover"
+          />
 
-        {/* ---------------- QUICK BOOKING ---------------- */}
-        <section className="relative w-full max-w-5xl mx-auto">
+          {/* Vignette Overlay - Tối xung quanh, sáng ở giữa */}
+          <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/60 to-black/70"></div>
+
+          {/* Gradient Overlay - Mờ dần xuống và hòa vào background cam */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-100/40 to-gray-100"></div>
+
+          {/* Content - CINEHUB + Button */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+            <h1
+              className="text-4xl md:text-7xl font-extrabold text-white mb-4 tracking-wider"
+              style={{
+                textShadow:
+                  "0 0 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.7), 4px 4px 8px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
+              }}
+            >
+              CINEHUB
+            </h1>
+            <p
+              className="text-xl md:text-2xl text-white font-light mb-8"
+              style={{
+                textShadow:
+                  "0 0 10px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
+              }}
+            >
+              Trải nghiệm điện ảnh đỉnh cao
+            </p>
+          </div>
+        </div>
+
+        {/* QuickBookingBar positioned below hero */}
+        <section className="relative w-full max-w-5xl mx-auto z-20 -mt-16">
           <QuickBookingBar />
         </section>
 
-        {/* ---------------- PHIM ĐANG CHIẾU ---------------- */}
-        <section className="relative w-full max-w-5xl mx-auto mt-12">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-10 text-center">
-            PHIM ĐANG CHIẾU
-          </h2>
+        <section className="relative w-full max-w-5xl mx-auto mt-10">
+          <div className="relative flex items-center justify-center mb-10">
+            <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
+              PHIM ĐANG CHIẾU
+            </h2>
+            {catAnimation && (
+              <div className="absolute left-1/2 translate-x-[calc(50%+180px)] md:translate-x-[calc(50%+120px)]">
+                <Lottie
+                  animationData={catAnimation}
+                  loop={true}
+                  style={{ width: 80, height: 80 }}
+                />
+              </div>
+            )}
+          </div>
           {loadingNowPlaying ? (
             <p className="text-white text-center">Đang tải phim...</p>
           ) : nowPlaying.length === 0 ? (
@@ -200,7 +269,7 @@ const Home = () => {
             <div className="flex justify-center mt-5">
               <Link
                 to="/movies/now-playing"
-                className="bg-transparent border border-yellow-700 text-white px-6 py-2 rounded-md font-semibold hover:bg-orange-500 hover:text-black transition"
+                className="bg-black/80 border border-gray-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-white hover:text-black transition-all shadow-md"
               >
                 Xem thêm
               </Link>
@@ -209,10 +278,21 @@ const Home = () => {
         </section>
 
         {/* ---------------- PHIM SẮP CHIẾU ---------------- */}
-        <section className="relative w-full max-w-6xl mx-auto mt-20">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-yellow-400 mb-10 text-center">
-            PHIM SẮP CHIẾU
-          </h2>
+        <section className="relative w-full max-w-5xl mx-auto mt-20">
+          <div className="relative flex items-center justify-center mb-10">
+            <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
+              PHIM SẮP CHIẾU
+            </h2>
+            {catInBoxAnimation && (
+              <div className="absolute left-1/2 translate-x-[calc(50%+200px)] md:translate-x-[calc(50%+140px)]">
+                <Lottie
+                  animationData={catInBoxAnimation}
+                  loop={true}
+                  style={{ width: 60, height: 60 }}
+                />
+              </div>
+            )}
+          </div>
           {loadingUpcoming ? (
             <p className="text-white text-center">Đang tải phim...</p>
           ) : upcoming.length === 0 ? (
@@ -224,7 +304,7 @@ const Home = () => {
             <div className="flex justify-center mt-5">
               <Link
                 to="/movies/upcoming"
-                className="bg-transparent border border-yellow-700 text-white px-6 py-2 rounded-md font-semibold hover:bg-orange-500 hover:text-black transition"
+                className="bg-black/80 border border-gray-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-white hover:text-black transition-all shadow-md"
               >
                 Xem thêm
               </Link>

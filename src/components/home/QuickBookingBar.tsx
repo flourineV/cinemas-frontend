@@ -112,10 +112,10 @@ function CustomSelect({
         disabled={disabled}
         className="
           w-full text-left px-4 py-3 pr-12 rounded-lg h-12 leading-tight
-          bg-transparent text-white border border-yellow-300/90 font-semibold outline-none
-          focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/30
-          backdrop-blur-sm hover:bg-white/5 transition-shadow
-          shadow-[0_6px_14px_rgba(0,0,0,0.45)]
+          bg-white/10 text-white border border-gray-600 font-semibold outline-none
+          focus:border-white focus:ring-2 focus:ring-white/30
+          backdrop-blur-sm hover:bg-white/20 transition-all
+          shadow-[0_30px_60px_rgba(0,0,0,0.7)]
         "
       >
         <span className="truncate block">{currentLabel}</span>
@@ -139,8 +139,8 @@ function CustomSelect({
           tabIndex={-1}
           className={`
             absolute z-50 left-0 top-full mt-2 min-w-full max-h-56 overflow-auto
-            bg-black/40 backdrop-blur-xl border border-yellow-400/40
-            shadow-[0_0_15px_rgba(255,200,0,0.25)]
+            bg-black/95 backdrop-blur-xl border border-gray-700
+            shadow-[0_8px_24px_rgba(0,0,0,0.5)]
             rounded-lg
             transform origin-top transition-all duration-180 ease-out
             ${anim ? "scale-100 opacity-100" : "scale-95 opacity-0"}
@@ -162,10 +162,10 @@ function CustomSelect({
                   handleClose();
                 }}
                 className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors text-white
-                  ${isHighlighted ? "bg-yellow-400/20" : ""} ${isSelected ? "font-semibold text-yellow-300" : ""}`}
+                  ${isHighlighted ? "bg-white/20" : ""} ${isSelected ? "font-semibold" : ""}`}
               >
                 <span className="truncate">{opt.label}</span>
-                {isSelected && <Check size={16} className="text-yellow-400" />}
+                {isSelected && <Check size={16} className="text-white" />}
               </li>
             );
           })}
@@ -221,14 +221,14 @@ const QuickBookingBar: React.FC = () => {
 
   return (
     <div
-      className="relative w-full bg-gradient-to-r from-[#3a0d0d] via-[#4a1a1a] to-[#3a0d0d]
-                    shadow-[0_0_25px_rgba(255,0,0,0.3)]
-                    border border-yellow-700 px-6 py-6 overflow-visible"
+      className="relative w-full bg-black/90
+                    shadow-[0_8px_32px_rgba(0,0,0,0.4)]
+                    border border-gray-700 px-6 py-6 overflow-visible backdrop-blur-md rounded-xl"
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-red-900/10 via-yellow-700/5 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 pointer-events-none rounded-xl" />
 
       <div className="flex flex-col lg:flex-row items-center gap-5 w-full relative z-10">
-        <h2 className="text-2xl font-extrabold text-yellow-400 whitespace-nowrap drop-shadow-[0_0_10px_rgba(255,200,0,0.4)]">
+        <h2 className="text-2xl font-extrabold text-white whitespace-nowrap">
           ĐẶT VÉ NHANH
         </h2>
 
@@ -279,19 +279,20 @@ const QuickBookingBar: React.FC = () => {
 
         <button
           disabled={!selectedTime}
-          className="relative overflow-hidden px-10 py-3 rounded-lg font-extrabold text-white 
-                     text-lg shadow-[0_0_15px_rgba(255,0,0,0.4)] 
-                     transition-all duration-500 ease-out disabled:opacity-60 disabled:cursor-not-allowed"
+          className="relative overflow-hidden px-10 py-3 rounded-lg font-extrabold text-black 
+                     text-lg shadow-[0_0_20px_rgba(251,146,60,0.6)] 
+                     transition-all duration-500 ease-out disabled:opacity-50 disabled:cursor-default
+                     hover:scale-105 hover:shadow-[0_0_30px_rgba(251,146,60,0.8)]"
           onClick={() => {
             alert(
               `Đặt: ${selectedCinema} | ${selectedMovie} | ${selectedDate} | ${selectedTime}`
             );
           }}
         >
-          <span className="relative z-10">ĐẶT NGAY</span>
+          <span className="relative z-10 drop-shadow-sm">ĐẶT NGAY</span>
           <div
-            className="absolute inset-0 bg-gradient-to-r from-red-600 via-yellow-400 to-red-600 
-                       bg-[length:200%_100%] animate-gradientMove rounded-lg opacity-90"
+            className="absolute inset-0 bg-gradient-to-r from-orange-500 via-yellow-400 to-orange-500 
+                       bg-[length:200%_100%] animate-gradientMove rounded-lg"
           />
         </button>
       </div>

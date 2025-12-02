@@ -34,7 +34,7 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 
     case "orange-to-f3ea28":
       baseBgClasses = "bg-[#FF8D00]";
-      hoverFillColor = "bg-[#F3EA28]";
+      hoverFillColor = "bg-[#D1EB23]";
       contentTextClasses = "text-gray-700 group-hover:text-black";
       break;
 
@@ -61,7 +61,7 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     <button
       className={`
         relative overflow-hidden 
-        px-6 py-2 rounded-sm font-bold transition-all duration-500 ease-out 
+        px-6 py-2 rounded-lg font-bold transition-all duration-500 ease-out 
         ${baseBgClasses} 
         ${baseTextClasses} 
         ${disabledClasses}
