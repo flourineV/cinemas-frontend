@@ -236,10 +236,6 @@ export default function ShowtimeTable({
 
   return (
     <div className="bg-black/60 backdrop-blur-md border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white">
-      <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent mb-6">
-        Quản lý lịch chiếu
-      </h2>
-
       {/* Filters Row 1: Search, Province, Theater, Room */}
       <div className="flex flex-col md:flex-row gap-3 mb-3">
         <div className="flex items-center flex-1 relative">

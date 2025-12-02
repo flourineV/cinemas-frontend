@@ -61,3 +61,22 @@ export interface BookingResponse {
   createdAt: string; // LocalDateTime -> string ISO
   updatedAt: string;
 }
+
+// Map từ BookingCriteria.java 
+export interface BookingCriteria {
+  userId?: string;         // UUID
+  showtimeId?: string;     // UUID
+  theaterId?: string;      // UUID
+  bookingCode?: string;
+  status?: string;         // PENDING, CONFIRMED, CANCELLED, v.v.
+  paymentMethod?: string;
+  guestName?: string;
+  guestEmail?: string;
+
+  fromDate?: string;       // ISO string, map từ LocalDateTime
+  toDate?: string;         // ISO string
+
+  minPrice?: number;       // BigDecimal -> number
+  maxPrice?: number;       // BigDecimal -> number
+}
+

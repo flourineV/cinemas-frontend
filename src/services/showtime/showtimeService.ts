@@ -107,6 +107,11 @@ export const showtimeService = {
       roomId?: string;
       movieId?: string;
       showtimeId?: string;
+      selectedDate?: string;
+      startOfDay?: string;
+      endOfDay?: string;
+      fromTime?: string;
+      toTime?: string;
     } = {},
     page = 1,
     size = 10,
@@ -116,7 +121,7 @@ export const showtimeService = {
     const params: Record<string, any> = { page, size, ...filters };
     if (sortBy) params.sortBy = sortBy;
     if (sortType) params.sortType = sortType;
-    const res = await showtimeClient.get("/available", { params });
+    const res = await showtimeClient.get("/admin/available", { params });
     return res.data;
   },
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
-import { bookingService } from "@/services/booking/booking.service";
+import { bookingService } from "@/services/booking/bookingService";
 import type { CreateBookingRequest } from "@/types/booking/booking.type";
 
 interface Props {

@@ -1,58 +1,87 @@
-// src/components/admin/MovieManagementTable.tsx
+//scr/components/admin/MovieManagementTable.tsx
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Search,
   Trash2,
-  Edit2,
+  Archive,
   ChevronLeft,
   ChevronRight,
   Eye,
   Loader2,
+  ChevronDown,
   Download,
 } from "lucide-react";
 import Swal from "sweetalert2";
 
 import { movieManagementService } from "@/services/movie/movieManagementService";
-import type {
-  MovieSummary,
-  MovieDetail,
-  MovieStatus,
-} from "@/types/movie/movie.type";
+import type { MovieSummary, MovieDetail } from "@/types/movie/movie.type";
 import type { GetMoviesParams } from "@/types/movie/stats.type";
 import type { PageResponse } from "@/types/PageResponse";
 import { useDebounce } from "@/hooks/useDebounce";
-import { GENRES_OPTIONS } from "@/constants/MovieGenres";
+import { useOutsideClick } from "@/hooks/useOutsideClick";
+import { Badge } from "@/components/ui/Badge";
+import { InputField, TextareaField } from "@/components/ui/FormFields";
+
+const STATUS_LABELS: Record<string, string> = {
+  ALL: "Tất cả",
+  nowPlaying: "Đang chiếu",
+  upcoming: "Sắp chiếu",
+  archived: "Lưu trữ",
+};
+
+// frontend status key => backend enum
+const STATUS_MAP: Record<string, string | undefined> = {
+  ALL: undefined,           // không gửi status nếu ALL
+  nowPlaying: "NOW_PLAYING",
+  upcoming: "UPCOMING",
+  archived: "ARCHIVED",
+};
 
 const ITEMS_PER_PAGE = 10;
 
-interface MovieManagementTableProps {
-  status: MovieStatus;
-  title: string;
-}
-
-export default function MovieManagementTable({
-  status,
-  title,
-}: MovieManagementTableProps): React.JSX.Element {
+export default function MovieManagementTable(): React.JSX.Element {
   const [movies, setMovies] = useState<MovieSummary[]>([]);
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // search + debounce
+  // search + debounce + filters
   const [searchTerm, setSearchTerm] = useState<string>("");
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  // genres filter
-  const [selectedGenre, setSelectedGenre] = useState<string>("Tất cả");
+  const [selectedStatus, setSelectedStatus] = useState<keyof typeof STATUS_LABELS | string>("ALL");
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  useOutsideClick(
+    dropdownRef,
+    () => setIsStatusDropdownOpen(false),
+    isStatusDropdownOpen
+  );
 
-  // modal state: previewMovie = MovieSummary shown immediately;
-  // modalMovie = MovieDetail, loaded lazily when entering edit mode
+  const [selectedGenre, setSelectedGenre] = useState<string>("ALL");
+  const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
+  const genreDropdownRef = useRef<HTMLDivElement | null>(null);
+  useOutsideClick(
+    genreDropdownRef,
+    () => setIsGenreDropdownOpen(false),
+    isGenreDropdownOpen
+  );
+
+  const allGenres = Array.from(
+    new Set(
+      movies.flatMap((m) => m.genres || [])
+    )
+  ).sort();
+
+  const filteredMovies =
+    selectedGenre === "ALL"
+      ? movies
+      : movies.filter((m) => (m.genres || []).includes(selectedGenre));
+
+  // modal state: chỉ dùng MovieDetail
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [previewMovie, setPreviewMovie] = useState<MovieSummary | null>(null);
   const [modalMovie, setModalMovie] = useState<MovieDetail | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   // fetch movies
@@ -67,11 +96,6 @@ export default function MovieManagementTable({
         keyword:
           debouncedSearch && debouncedSearch.length > 0
             ? debouncedSearch
-            : undefined,
-        status,
-        genres:
-          selectedGenre && selectedGenre !== "Tất cả"
-            ? selectedGenre
             : undefined,
         sortBy: "title",
         sortType: "ASC",
@@ -104,14 +128,14 @@ export default function MovieManagementTable({
   useEffect(() => {
     fetchMovies(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, selectedGenre]);
+  }, []);
 
   useEffect(() => {
     if (!loading) {
       fetchMovies(paging.page, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paging.page]);
+  }, [selectedStatus, debouncedSearch, paging.page]);
 
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing)
@@ -156,48 +180,33 @@ export default function MovieManagementTable({
     }
   }
 
-  // open modal quickly using MovieSummary (no API call)
-  function openModalWithSummary(summary: MovieSummary) {
-    setPreviewMovie(summary);
-    setModalMovie(null); // clear any previously loaded detail
-    setIsEditMode(false);
+  // open modal: Movie Detail
+  async function openModal(id: string) {
     setIsModalOpen(true);
-    setIsDetailLoading(false);
-  }
-
-  function closeModal() {
-    setIsModalOpen(false);
-    setPreviewMovie(null);
-    setModalMovie(null);
-    setIsEditMode(false);
-    setIsDetailLoading(false);
-  }
-
-  // when user wants to edit, fetch full MovieDetail lazily (if not already)
-  async function openEditMode() {
-    if (!previewMovie) return;
-    if (modalMovie) {
-      setIsEditMode(true);
-      return;
-    }
-
+    setIsDetailLoading(true);
     try {
-      setIsDetailLoading(true);
-      const detail = await movieManagementService.getByUuid(
-        String(previewMovie.id)
-      );
+      const detail = await movieManagementService.getByUuid(id);
       setModalMovie(detail);
-      setIsEditMode(true);
     } catch (err) {
-      console.error("load detail error", err);
+      console.error(err);
       Swal.fire({ icon: "error", title: "Không thể tải chi tiết phim" });
+      setIsModalOpen(false);
     } finally {
       setIsDetailLoading(false);
     }
   }
 
+  function closeModal() {
+    setIsModalOpen(false);
+    setModalMovie(null);
+    setIsDetailLoading(false);
+  }
+
+  function updateModalMovie<K extends keyof MovieDetail>(key: K, value: MovieDetail[K]) {
+    setModalMovie((prev) => prev ? { ...prev, [key]: value } : null);
+  }
+
   async function submitMovieUpdate() {
-    // if editing, modalMovie must contain details
     if (!modalMovie) return;
     try {
       await movieManagementService.updateMovie(modalMovie.id, modalMovie);
@@ -209,22 +218,8 @@ export default function MovieManagementTable({
         background: "#0b1020",
         color: "#fff",
       });
-      setIsEditMode(false);
       // refresh list and update previewMovie if open
       fetchMovies(paging.page);
-      // reflect updated title/status in preview if present
-      setPreviewMovie((prev) =>
-        prev && modalMovie
-          ? {
-              ...prev,
-              title: modalMovie.title,
-              posterUrl: modalMovie.posterUrl,
-              time: modalMovie.time,
-              genres: modalMovie.genres,
-              status: (modalMovie as any).status,
-            }
-          : prev
-      );
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -236,20 +231,38 @@ export default function MovieManagementTable({
     }
   }
 
-  async function changeStatus(id: string, newStatus: string) {
+  async function changeStatus(id: string, currentStatus: string) {
+    const targetStatus = 
+    currentStatus === "NOW_PLAYING" || currentStatus === "UPCOMING"
+      ? "ARCHIVED" 
+      : currentStatus; // nếu đang ARCHIVED, giữ nguyên, không đổi
+
+    const warningText =
+    targetStatus === "ARCHIVED"
+      ? "\n⚠️ Lưu ý: Nếu đổi sang ARCHIVED, các lịch chiếu hiện có sẽ bị xóa!"
+      : "";
+
     const confirm = await Swal.fire({
       title: "Xác nhận đổi trạng thái?",
-      text: `Đổi trạng thái phim thành "${newStatus}"`,
+      text: `Đổi trạng thái phim từ "${currentStatus}" → "${targetStatus}"${warningText}`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Đổi",
       background: "#0b1020",
       color: "#fff",
     });
+
     if (!confirm.isConfirmed) return;
 
     try {
-      await movieManagementService.changeStatus(id, newStatus);
+      // đổi trạng thái
+      await movieManagementService.changeStatus(id, targetStatus);
+
+      // nếu đang chuyển sang ARCHIVED, suspend showtimes
+      if (targetStatus === "ARCHIVED") {
+        await movieManagementService.suspendShowtimes(id, "Movie archived");
+      }
+
       Swal.fire({
         icon: "success",
         title: "Đổi trạng thái thành công",
@@ -259,11 +272,6 @@ export default function MovieManagementTable({
         color: "#fff",
       });
       fetchMovies(paging.page);
-
-      // if previewing the same movie, update preview quickly
-      if (previewMovie && String(previewMovie.id) === String(id)) {
-        setPreviewMovie({ ...previewMovie, status: status as any });
-      }
 
       // if modalMovie loaded and same id, refresh detail
       if (modalMovie && String(modalMovie.id) === String(id)) {
@@ -289,18 +297,16 @@ export default function MovieManagementTable({
       "status",
       "time",
       "genres",
-      "startDate",
-      "endDate",
+      "releaseDate",
     ];
     const rows = movies.map((m) => [
       m.id,
       m.tmdbId,
       m.title,
-      m.status ?? "",
+      String((m as any).status ?? ""),
       m.time,
       (m.genres || []).join("|"),
-      m.startDate ?? "",
-      m.endDate ?? "",
+      (m as any).releaseDate ?? "",
     ]);
     const csv = [headers, ...rows]
       .map((r) =>
@@ -311,7 +317,7 @@ export default function MovieManagementTable({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `movies_${status.toLowerCase()}_page_${paging.page}.csv`;
+    a.download = `movies_page_${paging.page}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -319,13 +325,8 @@ export default function MovieManagementTable({
   // skeleton
   if (loading) {
     return (
-      <div className="bg-black/60 backdrop-blur-md border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent mb-4">
-          {title}
-        </h2>
-        <div className="text-center text-gray-400 py-10">
-          Đang tải danh sách phim...
-        </div>
+      <div className="text-center text-gray-400 py-10">
+        Đang tải danh sách phim...
       </div>
     );
   }
@@ -350,20 +351,58 @@ export default function MovieManagementTable({
           </div>
 
           <div className="flex items-center gap-2">
-            <select
-              value={selectedGenre}
-              onChange={(e) => {
-                setSelectedGenre(e.target.value);
-                setPaging((p) => ({ ...p, page: 1 }));
-              }}
-              className="px-3 py-2 text-sm font-medium bg-black/40 border border-yellow-400/40 rounded-lg text-white hover:bg-black/50 focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            >
-              {GENRES_OPTIONS.map((genre) => (
-                <option key={genre} value={genre}>
-                  {genre}
-                </option>
-              ))}
-            </select>
+            <div className="relative" ref={genreDropdownRef}>
+              <button
+                onClick={() => setIsGenreDropdownOpen((s) => !s)}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-black/40 border border-yellow-400/40 rounded-lg text-white hover:bg-black/50"
+              >
+                <span className="whitespace-nowrap">
+                  {selectedGenre === "ALL" ? "All Genres" : selectedGenre}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isGenreDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isGenreDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-black/60 backdrop-blur-md border border-yellow-400/40 z-20">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setSelectedGenre("ALL");
+                        setIsGenreDropdownOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm ${
+                        selectedGenre === "ALL"
+                          ? "text-yellow-300 bg-black/50 font-semibold"
+                          : "text-yellow-100/80 hover:bg-black/40"
+                      }`}
+                    >
+                      All Genres
+                    </button>
+
+                    {allGenres.map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => {
+                          setSelectedGenre(g);
+                          setIsGenreDropdownOpen(false);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm ${
+                          selectedGenre === g
+                            ? "text-yellow-300 bg-black/50 font-semibold"
+                            : "text-yellow-100/80 hover:bg-black/40"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => exportCurrentCSV()}
@@ -371,6 +410,28 @@ export default function MovieManagementTable({
             >
               <Download size={16} /> Export CSV
             </button>
+          </div>
+        </div>
+
+        {/* Status filter bar */}
+        <div className="flex space-x-2 mb-4">
+          <div className="flex border border-yellow-400/40 rounded-lg p-0.5 bg-black/40">
+            {Object.entries(STATUS_LABELS).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setSelectedStatus(key);
+                  setPaging((p) => ({ ...p, page: 1 })); // reset page về 1
+                }}
+                className={`px-4 py-1 text-base font-medium rounded-lg transition-colors
+                  ${selectedStatus === key
+                    ? "bg-black/60 text-yellow-300 shadow-sm font-semibold"
+                    : "text-yellow-100/85 hover:bg-black/50"
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -387,23 +448,23 @@ export default function MovieManagementTable({
             style={{ tableLayout: "fixed", width: "100%" }}
           >
             <thead className="sticky top-0 z-10 border-b border-yellow-400/70">
-              <tr className="bg-yellow-500/20 text-yellow-300">
-                <th className="w-[240px] px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
-                  Phim
+              <tr className="bg-black/40 backdrop-blur-sm">
+                <th className="w-[220px] px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
+                  Tên phim
                 </th>
-                <th className="w-[90px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
-                  TMDB
+                <th className="w-[100px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                  TMDB ID
                 </th>
-                <th className="w-[110px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                <th className="w-[120px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
                   Thời lượng
                 </th>
                 <th className="w-[140px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
                   Thể loại
                 </th>
-                <th className="w-[190px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
-                  Thời gian chiếu
+                <th className="w-[140px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
+                  Trạng thái
                 </th>
-                <th className="w-[160px] px-6 py-3 text-right text-sm font-bold text-yellow-400 uppercase">
+                <th className="w-[180px] px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
                   Thao tác
                 </th>
               </tr>
@@ -413,14 +474,14 @@ export default function MovieManagementTable({
               {movies.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center py-10 text-yellow-100 italic text-base"
                   >
                     Không có dữ liệu
                   </td>
                 </tr>
               ) : (
-                movies.map((m) => (
+                filteredMovies.map((m) => (
                   <tr
                     key={String(m.id)}
                     className={`transition duration-150 ${
@@ -431,6 +492,9 @@ export default function MovieManagementTable({
                       <div className="flex flex-col">
                         <span className="font-semibold text-yellow-300 truncate text-base">
                           {m.title}
+                        </span>
+                        <span className="text-sm text-yellow-100/70 truncate">
+                          {m.posterUrl ? "Has poster" : "No poster"}
                         </span>
                       </div>
                     </td>
@@ -443,30 +507,47 @@ export default function MovieManagementTable({
                       {m.time ? `${m.time}ʼ` : "-"}
                     </td>
 
-                    <td className="px-6 py-3 text-center text-base text-yellow-100">
-                      {(m.genres || []).map((g, i) => (
-                        <div key={i}>{g}</div>
-                      ))}
-                    </td>
-
                     <td className="px-6 py-3 text-center text-base text-yellow-100 truncate">
-                      {m.startDate
-                        ? m.endDate
-                          ? `${new Date(m.startDate).toLocaleDateString("vi-VN")} - ${new Date(
-                              m.endDate
-                            ).toLocaleDateString("vi-VN")}`
-                          : `${new Date(m.startDate).toLocaleDateString("vi-VN")} - ...`
-                        : "-"}
+                      {(m.genres || []).join(", ")}
                     </td>
 
-                    <td className="px-6 py-3 text-right text-base font-medium">
-                      <div className="flex items-right justify-end gap-2">
+                    <td className="px-6 py-3 text-center">
+                      <Badge
+                        type="AccountStatus"
+                        value={String((m as any).status ?? "-")}
+                        raw={(m as any).status ?? undefined}
+                      />
+                    </td>
+
+                    <td className="px-6 py-3 text-center text-base font-medium">
+                      <div className="flex items-center justify-center gap-2">
                         <button
-                          title=""
-                          onClick={() => openModalWithSummary(m)}
+                          title="Xem"
+                          onClick={() => openModal(String(m.id))}
                           className="px-2 py-1 rounded text-base text-white flex items-center gap-2"
                         >
-                          <Edit2 size={20} />
+                          <Eye size={14} /> Xem
+                        </button>
+
+                        <button
+                          title="Đổi trạng thái"
+                          onClick={() => {
+                            const currentStatus = (m as any).status;
+                            // chỉ chuyển nếu đang NOW_PLAYING hoặc UPCOMING
+                            if (currentStatus === "NOW_PLAYING" || currentStatus === "UPCOMING") {
+                              changeStatus(String(m.id), currentStatus);
+                            } else {
+                              Swal.fire({
+                                icon: "info",
+                                title: "Phim đã ở trạng thái ARCHIVED",
+                                background: "#0b1020",
+                                color: "#fff",
+                              });
+                            }
+                          }}
+                          className="px-2 py-1 rounded text-base text-yellow-300 flex items-center gap-2"
+                        >
+                          <Archive size={14} /> ARCHIVED
                         </button>
 
                         <button
@@ -474,7 +555,7 @@ export default function MovieManagementTable({
                           onClick={() => onDelete(String(m.id))}
                           className="px-2 py-1 rounded text-base text-red-400"
                         >
-                          <Trash2 size={20} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
@@ -520,7 +601,7 @@ export default function MovieManagementTable({
       </div>
 
       {/* Modal: preview + edit (lazy load detail) */}
-      {isModalOpen && (previewMovie || modalMovie) && (
+      {isModalOpen && modalMovie && (
         <div
           role="dialog"
           aria-modal="true"
@@ -531,20 +612,31 @@ export default function MovieManagementTable({
             onClick={closeModal}
           />
 
-          <div className="relative w-full max-w-2xl bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white z-10">
+          {/* Modal Content */}
+          <div className="relative w-full max-w-3xl bg-black/60 border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white z-10 overflow-y-auto max-h-[90vh]">
             <div className="flex items-start justify-between">
-              <h3 className="text-xl font-bold mb-3 text-yellow-400">
-                {isEditMode ? "Chỉnh sửa phim" : "Chi tiết phim"}
+              <h3 className="text-xl font-bold mb-3 text-yellow-400">Chi tiết phim
               </h3>
               <div className="flex gap-2">
-                {!isEditMode && (
-                  <button
-                    onClick={openEditMode}
-                    className="px-3 py-2 rounded-lg bg-yellow-400 text-black font-medium hover:bg-yellow-300"
-                  >
-                    Sửa
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    const currentStatus = modalMovie.status;
+                    if (currentStatus === "NOW_PLAYING" || currentStatus === "UPCOMING") {
+                      changeStatus(String(modalMovie.id), currentStatus);
+                    } else {
+                      Swal.fire({
+                        icon: "info",
+                        title: "Phim đã ở trạng thái ARCHIVED",
+                        background: "#0b1020",
+                        color: "#fff",
+                      });
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg bg-yellow-400 text-black font-medium hover:bg-yellow-300 flex items-center gap-1"
+                >
+                  <Archive size={14} /> ARCHIVED
+                </button>
+
                 <button
                   onClick={closeModal}
                   className="px-3 py-2 rounded-lg text-yellow-100 hover:bg-black/40"
@@ -554,178 +646,113 @@ export default function MovieManagementTable({
               </div>
             </div>
 
-            {/* form */}
+            {/* Body Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Title */}
-              <div>
-                <label className="block text-sm text-white/80">Tiêu đề</label>
-                <input
-                  value={
-                    isEditMode
-                      ? (modalMovie?.title ?? "")
-                      : (previewMovie?.title ?? "")
-                  }
-                  disabled={!isEditMode}
-                  onChange={(e) =>
-                    setModalMovie((prev) =>
-                      prev ? { ...prev, title: e.target.value } : prev
-                    )
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
-                />
-              </div>
-
-              {/* TMDB ID */}
-              <div>
-                <label className="block text-sm text-white/80">TMDB ID</label>
-                <input
-                  value={String(
-                    isEditMode
-                      ? (modalMovie?.tmdbId ?? "")
-                      : (previewMovie?.tmdbId ?? "")
-                  )}
-                  disabled
-                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
-                />
-              </div>
-
-              {/* Time */}
-              <div>
-                <label className="block text-sm text-white/80">
-                  Thời lượng (phút)
-                </label>
-                <input
-                  type="number"
-                  value={
-                    isEditMode
-                      ? (modalMovie?.time ?? "")
-                      : (previewMovie?.time ?? "")
-                  }
-                  disabled={!isEditMode}
-                  onChange={(e) =>
-                    setModalMovie((prev) =>
-                      prev
-                        ? { ...prev, time: Number(e.target.value) || 0 }
-                        : prev
-                    )
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
-                />
-              </div>
-
-              {/* Release date */}
-              <div>
-                <label className="block text-sm text-white/80">
-                  Ngày phát hành
-                </label>
-                <input
-                  type="date"
-                  value={
-                    isEditMode
-                      ? (modalMovie as any)?.releaseDate
-                        ? (modalMovie as any).releaseDate.split("T")[0]
-                        : ""
-                      : (previewMovie as any)?.releaseDate
-                        ? (previewMovie as any).releaseDate.split("T")[0]
-                        : ""
-                  }
-                  disabled={!isEditMode}
-                  onChange={(e) =>
-                    setModalMovie((prev) =>
-                      prev ? { ...prev, releaseDate: e.target.value } : prev
-                    )
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
-                />
-              </div>
-
-              {/* Genres */}
-              <div className="md:col-span-2">
-                <label className="block text-sm text-white/80">
-                  Thể loại (phân cách bằng dấu phẩy)
-                </label>
-                <input
-                  value={
-                    isEditMode
-                      ? (modalMovie?.genres || []).join(", ")
-                      : (previewMovie?.genres || []).join(", ")
-                  }
-                  disabled={!isEditMode}
-                  onChange={(e) =>
-                    setModalMovie((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            genres: e.target.value
-                              .split(",")
-                              .map((s) => s.trim())
-                              .filter(Boolean),
-                          }
-                        : prev
-                    )
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white"
-                />
-              </div>
-
-              {/* Overview */}
-              <div className="md:col-span-2">
-                <label className="block text-sm text-white/80">Mô tả</label>
-                <textarea
-                  value={
-                    isEditMode
-                      ? (modalMovie?.overview ?? "")
-                      : (previewMovie?.title ?? "")
-                  }
-                  disabled={!isEditMode}
-                  onChange={(e) =>
-                    setModalMovie((prev) =>
-                      prev ? { ...prev, overview: e.target.value } : prev
-                    )
-                  }
-                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/30 border border-yellow-400/30 text-white h-24"
-                />
-              </div>
+              <InputField label="TMDB ID" value={modalMovie.tmdbId} disabled />
+              <InputField
+                label="Trạng thái"
+                value={modalMovie.status}
+                onChange={(val) => updateModalMovie("status", val)}
+                disabled
+              />
+              <InputField
+                label="Tên phim"
+                value={modalMovie.title}
+                onChange={(val) => updateModalMovie("title", val)}
+              />
+              <InputField
+                label="Thời lượng (phút)"
+                type="number"
+                value={modalMovie.time}
+                onChange={(val) => updateModalMovie("time", Number(val))}
+              />
+              <InputField
+                label="Quốc gia"
+                value={modalMovie.country ?? ""}
+                onChange={(val) => updateModalMovie("country", val)}
+              />
+              <InputField
+                label="Ngôn ngữ"
+                value={(modalMovie.spokenLanguages || []).join(", ")}
+                onChange={(val) =>
+                  updateModalMovie("spokenLanguages", val.split(",").map((s: string) => s.trim()))
+                }
+              />
+              <InputField
+                label="Đội ngũ (Crew)"
+                value={(modalMovie.crew || []).join(", ")}
+                onChange={(val) => updateModalMovie("crew", val.split(",").map((s: string) => s.trim()))}
+                className="md:col-span-2"
+              />
+              <InputField
+                label="Diễn viên (Cast)"
+                value={(modalMovie.cast || []).join(", ")}
+                onChange={(val) => updateModalMovie("cast", val.split(",").map((s: string) => s.trim()))}
+                className="md:col-span-2"
+              />
+              <InputField
+                label="Ngày phát hành"
+                type="date"
+                value={modalMovie.releaseDate?.split("T")[0] ?? ""}
+                onChange={(val) => updateModalMovie("releaseDate", val)}
+              />
+              <InputField
+                label="Độ phổ biến"
+                type="number"
+                value={modalMovie.popularity ?? 0}
+                onChange={(val) => updateModalMovie("popularity", Number(val))}
+              />
+              <InputField
+                label="Ngày bắt đầu"
+                type="date"
+                value={modalMovie.startDate?.split("T")[0] ?? ""}
+                onChange={(val) => updateModalMovie("startDate", val)}
+              />
+              <InputField
+                label="Ngày kết thúc"
+                type="date"
+                value={modalMovie.endDate?.split("T")[0] ?? ""}
+                onChange={(val) => updateModalMovie("endDate", val)}
+              />
+              <InputField
+                label="Thể loại"
+                value={(modalMovie.genres || []).join(", ")}
+                onChange={(val) => updateModalMovie("genres", val.split(",").map((s: string) => s.trim()))}
+                className="md:col-span-2"
+              />
+              <TextareaField
+                label="Mô tả"
+                value={modalMovie.overview}
+                onChange={(val) => updateModalMovie("overview", val)}
+                className="md:col-span-2"
+              />
+              <InputField
+                label="Trailer URL"
+                value={modalMovie.trailer}
+                onChange={(val) => updateModalMovie("trailer", val)}
+                className="md:col-span-2"
+              />
+              <InputField
+                label="Poster URL"
+                value={modalMovie.posterUrl}
+                onChange={(val) => updateModalMovie("posterUrl", val)}
+                className="md:col-span-2"
+              />
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-4">
-              {isEditMode ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setIsEditMode(false);
-                    }}
-                    className="px-3 py-2 rounded-lg text-yellow-100 hover:bg-black/40"
-                  >
-                    Huỷ
-                  </button>
-                  <button
-                    onClick={submitMovieUpdate}
-                    className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-medium hover:bg-yellow-300"
-                  >
-                    Lưu
-                  </button>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      changeStatus(
-                        String(previewMovie?.id ?? modalMovie?.id ?? ""),
-                        String(
-                          (previewMovie as any)?.status ??
-                            (modalMovie as any)?.status
-                        ) === "nowPlaying"
-                          ? "archived"
-                          : "nowPlaying"
-                      )
-                    }
-                    className="px-3 py-2 rounded-lg bg-yellow-400 text-black font-medium hover:bg-yellow-300"
-                  >
-                    Đổi trạng thái
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={closeModal}
+                className="px-3 py-2 rounded-lg text-yellow-100 hover:bg-black/40"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={submitMovieUpdate}
+                className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-medium hover:bg-yellow-300"
+              >
+                Lưu
+              </button>
             </div>
           </div>
         </div>
