@@ -15,6 +15,7 @@ import ManagerDashboard from "@/pages/Dashboard/Manager/ManagerDashboard";
 import StaffDashboard from "@/pages/Dashboard/Staff/StaffDashboard";
 import CheckoutPage from "@/pages/Checkout/CheckoutPage";
 import PaymentResult from "@/pages/Payment/PaymentResult";
+import TheaterDetail from "@/pages/Theater/TheaterDetail";
 
 import { UserRole } from "@/constants/UserRole";
 
@@ -25,6 +26,7 @@ export const publicRoutes = [
   { path: "/movies/now-playing", element: <NowPlayingPage /> },
   { path: "/movies/upcoming", element: <UpcomingPage /> },
   { path: "/movies/:id", element: <MovieDetailPage /> },
+  { path: "/theater/:theaterId", element: <TheaterDetail /> },
   { path: "/login", element: <SignIn /> },
   { path: "/signup", element: <SignUp /> },
   { path: "/reset-password", element: <ResetPassword /> },

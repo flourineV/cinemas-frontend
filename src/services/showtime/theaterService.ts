@@ -4,6 +4,7 @@ import { showtimeClient } from "../apiClient";
 import type {
   TheaterRequest,
   TheaterResponse,
+  MovieShowtimesResponse,
 } from "@/types/showtime/theater.type";
 
 export const theaterService = {
@@ -49,5 +50,14 @@ export const theaterService = {
 
   deleteTheater: async (id: string): Promise<void> => {
     await showtimeClient.delete(`/theaters/${id}`);
+  },
+
+  getMoviesByTheater: async (
+    theaterId: string
+  ): Promise<MovieShowtimesResponse[]> => {
+    const res = await showtimeClient.get<MovieShowtimesResponse[]>(
+      `/theaters/${theaterId}/movies`
+    );
+    return res.data;
   },
 };

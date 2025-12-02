@@ -1,6 +1,7 @@
 import { Package, Gift, Film, MapPin, Phone, Mail } from "lucide-react";
 import Layout from "../../components/layout/Layout";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { theaterService } from "@/services/showtime/theaterService";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 
@@ -28,9 +29,10 @@ const TheaterList = () => {
   return (
     <div className="space-y-5">
       {theaters.map((theater, index) => (
-        <div
+        <Link
           key={theater.id}
-          className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 border-2 border-purple-600/60 rounded-xl p-6 hover:border-purple-500 hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all duration-300 group"
+          to={`/theater/${theater.id}`}
+          className="block bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 border-2 border-purple-600/60 rounded-xl p-6 hover:border-purple-500 hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all duration-300 group cursor-pointer"
         >
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0 w-12 h-12 bg-purple-600/30 rounded-full flex items-center justify-center border-2 border-purple-500 group-hover:bg-purple-600/50 transition-colors">
@@ -48,7 +50,7 @@ const TheaterList = () => {
               </div>
             </div>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -220,7 +222,7 @@ const About = () => {
             HỆ THỐNG CÁC CỤM RẠP
           </h2>
           <p className="text-gray-700 text-lg mb-12 text-center max-w-3xl mx-auto">
-            Cinestar là hệ thống gồm 10 cụm rạp chiếu phim hiện đại, trải dài cả
+            Cinestar là hệ thống gồm 5 cụm rạp chiếu phim hiện đại, trải dài cả
             nước, mang đến trải nghiệm điện ảnh chất lượng cao cho khán giả trên
             toàn quốc.
           </p>

@@ -12,3 +12,17 @@ export interface TheaterResponse {
   description: string;
   provinceName: string;
 }
+
+export interface ShowtimeInfo {
+  showtimeId: string;
+  roomId: string;
+  roomName: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+}
+
+export interface MovieShowtimesResponse {
+  movieId: string;
+  showtimes: ShowtimeInfo[];
+}
