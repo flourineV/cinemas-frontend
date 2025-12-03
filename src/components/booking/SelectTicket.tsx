@@ -59,73 +59,95 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
   };
 
   if (loading)
-    return <p className="text-white text-center mt-6">Đang tải loại vé...</p>;
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-yellow-400"></div>
+      </div>
+    );
   if (!tickets.length)
     return (
-      <p className="text-white text-center mt-6">Loại vé không tồn tại.</p>
+      <p className="text-gray-300 text-center mt-6">Loại vé không tồn tại.</p>
     );
 
   return (
-    // container fixed 2 columns, giới hạn max width, căn giữa
-    <div className="grid grid-cols-2 gap-8 w-full max-w-3xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
       {tickets.slice(0, 4).map((ticket) => {
-        // slice(0,4) để chắc chắn 2x2
         const key = `${ticket.seatType}-${ticket.ticketType}`;
         const count = selectedTickets[key] || 0;
+        const isSelected = count > 0;
 
         return (
           <div
             key={key}
-            // aspect-square giữ card vuông; flex-col + justify-between để bố trí nội dung
-            className="border border-yellow-800 bg-zinc-900/40 rounded-xl shadow-md flex flex-col justify-between items-center pb-7 pt-5"
+            className={`relative border-2 rounded-2xl shadow-lg flex flex-col justify-between items-center p-6 transition-all duration-300 ${
+              isSelected
+                ? "border-yellow-400 bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 shadow-yellow-400/30"
+                : "border-zinc-700 bg-zinc-800/60 hover:border-zinc-600"
+            }`}
           >
-            {/* header: title + seat type */}
-            <div className="flex flex-col items-center gap-1">
-              <div className="flex items-baseline gap-2 justify-center">
-                <span className="font-semibold text-lg text-white">
+            {/* Badge for selected count */}
+            {isSelected && (
+              <div className="absolute -top-3 -right-3 bg-yellow-400 text-black font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
+                {count}
+              </div>
+            )}
+
+            {/* Header */}
+            <div className="flex flex-col items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 justify-center">
+                <span className="font-bold text-xl text-white">
                   {TICKET_LABELS[ticket.ticketType] || ticket.ticketType}
                 </span>
-                <span className="text-gray-400 text-md">
-                  ({ticket.seatType === "COUPLE" ? "Đôi" : "Đơn"})
+                <span
+                  className={`text-sm px-2 py-0.5 rounded-full ${
+                    ticket.seatType === "COUPLE"
+                      ? "bg-pink-500/20 text-pink-300"
+                      : "bg-blue-500/20 text-blue-300"
+                  }`}
+                >
+                  {ticket.seatType === "COUPLE" ? "Đôi" : "Đơn"}
                 </span>
               </div>
-              <div className="text-yellow-400 font-semibold text-lg text-center pt-2">
-                {Number(ticket.basePrice).toLocaleString()} VNĐ
+              <div className="text-yellow-400 font-bold text-2xl">
+                {Number(ticket.basePrice).toLocaleString()}
+                <span className="text-sm ml-1">VNĐ</span>
               </div>
             </div>
 
-            {/* controls - đặt ở đáy card */}
-            <div className="w-full flex items-center justify-center gap-4 pt-5">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  aria-label={`Giảm số lượng ${ticket.ticketType}`}
-                  onClick={() =>
-                    handleChange(ticket.seatType, ticket.ticketType, -1)
-                  }
-                  disabled={count <= 0}
-                  className={`w-9 h-9 flex items-center justify-center rounded-full 
-                    transition transform active:scale-95 focus:outline-none
-                    ${count <= 0 ? "bg-zinc-800/60 text-zinc-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 text-white"}`}
-                >
-                  <span className="text-lg font-bold select-none pb-1">-</span>
-                </button>
+            {/* Controls */}
+            <div className="w-full flex items-center justify-center gap-4">
+              <button
+                type="button"
+                aria-label={`Giảm số lượng ${ticket.ticketType}`}
+                onClick={() =>
+                  handleChange(ticket.seatType, ticket.ticketType, -1)
+                }
+                disabled={count <= 0}
+                className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl
+                  transition-all transform active:scale-95 focus:outline-none
+                  ${
+                    count <= 0
+                      ? "bg-zinc-700/50 text-zinc-500 cursor-not-allowed"
+                      : "bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-red-500/50"
+                  }`}
+              >
+                −
+              </button>
 
-                <div className="min-w-[36px] px-2 py-1 bg-zinc-800 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium">{count}</span>
-                </div>
-
-                <button
-                  type="button"
-                  aria-label={`Tăng số lượng ${ticket.ticketType}`}
-                  onClick={() =>
-                    handleChange(ticket.seatType, ticket.ticketType, 1)
-                  }
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-green-600 hover:bg-green-700 text-white transition transform active:scale-95 focus:outline-none"
-                >
-                  <span className="text-lg font-bold select-none pb-1">+</span>
-                </button>
+              <div className="min-w-[60px] px-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">{count}</span>
               </div>
+
+              <button
+                type="button"
+                aria-label={`Tăng số lượng ${ticket.ticketType}`}
+                onClick={() =>
+                  handleChange(ticket.seatType, ticket.ticketType, 1)
+                }
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold text-xl transition-all transform active:scale-95 focus:outline-none shadow-lg hover:shadow-green-500/50"
+              >
+                +
+              </button>
             </div>
           </div>
         );

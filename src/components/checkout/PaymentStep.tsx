@@ -175,12 +175,12 @@ const PaymentStep: React.FC<Props> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.35 }}
-      className="space-y-4"
+      className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 space-y-6"
     >
-      <h2 className="text-2xl font-bold text-yellow-300">
+      <h2 className="text-2xl font-bold text-gray-800">
         Phương thức thanh toán
       </h2>
-      <p className="text-sm text-gray-300">
+      <p className="text-sm text-gray-600">
         Chọn một phương thức để hoàn tất thanh toán.
       </p>
 
@@ -188,10 +188,10 @@ const PaymentStep: React.FC<Props> = ({
         {["momo", "card", "visa"].map((method) => (
           <label
             key={method}
-            className={`p-4 rounded-lg border cursor-pointer ${
+            className={`p-4 rounded-lg border-2 cursor-pointer transition ${
               paymentMethod === method
-                ? "bg-yellow-400 text-black"
-                : "bg-zinc-800 border-zinc-700"
+                ? "bg-yellow-500 text-white border-yellow-500"
+                : "bg-gray-50 border-gray-300 hover:border-yellow-400"
             }`}
           >
             <input
@@ -220,7 +220,7 @@ const PaymentStep: React.FC<Props> = ({
       </div>
 
       <div className="mt-4">
-        <label className="text-sm text-gray-300 font-semibold">
+        <label className="text-sm text-gray-700 font-semibold">
           Mã giảm giá
         </label>
         <div className="flex items-center mt-2 gap-2">
@@ -228,12 +228,12 @@ const PaymentStep: React.FC<Props> = ({
             value={appliedPromo?.code || ""}
             readOnly
             placeholder="Chưa áp dụng"
-            className="flex-1 bg-zinc-800 p-3 rounded-l-md border border-gray-700 text-white"
+            className="flex-1 bg-gray-50 p-3 rounded-l-lg border-2 border-gray-300 text-gray-900"
           />
           <button
             type="button"
             onClick={handleSelectPromo}
-            className="bg-yellow-400 text-black font-semibold py-3 px-4 rounded-r-md whitespace-nowrap"
+            className="bg-yellow-500 text-white font-semibold py-3 px-4 rounded-r-lg whitespace-nowrap hover:bg-yellow-600 transition"
           >
             Chọn mã
           </button>
@@ -243,14 +243,14 @@ const PaymentStep: React.FC<Props> = ({
       <div className="flex justify-between mt-6">
         <button
           onClick={onPrev}
-          className="bg-gray-700 py-2 px-5 rounded-md"
+          className="bg-gray-300 text-gray-800 py-3 px-6 rounded-lg hover:bg-gray-400 transition font-semibold"
           disabled={isProcessing}
         >
           Quay lại
         </button>
         <button
           onClick={handlePayment}
-          className="bg-yellow-400 text-black font-bold py-2 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isProcessing}
         >
           {isProcessing ? "Đang xử lý..." : "Xác nhận & Thanh toán"}

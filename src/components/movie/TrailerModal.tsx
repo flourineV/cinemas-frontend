@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 
 interface TrailerModalProps {
@@ -11,6 +11,18 @@ export default function TrailerModal({
   buttonLabel = "Trailer",
 }: TrailerModalProps) {
   const [open, setOpen] = useState(false);
+
+  // Block scroll khi modal mở
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [open]);
 
   if (!trailerUrl) {
     return null; // Hoặc return <></> để không hiển thị component

@@ -6,16 +6,15 @@ import {
   Clock,
   Languages,
   Globe,
-  Shield,
+  ShieldCheck,
   Calendar,
   MonitorPlay,
 } from "lucide-react";
 import Layout from "../../components/layout/Layout";
 import { getPosterUrl } from "../../utils/getPosterUrl";
+import { formatAgeRating } from "@/utils/formatAgeRating";
 import { movieService } from "@/services/movie/movieService";
 import type { MovieDetail } from "@/types/movie/movie.type";
-import type { ShowtimeResponse } from "@/types/showtime/showtime.type";
-import TrailerModal from "@/components/movie/TrailerModal";
 import TrailerModalForDetail from "@/components/movie/TrailerModalForDetail";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -27,9 +26,6 @@ export default function MovieDetailPage() {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showBookingBar, setShowBookingBar] = useState(false);
-  const [selectedShowtime, setSelectedShowtime] =
-    useState<ShowtimeResponse | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -48,148 +44,184 @@ export default function MovieDetailPage() {
     fetchMovie();
   }, [id]);
 
-  // --- Trạng thái tải ---
+  // Loading state
   if (loading)
     return (
       <Layout>
-        <div className="text-center text-white mt-20">Đang tải...</div>
+        <div className="relative min-h-screen bg-zinc-950 flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-zinc-950"></div>
+          <div className="relative z-10 text-center text-white">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-400 mx-auto"></div>
+            <p className="mt-4 text-lg">Đang tải...</p>
+          </div>
+        </div>
       </Layout>
     );
 
+  // Error state
   if (error)
     return (
       <Layout>
-        <div className="text-center text-red-400 mt-20">{error}</div>
+        <div className="relative min-h-screen bg-zinc-950 flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-zinc-950"></div>
+          <div className="relative z-10 text-center text-red-400 text-xl">
+            {error}
+          </div>
+        </div>
       </Layout>
     );
 
+  // Not found state
   if (!movie)
     return (
       <Layout>
-        <div className="text-center text-gray-400 mt-20">
-          Không tìm thấy phim.
+        <div className="relative min-h-screen bg-zinc-950 flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-zinc-950"></div>
+          <div className="relative z-10 text-center text-gray-400 text-xl">
+            Không tìm thấy phim.
+          </div>
         </div>
       </Layout>
     );
 
-  // --- Giao diện chính ---
+  // Main content
   return (
     <Layout>
-      <motion.main
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-5xl mx-auto text-black pt-10 pb-10"
-      >
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Poster phim */}
-          <div className="w-full md:w-[350px] lg:w-[400px] flex-shrink-0 mx-auto md:mx-0">
-            <img
-              src={getPosterUrl(movie.posterUrl)}
-              alt={movie.title}
-              className="w-full h-auto object-cover rounded-xl shadow-lg border border-orange-500"
-            />
-          </div>
+      <div className="relative min-h-screen bg-zinc-950 py-20">
+        {/* Background with movie poster - Fixed */}
+        <div
+          className="fixed inset-0 z-0"
+          style={{
+            backgroundImage: `url(${getPosterUrl(movie.posterUrl)})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        </div>
 
-          {/* Thông tin phim */}
-          <div className="flex-1 flex flex-col ml-5">
-            <h1 className="text-2xl md:text-4xl font-extrabold mb-4 text-center md:text-left text-orange-500">
-              {movie.title}
-            </h1>
-            <div className="space-y-2 text-sm md:text-base">
-              <p className="flex items-center gap-2 mt-4">
-                <Film className="w-4 h-4 text-orange-500" />
-                <span className="font-bold"></span>
-                {movie.genres.join(", ")}
-              </p>
-              <p className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-orange-500" />
-                <span className="font-bold"></span> {movie.time}’
-              </p>
-              <p className="flex items-center gap-2">
-                <Languages className="w-4 h-4 text-orange-500" />
-                <span className="font-bold"></span>
-                {movie.spokenLanguages.join(", ")}
-              </p>
-              <p className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-orange-500" />
-                <span className="font-bold ml-2">Quốc gia:</span>{" "}
-                {movie.country}
-              </p>
-              <p className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-orange-500" />
-                <span className="font-bold ml-2">Độ tuổi:</span> {movie.age}
-              </p>
-              <p className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-orange-500" />
-                <span className="font-bold ml-2">Ngày phát hành:</span>{" "}
-                {movie.releaseDate}
-              </p>
-            </div>
-
-            {(movie.crew?.length > 0 || movie.cast?.length > 0) && (
-              <div className="mt-8">
-                <h2 className="text-lg md:text-2xl font-bold mb-2 flex items-center gap-2 text-orange-500">
-                  Mô tả
-                </h2>
-
-                {/* Đạo diễn / Crew */}
-                {movie.crew?.length > 0 && (
-                  <p>
-                    <strong>Đạo diễn:</strong> {movie.crew.join(", ")}
-                  </p>
-                )}
-
-                {/* Diễn viên / Cast */}
-                {movie.cast?.length > 0 && (
-                  <p className="mt-2">
-                    <strong>Diễn viên:</strong> {movie.cast.join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Nội dung phim */}
-            <div className="mt-6">
-              <h2 className="text-lg md:text-2xl font-bold mb-2 flex items-center gap-2 text-orange-500">
-                Nội dung phim
-              </h2>
-              <p className="text-justify leading-relaxed">{movie.overview}</p>
-            </div>
-
-            {movie.trailer && (
-              <div className="mt-3 -ml-3">
-                <TrailerModalForDetail
-                  trailerUrl={movie.trailer}
-                  icon={
-                    <span className="flex items-center gap-2 group cursor-pointer">
-                      <MonitorPlay className="w-5 h-5 text-yellow-400 group-hover:text-yellow-600 transition-colors" />
-                      <span className="text-yellow-400 group-hover:text-yellow-600 group-hover:underline -mt-1 text-lg md:text-xl font-semibold transition-colors">
-                        Trailer
-                      </span>
-                    </span>
-                  }
-                  buttonLabel="" // chỉ hiện icon + chữ qua icon prop
-                  className="bg-transparent p-0 hover:bg-transparent"
+        <motion.main
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="relative z-10 max-w-6xl mx-auto px-4 min-h-screen"
+        >
+          {/* Main Content Card */}
+          <div className="bg-zinc-900/90 rounded-2xl shadow-2xl overflow-hidden border border-zinc-800 mb-8">
+            <div className="flex flex-col md:flex-row gap-6 p-6 md:p-8">
+              {/* Poster */}
+              <div className="w-full md:w-[300px] lg:w-[350px] flex-shrink-0 mx-auto md:mx-0">
+                <img
+                  src={getPosterUrl(movie.posterUrl)}
+                  alt={movie.title}
+                  className="w-full h-auto object-cover rounded-xl shadow-2xl border-2 border-yellow-400/30 transition-all"
                 />
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* --- Lịch chiếu của phim --- */}
-        <div className="mt-12">
-          <MovieShowtime
-            movieId={movie.id}
-            movieTitle={movie.title}
-            movieStatus={movie.status}
-            onSelectShowtime={(st) => {
-              setShowBookingBar(true);
-              setSelectedShowtime(st);
-            }}
-          />
-        </div>
-      </motion.main>
+              {/* Movie Info */}
+              <div className="flex-1 flex flex-col text-white">
+                <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-yellow-400">
+                  {movie.title}
+                </h1>
+
+                <div className="space-y-3 text-sm md:text-base">
+                  <div className="flex items-center gap-3">
+                    <Film className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                    <span className="text-gray-300">
+                      {movie.genres.join(", ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                    <span className="text-gray-300">{movie.time} phút</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Languages className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                    <span className="text-gray-300">
+                      {movie.spokenLanguages.join(", ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                    <span className="text-gray-300">{movie.country}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                    <span className="text-gray-300">
+                      {formatAgeRating(movie.age)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                    <span className="text-gray-300">{movie.releaseDate}</span>
+                  </div>
+                </div>
+
+                {(movie.crew?.length > 0 || movie.cast?.length > 0) && (
+                  <div className="mt-6 pt-6 border-t border-zinc-700">
+                    <h2 className="text-xl font-bold mb-3 text-yellow-400">
+                      Thông tin
+                    </h2>
+
+                    {movie.crew?.length > 0 && (
+                      <p className="text-gray-300 mb-2">
+                        <strong className="text-white">Đạo diễn:</strong>{" "}
+                        {movie.crew.join(", ")}
+                      </p>
+                    )}
+
+                    {movie.cast?.length > 0 && (
+                      <p className="text-gray-300">
+                        <strong className="text-white">Diễn viên:</strong>{" "}
+                        {movie.cast.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Overview */}
+                <div className="mt-6 pt-6 border-t border-zinc-700">
+                  <h2 className="text-xl font-bold mb-3 text-yellow-400">
+                    Nội dung phim
+                  </h2>
+                  <p className="text-gray-300 text-justify leading-relaxed">
+                    {movie.overview}
+                  </p>
+                </div>
+
+                {/* Trailer */}
+                {movie.trailer && (
+                  <div className="mt-4">
+                    <TrailerModalForDetail
+                      trailerUrl={movie.trailer}
+                      icon={
+                        <span className="flex items-center gap-2 group cursor-pointer -ml-3">
+                          <MonitorPlay className="w-6 h-6 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
+                          <span className="text-yellow-400 group-hover:text-yellow-300 group-hover:underline text-lg font-semibold transition-colors">
+                            Xem Trailer
+                          </span>
+                        </span>
+                      }
+                      buttonLabel=""
+                      className="bg-transparent p-0 hover:bg-transparent"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Showtimes */}
+          <div className="bg-zinc-900/90 rounded-2xl shadow-2xl border border-zinc-800 p-6">
+            <MovieShowtime
+              movieId={movie.id}
+              movieTitle={movie.title}
+              movieStatus={movie.status}
+              onSelectShowtime={() => {}}
+            />
+          </div>
+        </motion.main>
+      </div>
     </Layout>
   );
 }

@@ -48,10 +48,10 @@ const BookingSummary: React.FC<Props> = ({
 
   return (
     <aside className="space-y-4 relative">
-      <div className="bg-zinc-900/40 border border-yellow-600/20 rounded-xl p-6 sticky top-28">
+      <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 sticky top-28 shadow-lg">
         {/* Header row with title + TTL on the right */}
         <div className="flex items-start justify-between">
-          <h3 className="text-lg font-extrabold text-yellow-300">
+          <h3 className="text-xl font-extrabold text-gray-800">
             Tóm tắt đơn hàng
           </h3>
 
@@ -67,7 +67,7 @@ const BookingSummary: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="mt-3 text-sm text-gray-300">
+        <div className="mt-3 text-sm text-gray-700">
           <div className="flex justify-between">
             <span>Phim</span>
             <span className="font-semibold">{booking.movieTitle}</span>
@@ -98,9 +98,9 @@ const BookingSummary: React.FC<Props> = ({
           </div>
 
           <div className="mt-3">
-            <div className="font-semibold text-yellow-300">Combo</div>
+            <div className="font-semibold text-gray-800">Combo</div>
             {combosArray.length === 0 ? (
-              <div className="text-gray-400 text-sm">Không có combo</div>
+              <div className="text-gray-500 text-sm">Không có combo</div>
             ) : (
               <ul className="text-sm list-disc ml-4 mt-2">
                 {combosArray.map((c, idx) => (
@@ -113,17 +113,17 @@ const BookingSummary: React.FC<Props> = ({
             )}
           </div>
 
-          <div className="pt-4 border-t border-zinc-700 mt-4">
-            <div className="flex justify-between text-gray-300">
+          <div className="pt-4 border-t border-gray-300 mt-4">
+            <div className="flex justify-between text-gray-700">
               <span>Tạm tính</span>
               <span>{booking.totalPrice.toLocaleString()} VND</span>
             </div>
-            <div className="flex justify-between text-gray-300 mt-2">
+            <div className="flex justify-between text-gray-700 mt-2">
               <span>Combo</span>
               <span>{comboTotal.toLocaleString()} VND</span>
             </div>
             {appliedPromo && (
-              <div className="flex justify-between text-red-400 mt-2">
+              <div className="flex justify-between text-red-600 mt-2">
                 <span>Mã giảm giá ({appliedPromo.code})</span>
                 <span>
                   -
@@ -133,7 +133,7 @@ const BookingSummary: React.FC<Props> = ({
                 </span>
               </div>
             )}
-            <div className="flex justify-between text-yellow-300 font-bold mt-3 text-lg">
+            <div className="flex justify-between text-yellow-600 font-bold mt-3 text-lg">
               <span>Tổng</span>
               <span>{finalTotal.toLocaleString()} VND</span>
             </div>
@@ -142,7 +142,7 @@ const BookingSummary: React.FC<Props> = ({
           <div className="mt-6">
             <button
               onClick={() => goToStep(4)}
-              className="w-full bg-yellow-400 text-black font-bold py-3 rounded-md"
+              className="w-full bg-yellow-500 text-white font-bold py-3 rounded-lg hover:bg-yellow-600 transition"
             >
               Thanh toán
             </button>

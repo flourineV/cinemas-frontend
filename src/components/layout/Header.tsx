@@ -92,7 +92,7 @@ const Header = () => {
             {!user ? (
               // Chưa đăng nhập
               <Link
-                to="/login"
+                to="/auth"
                 className="flex items-center space-x-1 hover:text-yellow-400 transition-colors whitespace-nowrap"
               >
                 <User className="w-4 h-4" />

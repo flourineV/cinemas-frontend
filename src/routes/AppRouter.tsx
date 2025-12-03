@@ -16,6 +16,7 @@ export default function AppRouter() {
           path === "/promotions" ||
           path === "/login" ||
           path === "/signup" ||
+          path === "/auth" ||
           path.startsWith("/movies")
         ) {
           return (

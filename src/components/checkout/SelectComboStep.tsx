@@ -37,21 +37,21 @@ const SelectComboStep: React.FC<Props> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.35 }}
-      className="space-y-4"
+      className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 space-y-6"
     >
-      <div className="mt-4">
+      <div>
         <SelectCombo onComboSelect={setSelectedCombos} />
       </div>
       <div className="flex justify-between mt-6">
         <button
           onClick={handleBack}
-          className="bg-gray-700 text-white py-3 px-6 rounded-md shadow-md"
+          className="bg-gray-300 text-gray-800 py-3 px-6 rounded-lg shadow-md hover:bg-gray-400 transition font-semibold"
         >
           Quay lại
         </button>
         <button
           onClick={onNext}
-          className="bg-yellow-400 text-black font-bold py-3 px-6 rounded-md shadow-md"
+          className="bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-yellow-600 transition"
         >
           Tiếp theo
         </button>

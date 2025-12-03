@@ -28,7 +28,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Nếu token không có hoặc hết hạn → redirect login
   if (!token || isTokenExpired(token)) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Kiểm tra role đủ quyền

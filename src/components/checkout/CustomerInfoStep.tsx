@@ -101,22 +101,22 @@ const CustomerInfoStep: React.FC<Props> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.35 }}
-      className="space-y-6"
+      className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 space-y-6"
     >
       <div className="space-y-4">
         <div>
-          <label className="text-md font-bold text-white block">
+          <label className="text-md font-bold text-gray-800 block">
             Họ và tên <span className="text-red-500">*</span>
           </label>
           <input
             value={customer.name}
             onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-            className={`w-full bg-white text-black p-3 rounded mt-2 focus:outline-none ${errors.name ? "border border-red-500" : ""}`}
+            className={`w-full bg-gray-50 text-gray-900 p-3 rounded-lg mt-2 border-2 focus:outline-none focus:border-yellow-500 transition-colors ${errors.name ? "border-red-500" : "border-gray-300"}`}
             placeholder="Nguyễn Văn A"
           />
         </div>
         <div>
-          <label className="text-md font-bold text-white block">
+          <label className="text-md font-bold text-gray-800 block">
             Email <span className="text-red-500">*</span>
           </label>
           <input
@@ -124,12 +124,12 @@ const CustomerInfoStep: React.FC<Props> = ({
             onChange={(e) =>
               setCustomer({ ...customer, email: e.target.value })
             }
-            className={`w-full bg-white text-black p-3 rounded mt-2 focus:outline-none ${errors.email ? "border border-red-500" : ""}`}
+            className={`w-full bg-gray-50 text-gray-900 p-3 rounded-lg mt-2 border-2 focus:outline-none focus:border-yellow-500 transition-colors ${errors.email ? "border-red-500" : "border-gray-300"}`}
             placeholder="email@example.com"
           />
         </div>
         <div>
-          <label className="text-md font-bold text-white block">
+          <label className="text-md font-bold text-gray-800 block">
             Số điện thoại <span className="text-red-500">*</span>
           </label>
           <input
@@ -137,7 +137,7 @@ const CustomerInfoStep: React.FC<Props> = ({
             onChange={(e) =>
               setCustomer({ ...customer, phone: e.target.value })
             }
-            className={`w-full bg-white text-black p-3 rounded mt-2 focus:outline-none ${errors.phone ? "border border-red-500" : ""}`}
+            className={`w-full bg-gray-50 text-gray-900 p-3 rounded-lg mt-2 border-2 focus:outline-none focus:border-yellow-500 transition-colors ${errors.phone ? "border-red-500" : "border-gray-300"}`}
             placeholder="09xx xxx xxx"
           />
         </div>
@@ -152,7 +152,7 @@ const CustomerInfoStep: React.FC<Props> = ({
             onChange={(e) => setAgreeAge(e.target.checked)}
           />
           <div
-            className={`h-5 w-5 border rounded-sm flex items-center justify-center transition-all ${agreeAge ? "bg-yellow-700 border-yellow-400" : "bg-transparent border-white"} ${errors.ageAgree && !agreeAge ? "border-red-500 animate-pulse" : ""}`}
+            className={`h-5 w-5 border rounded-sm flex items-center justify-center transition-all ${agreeAge ? "bg-yellow-500 border-yellow-500" : "bg-transparent border-gray-400"} ${errors.ageAgree && !agreeAge ? "border-red-500 animate-pulse" : ""}`}
           >
             {agreeAge && (
               <svg
@@ -168,7 +168,7 @@ const CustomerInfoStep: React.FC<Props> = ({
               </svg>
             )}
           </div>
-          <span className="text-sm text-gray-200">
+          <span className="text-sm text-gray-700">
             Đảm bảo mua vé đúng số tuổi quy định.
           </span>
         </label>
@@ -181,7 +181,7 @@ const CustomerInfoStep: React.FC<Props> = ({
             onChange={(e) => setAgreeTerms(e.target.checked)}
           />
           <div
-            className={`h-5 w-5 border rounded-sm flex items-center justify-center transition-all ${agreeTerms ? "bg-yellow-400 border-yellow-400" : "bg-transparent border-white"} ${errors.terms && !agreeTerms ? "border-red-500 animate-pulse" : ""}`}
+            className={`h-5 w-5 border rounded-sm flex items-center justify-center transition-all ${agreeTerms ? "bg-yellow-500 border-yellow-500" : "bg-transparent border-gray-400"} ${errors.terms && !agreeTerms ? "border-red-500 animate-pulse" : ""}`}
           >
             {agreeTerms && (
               <svg
@@ -197,7 +197,7 @@ const CustomerInfoStep: React.FC<Props> = ({
               </svg>
             )}
           </div>
-          <span className="text-sm text-gray-200">
+          <span className="text-sm text-gray-700">
             Đồng ý với điều khoản của Cinestar.
           </span>
         </label>
@@ -206,7 +206,7 @@ const CustomerInfoStep: React.FC<Props> = ({
       <div className="flex justify-end mt-6">
         <button
           onClick={handleProcess}
-          className="bg-yellow-400 text-black font-bold py-2 px-6 rounded-md hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg"
+          className="bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition transform hover:scale-105 shadow-lg"
         >
           Tiếp tục
         </button>

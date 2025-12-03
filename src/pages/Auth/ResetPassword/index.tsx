@@ -31,7 +31,7 @@ const ResetPassword: React.FC = () => {
       setLoading(true);
       await authService.resetPassword({ token: token || "", newPassword });
       setSuccess("Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay.");
-      setTimeout(() => navigate("/login"), 2000);
+      setTimeout(() => navigate("/auth"), 2000);
     } catch (err: any) {
       console.error(err);
       setError("Liên kết đặt lại không hợp lệ hoặc đã hết hạn.");
@@ -55,7 +55,10 @@ const ResetPassword: React.FC = () => {
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="newPassword"
+                className="block text-sm font-medium text-gray-300"
+              >
                 Mật khẩu mới
               </label>
               <input
@@ -71,7 +74,10 @@ const ResetPassword: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-300"
+              >
                 Xác nhận mật khẩu
               </label>
               <input

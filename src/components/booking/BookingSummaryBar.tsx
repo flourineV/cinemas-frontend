@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Swal from "sweetalert2"; // Import SweetAlert2
 
 interface BookingSummaryBarProps {
@@ -121,13 +122,15 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
 
   if (!isVisible) return null;
 
-  return (
+  const barContent = (
     <div
       ref={barRef}
-      className={`w-full left-0 z-50 ${isSticky ? "fixed bottom-0" : "absolute"}`}
-      style={!isSticky ? { top: `${topPosition}px` } : undefined}
+      className={`w-full left-0 right-0 z-50 ${isSticky ? "fixed bottom-0" : "absolute"}`}
+      style={
+        !isSticky ? { top: `${topPosition}px`, left: 0, right: 0 } : undefined
+      }
     >
-      <div className="bg-yellow-600 h-28 text-white flex justify-between items-center px-56 shadow-lg border-t border-yellow-600/30">
+      <div className="bg-yellow-600 h-28 text-white flex justify-between items-center px-8 md:px-16 lg:px-32 xl:px-56 shadow-lg border-t border-yellow-600/30">
         <div>
           <h2 className="text-2xl font-extrabold text-black">{movieTitle}</h2>
           <p className="text-md text-gray-800 mt-2">{cinemaName}</p>
@@ -187,6 +190,9 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
       </div>
     </div>
   );
+
+  // Use portal to render at document body level for true full width
+  return createPortal(barContent, document.body);
 };
 
 export default BookingSummaryBar;

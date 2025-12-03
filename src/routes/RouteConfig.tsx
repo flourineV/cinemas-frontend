@@ -1,6 +1,5 @@
 import Home from "@/pages/Home";
-import SignIn from "@/pages/Auth/SignIn";
-import SignUp from "@/pages/Auth/SignUp";
+import AuthPage from "@/pages/Auth/AuthPage";
 import ForgotPassword from "@/pages/Auth/ForgotPassword";
 import RedirectReset from "@/pages/Auth/RedirectReset";
 import ResetPassword from "@/pages/Auth/ResetPassword";
@@ -27,8 +26,7 @@ export const publicRoutes = [
   { path: "/movies/upcoming", element: <UpcomingPage /> },
   { path: "/movies/:id", element: <MovieDetailPage /> },
   { path: "/theater/:theaterId", element: <TheaterDetail /> },
-  { path: "/login", element: <SignIn /> },
-  { path: "/signup", element: <SignUp /> },
+  { path: "/auth", element: <AuthPage /> },
   { path: "/reset-password", element: <ResetPassword /> },
   { path: "/redirect-reset", element: <RedirectReset /> },
   { path: "/forgot-password", element: <ForgotPassword /> },

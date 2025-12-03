@@ -329,169 +329,178 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="pt-16 rounded-2xl shadow-md"
-    >
-      <h2 className="text-4xl font-extrabold mb-14 text-center text-yellow-300">
-        LỊCH CHIẾU
-      </h2>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="pt-16 rounded-2xl shadow-md"
+      >
+        <h2 className="text-4xl font-extrabold mb-10 text-center text-yellow-400">
+          LỊCH CHIẾU
+        </h2>
 
-      {/* Date Tabs */}
-      {movieStatus === "NOW_PLAYING" && (
-        <div className="flex justify-center gap-4 mb-10 flex-wrap">
-          {fixedDates.map((date) => {
-            const dateObj = dayjs(date);
-            return (
-              <button
-                key={date}
-                onClick={() => setSelectedDate(date)}
-                className={`px-6 py-3 rounded-md text-lg font-semibold transition-colors ${
-                  date === selectedDate
-                    ? "bg-yellow-300 text-black"
-                    : "border border-yellow-100/80 text-yellow-400 hover:bg-yellow-300 hover:text-black"
-                }`}
-              >
-                <div className="text-xl font-bold">
-                  {dateObj.format("DD/MM")}
-                </div>
-                <div className="text-sm">
-                  {dateObj.isSame(dayjs(), "day")
-                    ? "Hôm nay"
-                    : dateObj.format("dddd")}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Filter & List */}
-      <div className="flex items-center justify-between mb-4 max-w-6xl mx-auto pt-10">
-        <span className="text-yellow-300 font-extrabold text-3xl">
-          DANH SÁCH RẠP
-        </span>
-        {provinces.length > 0 && (
-          <div className="min-w-[220px]">
-            <CustomSelect
-              options={provinces.map((p) => ({ value: p.id, label: p.name }))}
-              value={selectedProvinceId}
-              onChange={setSelectedProvinceId}
-              placeholder="Chọn tỉnh/thành phố"
-            />
+        {/* Date Tabs */}
+        {movieStatus === "NOW_PLAYING" && (
+          <div className="flex justify-center gap-4 mb-10 flex-wrap">
+            {fixedDates.map((date) => {
+              const dateObj = dayjs(date);
+              return (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={`px-6 py-3 rounded-md text-lg font-semibold transition-colors ${
+                    date === selectedDate
+                      ? "bg-yellow-300 text-black"
+                      : "border border-yellow-100/80 text-yellow-400 hover:bg-yellow-300 hover:text-black"
+                  }`}
+                >
+                  <div className="text-xl font-bold">
+                    {dateObj.format("DD/MM")}
+                  </div>
+                  <div className="text-sm">
+                    {dateObj.isSame(dayjs(), "day")
+                      ? "Hôm nay"
+                      : dateObj.format("dddd")}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
-      </div>
 
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-400"></div>
-        </div>
-      ) : (
-        <div className="rounded-xl pt-10 shadow-lg max-w-6xl mx-auto mb-8">
-          {theaterShowtimesForDate.length === 0 ? (
-            <p className="text-white text-center">
-              Chưa có rạp chiếu tại khu vực này.
-            </p>
-          ) : (
-            theaterShowtimesForDate.map((theater, idx) => (
-              <motion.div
-                key={theater.theaterId}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="bg-yellow-900/50 border border-yellow-600/30 pt-7 pl-10 pb-5 shadow-inner"
-              >
-                <h3 className="text-2xl font-extrabold text-yellow-300 mb-1">
-                  {theater.theaterName}
-                </h3>
-                <p className="text-white text-md mb-3 mt-4">
-                  {theater.theaterAddress}
-                </p>
-                <div className="mb-4 pt-3">
-                  {theater.showtimes.length === 0 ? (
-                    <p className="text-gray-400 italic">Chưa có lịch chiếu</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-3">
-                      {theater.showtimes
-                        .filter((st) => dayjs(st.startTime).isAfter(dayjs()))
-                        .sort((a, b) =>
-                          dayjs(a.startTime).diff(dayjs(b.startTime))
-                        )
-                        .map((st) => (
-                          <button
-                            key={st.showtimeId}
-                            onClick={() => {
-                              const res: ShowtimeResponse = {
-                                id: st.showtimeId,
-                                movieId,
-                                theaterName: theater.theaterName,
-                                roomId: st.roomId,
-                                roomName: st.roomName,
-                                startTime: st.startTime,
-                                endTime: st.endTime,
-                              };
-                              setSelectedShowtime(res);
-                              onSelectShowtime?.(res);
-                            }}
-                            className={`px-4 py-2 rounded-md border transition-colors ${selectedShowtime?.id === st.showtimeId ? "bg-yellow-400 text-black border-yellow-400" : "text-white border-white hover:bg-yellow-400 hover:text-black"}`}
-                          >
-                            {dayjs(st.startTime).format("HH:mm")}
-                          </button>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))
+        {/* Filter & List */}
+        <div className="flex items-center justify-between mb-4 max-w-5xl mx-auto pt-10 px-10">
+          <span className="text-yellow-400 font-extrabold text-3xl">
+            DANH SÁCH RẠP
+          </span>
+          {provinces.length > 0 && (
+            <div className="min-w-[220px]">
+              <CustomSelect
+                options={provinces.map((p) => ({ value: p.id, label: p.name }))}
+                value={selectedProvinceId}
+                onChange={setSelectedProvinceId}
+                placeholder="Chọn tỉnh/thành phố"
+              />
+            </div>
           )}
         </div>
-      )}
 
-      {/* Booking Sections */}
-      {selectedShowtime && (
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mt-24 max-w-6xl mx-auto"
-        >
-          <h2
-            ref={ticketSectionRef}
-            className="text-4xl font-extrabold mb-6 text-center text-yellow-300 scroll-mt-24"
-          >
-            CHỌN LOẠI VÉ
-          </h2>
-          <div className="pt-10">
-            <SelectTicket
-              seatType="NORMAL"
-              onTicketChange={setSelectedTickets}
-              selectedSeats={selectedSeats.map((s) => s.seatId)} // giữ SelectTicket API hiện tại
-            />
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-400"></div>
           </div>
-
-          <h2
-            ref={seatSectionRef}
-            className="text-4xl font-extrabold mb-6 mt-12 text-center text-yellow-300 pt-20"
-          >
-            CHỌN GHẾ
-          </h2>
-          <p className="text-2xl text-yellow-200 font-light text-center">
-            {selectedShowtime.roomName}
-          </p>
-          <div className="pt-10 pb-36">
-            <SelectSeat
-              showtimeId={selectedShowtime.id}
-              onSeatSelect={setSelectedSeats} // bây giờ nhận ShowtimeSeatResponse[]
-              selectedTickets={selectedTickets}
-              onSeatLock={setSeatLockTTL}
-            />
+        ) : (
+          <div className="rounded-xl pt-10 max-w-6xl mx-auto mb-8 space-y-4 px-10">
+            {theaterShowtimesForDate.length === 0 ? (
+              <p className="text-gray-300 text-center py-8">
+                Chưa có rạp chiếu tại khu vực này.
+              </p>
+            ) : (
+              theaterShowtimesForDate.map((theater, idx) => (
+                <motion.div
+                  key={theater.theaterId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="bg-zinc-800/60 backdrop-blur-sm border border-zinc-900 rounded-xl p-6 shadow-lg hover:border-zinc-600 transition-colors"
+                >
+                  <h3 className="text-2xl font-bold text-yellow-400 mb-2">
+                    {theater.theaterName}
+                  </h3>
+                  <p className="text-gray-300 text-sm mb-4">
+                    {theater.theaterAddress}
+                  </p>
+                  <div>
+                    {theater.showtimes.length === 0 ? (
+                      <p className="text-gray-400 italic text-sm">
+                        Chưa có lịch chiếu
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-3">
+                        {theater.showtimes
+                          .filter((st) => dayjs(st.startTime).isAfter(dayjs()))
+                          .sort((a, b) =>
+                            dayjs(a.startTime).diff(dayjs(b.startTime))
+                          )
+                          .map((st) => (
+                            <button
+                              key={st.showtimeId}
+                              onClick={() => {
+                                const res: ShowtimeResponse = {
+                                  id: st.showtimeId,
+                                  movieId,
+                                  theaterName: theater.theaterName,
+                                  roomId: st.roomId,
+                                  roomName: st.roomName,
+                                  startTime: st.startTime,
+                                  endTime: st.endTime,
+                                };
+                                setSelectedShowtime(res);
+                                onSelectShowtime?.(res);
+                              }}
+                              className={`px-5 py-2.5 rounded-lg font-bold transition-all ${
+                                selectedShowtime?.id === st.showtimeId
+                                  ? "bg-yellow-400 text-black border-2 border-yellow-400 shadow-lg shadow-yellow-400/50 scale-105"
+                                  : "bg-yellow-500/20 text-yellow-400 border-2 border-yellow-500/40 hover:bg-yellow-400 hover:text-black hover:border-yellow-400 hover:scale-105"
+                              }`}
+                            >
+                              {dayjs(st.startTime).format("HH:mm")}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
-        </motion.div>
-      )}
+        )}
 
+        {/* Booking Sections */}
+        {selectedShowtime && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mt-24 max-w-6xl mx-auto"
+          >
+            <h2
+              ref={ticketSectionRef}
+              className="text-4xl font-extrabold mb-6 text-center text-yellow-300 scroll-mt-24"
+            >
+              CHỌN LOẠI VÉ
+            </h2>
+            <div className="pt-10">
+              <SelectTicket
+                seatType="NORMAL"
+                onTicketChange={setSelectedTickets}
+                selectedSeats={selectedSeats.map((s) => s.seatId)} // giữ SelectTicket API hiện tại
+              />
+            </div>
+
+            <h2
+              ref={seatSectionRef}
+              className="text-4xl font-extrabold mb-6 mt-12 text-center text-yellow-300 pt-20"
+            >
+              CHỌN GHẾ
+            </h2>
+            <p className="text-2xl text-yellow-200 font-light text-center">
+              {selectedShowtime.roomName}
+            </p>
+            <div className="pt-10 pb-36">
+              <SelectSeat
+                showtimeId={selectedShowtime.id}
+                onSeatSelect={setSelectedSeats} // bây giờ nhận ShowtimeSeatResponse[]
+                selectedTickets={selectedTickets}
+                onSeatLock={setSeatLockTTL}
+              />
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* BookingSummaryBar - Outside motion.div for full width */}
       <BookingSummaryBar
         movieTitle={movieTitle}
         cinemaName={`${selectedShowtime?.theaterName || ""} (${provinces.find((p) => p.id === selectedProvinceId)?.name || ""})`}
@@ -501,7 +510,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
         onSubmit={handleSubmitBooking}
         onTTLExpired={handleTTLExpired}
       />
-    </motion.div>
+    </>
   );
 };
 

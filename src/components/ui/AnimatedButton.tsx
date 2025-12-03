@@ -67,7 +67,7 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         ${disabledClasses}
         ${className} 
         group
-        focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-black/40
+        focus:outline-none
       `}
       {...props}
     >

@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   TableProperties,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import AnimatedButton from "@/components/ui/AnimatedButton";
 import Lottie from "lottie-react";
@@ -33,6 +33,7 @@ import {
 } from "@/utils/format";
 
 const Home = () => {
+  const navigate = useNavigate();
   const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
   const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
   const [loadingNowPlaying, setLoadingNowPlaying] = useState(true);
@@ -158,12 +159,7 @@ const Home = () => {
         <AnimatedButton
           variant="orange-to-f3ea28"
           className="w-1/2"
-          onClick={() => {
-            // ví dụ: chuyển tới trang đặt vé
-            // nếu dùng react-router navigate, import và dùng useNavigate
-            // hoặc thay bằng Link nếu cần
-            console.log("Đặt vé cho", movie.id);
-          }}
+          onClick={() => navigate(`/movies/${movie.id}`)}
         >
           ĐẶT VÉ
         </AnimatedButton>

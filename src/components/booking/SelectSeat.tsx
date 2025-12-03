@@ -380,19 +380,28 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
                   const gapSpacers = colGap > 0 ? Array(colGap).fill(null) : [];
 
                   let colorClass = "";
-                  if (isBooked) {
+                  // PRIORITY 1: Ghế mình chọn (selectedSeats) - LUÔN VÀNG
+                  if (isSelected) {
+                    colorClass =
+                      "cursor-pointer " +
+                      (!isCouple
+                        ? "bg-yellow-400 text-black font-bold shadow-lg shadow-yellow-400/50"
+                        : "scale-105");
+                  }
+                  // PRIORITY 2: Ghế đã booked
+                  else if (isBooked) {
                     colorClass =
                       "cursor-not-allowed " +
                       (!isCouple ? "bg-gray-600 text-gray-300" : "");
-                  } else if (isLocked) {
+                  }
+                  // PRIORITY 3: Ghế bị lock bởi người khác
+                  else if (isLocked) {
                     colorClass =
                       "cursor-not-allowed opacity-70 " +
                       (!isCouple ? "bg-orange-500 text-white" : "");
-                  } else if (isSelected) {
-                    colorClass =
-                      "cursor-pointer " +
-                      (!isCouple ? "bg-yellow-400 text-black" : "scale-105");
-                  } else {
+                  }
+                  // PRIORITY 4: Ghế trống
+                  else {
                     if (isVip)
                       colorClass =
                         "bg-purple-500 text-white hover:bg-purple-400 cursor-pointer";
@@ -424,7 +433,15 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
                             viewBox="0 0 64 40"
                             fill="currentColor"
                             preserveAspectRatio="none"
-                            className={`h-full w-16 transition-colors ${isBooked ? "text-gray-300" : isLocked ? "text-orange-500 opacity-70" : isSelected ? "text-yellow-400" : "text-white hover:text-yellow-200"}`}
+                            className={`h-full w-16 transition-colors ${
+                              isSelected
+                                ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]"
+                                : isBooked
+                                  ? "text-gray-300"
+                                  : isLocked
+                                    ? "text-orange-500 opacity-70"
+                                    : "text-white hover:text-yellow-200"
+                            }`}
                           >
                             <path d="M8 0 L26 0 L32 6 L38 0 L56 0 A8 8 0 0 1 64 8 L64 32 A8 8 0 0 1 56 40 L38 40 L32 34 L26 40 L8 40 A8 8 0 0 1 0 32 L0 8 A8 8 0 0 1 8 0 Z" />
                             <text

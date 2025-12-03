@@ -160,13 +160,13 @@ export default function CheckoutPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen text-white flex flex-col pb-10">
+      <div className="min-h-screen bg-gray-100 flex flex-col pb-10">
         <main className="container mx-auto px-4 md:px-6 mt-14 flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-16">
             {/* LEFT COLUMN */}
             <div className="flex flex-col space-y-8 lg:col-span-2">
               <div className="text-center lg:text-left">
-                <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-300 mb-6 uppercase tracking-tighter">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-500 mb-6 uppercase tracking-tighter">
                   THANH TOÁN
                 </h1>
                 {/* Steps Bar */}
@@ -177,25 +177,29 @@ export default function CheckoutPage() {
                     return (
                       <React.Fragment key={step.id}>
                         <div className="flex flex-col items-center z-10 relative flex-1">
-                          <span
-                            className={`text-2xl font-bold mb-1 transition-colors ${isActive || isCompleted ? "text-yellow-300" : "text-gray-600"}`}
+                          <div
+                            className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
+                              isActive || isCompleted
+                                ? "bg-yellow-500 text-black"
+                                : "bg-gray-700 text-gray-400"
+                            }`}
                           >
-                            {step.id}
-                          </span>
+                            <span className="text-xl font-bold">{step.id}</span>
+                          </div>
                           <span
-                            className={`text-[10px] md:text-xs font-bold uppercase text-center transition-colors ${isActive || isCompleted ? "text-yellow-300" : "text-gray-500"}`}
+                            className={`text-[10px] md:text-xs font-bold uppercase text-center transition-colors ${isActive || isCompleted ? "text-yellow-500" : "text-gray-500"}`}
                           >
                             {step.label}
                           </span>
                         </div>
                         {index < STEPS.length - 1 && (
-                          <div className="flex-1 h-[2px] mt-4 relative">
+                          <div className="flex-1 h-[2px] mt-6 relative">
                             <div className="absolute top-0 left-0 w-full h-full bg-gray-700"></div>
                             <motion.div
                               initial={{ width: "0%" }}
                               animate={{ width: isCompleted ? "100%" : "0%" }}
                               transition={{ duration: 0.5 }}
-                              className="absolute top-0 left-0 h-full bg-yellow-300"
+                              className="absolute top-0 left-0 h-full bg-yellow-500"
                             />
                           </div>
                         )}

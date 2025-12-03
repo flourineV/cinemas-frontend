@@ -93,3 +93,70 @@
     line-clamp: 2;
   }
 }
+
+/* Fix autocomplete background color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #000 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* For dark/gray backgrounds */
+input.bg-gray-100:-webkit-autofill,
+input.bg-gray-100:-webkit-autofill:hover,
+input.bg-gray-100:-webkit-autofill:focus,
+input.bg-gray-100:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgb(243, 244, 246) inset !important;
+  -webkit-text-fill-color: #000 !important;
+}
+
+input.bg-slate-800:-webkit-autofill,
+input.bg-slate-800:-webkit-autofill:hover,
+input.bg-slate-800:-webkit-autofill:focus,
+input.bg-slate-800:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgb(30, 41, 59) inset !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* Custom checkbox style - white background, zinc-950 when checked */
+input[type="checkbox"].custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: white;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"].custom-checkbox:hover {
+  border-color: #9ca3af;
+}
+
+input[type="checkbox"].custom-checkbox:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.2);
+}
+
+input[type="checkbox"].custom-checkbox:checked {
+  background-color: #18181b;
+  border-color: #18181b;
+}
+
+input[type="checkbox"].custom-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 0.25rem;
+  height: 0.5rem;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+}

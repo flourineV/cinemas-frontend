@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { theaterService } from "@/services/showtime/theaterService";
 import { movieService } from "@/services/movie/movieService";
+import MovieShowtimeCard from "@/components/theater/MovieShowtimeCard";
 import type {
   TheaterResponse,
   MovieShowtimesResponse,
 } from "@/types/showtime/theater.type";
 import type { MovieDetail } from "@/types/movie/movie.type";
-import { MapPin, Clock } from "lucide-react";
-import { getPosterUrl } from "@/utils/getPosterUrl";
+import { MapPin } from "lucide-react";
 
 // Function to get theater image based on name
 const getTheaterImage = (theaterName: string): string => {
@@ -160,61 +160,13 @@ const TheaterDetail = () => {
               Hiện tại rạp chưa có suất chiếu nào
             </p>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {moviesWithShowtimes.map(({ movie, showtimes }) => (
-                <div
+                <MovieShowtimeCard
                   key={movie.id}
-                  className="bg-gradient-to-br from-purple-900/95 to-blue-900/95 rounded-xl overflow-hidden shadow-2xl"
-                >
-                  <div className="flex gap-4 p-6">
-                    <Link to={`/movies/${movie.id}`} className="flex-shrink-0">
-                      <img
-                        src={getPosterUrl(movie.posterUrl)}
-                        alt={movie.title}
-                        className="w-32 h-48 object-cover rounded-lg shadow-lg hover:scale-105 transition-transform"
-                      />
-                    </Link>
-
-                    <div className="flex-1">
-                      <Link to={`/movies/${movie.id}`}>
-                        <h3 className="text-xl font-extrabold text-yellow-400 mb-2 uppercase hover:text-yellow-300 transition-colors">
-                          {movie.title}
-                        </h3>
-                      </Link>
-                      <div className="text-gray-300 text-sm space-y-1 mb-4">
-                        <p>Thời lượng: {movie.time} phút</p>
-                        <p>Độ tuổi: {movie.age}</p>
-                      </div>
-
-                      <div className="space-y-3">
-                        {showtimes.showtimes.map((showtime) => (
-                          <Link
-                            key={showtime.showtimeId}
-                            to={`/showtime/${showtime.showtimeId}`}
-                            className="block border border-purple-400/50 rounded-lg p-3 hover:border-purple-400 hover:bg-purple-800/30 transition-all"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Clock size={16} className="text-yellow-400" />
-                                <span className="font-bold text-white">
-                                  {new Date(
-                                    showtime.startTime
-                                  ).toLocaleTimeString("vi-VN", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </span>
-                              </div>
-                              <span className="text-sm text-gray-300">
-                                {showtime.roomName}
-                              </span>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  movie={movie}
+                  showtimes={showtimes}
+                />
               ))}
             </div>
           )}
