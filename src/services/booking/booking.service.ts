@@ -16,7 +16,7 @@ export const bookingService = {
     return res.data;
   },
 
-  // GET /api/bookings/statistics
+  // GET /api/bookings/admin/search
   getBookings: async (
     criteria: BookingCriteria,
     page = 0,
@@ -32,7 +32,7 @@ export const bookingService = {
       sortDir,
     };
     const res = await bookingClient.get<PageResponse<BookingResponse>>(
-      "/statistics",
+      "/admin/search",
       { params }
     );
     return res.data;
@@ -67,13 +67,13 @@ export const bookingService = {
   // POST /api/bookings/{id}/cancel
   cancelBooking: async (id: string): Promise<BookingResponse> => {
     const res = await bookingClient.post<BookingResponse>(
-      `/bookings/${id}/cancel`
+      `/${id}/cancel`
     );
     return res.data;
   },
 
   // DELETE /api/bookings/{id} (Admin)
   deleteBooking: async (id: string): Promise<void> => {
-    await bookingClient.delete(`/bookings/${id}`);
+    await bookingClient.delete(`/${id}`);
   },
 };

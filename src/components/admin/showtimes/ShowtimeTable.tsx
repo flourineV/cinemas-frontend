@@ -17,7 +17,6 @@ import { theaterService } from "@/services/showtime/theaterService";
 import { roomService } from "@/services/showtime/roomService";
 import { movieManagementService } from "@/services/movie/movieManagementService";
 import type { ShowtimeDetailResponse } from "@/types/showtime/showtime.type";
-import type { PageResponse } from "@/types/PageResponse";
 import { useDebounce } from "@/hooks/useDebounce";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
 
@@ -41,8 +40,10 @@ export default function ShowtimeTable({
   const [theaterFilter, setTheaterFilter] = useState<string>("");
   const [roomFilter, setRoomFilter] = useState<string>("");
   const [movieFilter, setMovieFilter] = useState<string>("");
-  const [dateFilter, setDateFilter] = useState<string>("");
-  const [timeFilter, setTimeFilter] = useState<string>("");
+  const [startOfDayFilter, setStartOfDayFilter] = useState<string>("");
+  const [endOfDayFilter, setEndOfDayFilter] = useState<string>("");
+  const [fromTimeFilter, setFromTimeFilter] = useState<string>("");
+  const [toTimeFilter, setToTimeFilter] = useState<string>("");
 
   const [filterTheaters, setFilterTheaters] = useState<any[]>([]);
   const [filterRooms, setFilterRooms] = useState<any[]>([]);
@@ -55,24 +56,25 @@ export default function ShowtimeTable({
       if (showSkeleton) setLoading(true);
       else setIsRefreshing(true);
 
-      const filters = {
+      const criteria = {
         provinceId: provinceFilter || undefined,
         theaterId: theaterFilter || undefined,
         roomId: roomFilter || undefined,
         movieId: movieFilter || undefined,
-        date: dateFilter || undefined,
-        time: timeFilter || undefined,
         showtimeId: debouncedSearch || undefined,
+        startOfDay: startOfDayFilter ? dayjs(startOfDayFilter).format("YYYY-MM-DDTHH:mm") : undefined,
+        endOfDay: endOfDayFilter ? dayjs(endOfDayFilter).format("YYYY-MM-DDTHH:mm") : undefined,
+        fromTime: fromTimeFilter || undefined,
+        toTime: toTimeFilter || undefined,
       };
 
-      const pageResp: PageResponse<ShowtimeDetailResponse> =
-        await showtimeService.getAllAvailableShowtimes(
-          filters,
-          page,
-          ITEMS_PER_PAGE,
-          "startTime",
-          "desc"
-        );
+      const pageResp = await showtimeService.adminSearch(
+        criteria,
+        page,
+        ITEMS_PER_PAGE,
+        "startTime",
+        "desc"
+      );
 
       setShowtimes(pageResp.data ?? []);
       setPaging({
@@ -129,8 +131,10 @@ export default function ShowtimeTable({
     theaterFilter,
     roomFilter,
     movieFilter,
-    dateFilter,
-    timeFilter,
+    startOfDayFilter,
+    endOfDayFilter,
+    fromTimeFilter,
+    toTimeFilter,
     debouncedSearch,
   ]);
 
@@ -312,30 +316,63 @@ export default function ShowtimeTable({
           placeholder="Tất cả phim"
         />
 
+        {/* Start of Day */}
         <div className="flex items-center relative flex-1">
+          <label className="sr-only">Start of Day</label>
           <input
-            type="date"
+            type="datetime-local"
             className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            value={dateFilter}
+            value={startOfDayFilter}
             onChange={(e) => {
-              setDateFilter(e.target.value);
+              setStartOfDayFilter(e.target.value);
               setPaging((p) => ({ ...p, page: 1 }));
             }}
-            placeholder="Chọn ngày chiếu"
+            placeholder="Ngày giờ bắt đầu"
           />
         </div>
 
+        {/* End of Day */}
+        <div className="flex items-center relative flex-1">
+          <label className="sr-only">End of Day</label>
+          <input
+            type="datetime-local"
+            className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            value={endOfDayFilter}
+            onChange={(e) => {
+              setEndOfDayFilter(e.target.value);
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Ngày giờ kết thúc"
+          />
+        </div>
+
+        {/* From Time */}
         <div className="flex items-center relative flex-1">
           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/70" />
           <input
             type="time"
             className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            value={timeFilter}
+            value={fromTimeFilter}
             onChange={(e) => {
-              setTimeFilter(e.target.value);
+              setFromTimeFilter(e.target.value);
               setPaging((p) => ({ ...p, page: 1 }));
             }}
-            placeholder="Chọn giờ chiếu"
+            placeholder="Giờ bắt đầu"
+          />
+        </div>
+
+        {/* To Time */}
+        <div className="flex items-center relative flex-1">
+          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/70" />
+          <input
+            type="time"
+            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            value={toTimeFilter}
+            onChange={(e) => {
+              setToTimeFilter(e.target.value);
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Giờ kết thúc"
           />
         </div>
       </div>

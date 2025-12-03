@@ -150,9 +150,14 @@ export default function BookingManagementTable(): React.JSX.Element {
   }
 
   // Chú ý mapping các trường từ BookingResponse
-  const getName = (b: BookingResponse) => b.guestName ?? "Chưa có tên";
-  const getShowtimeName = (b: BookingResponse) => b.showtimeId; // nếu cần hiển thị tên, phải join từ showtime data
-  const getTheaterName = (b: BookingResponse) => "Chưa có tên rạp"; // nếu backend trả theaterId, cần fetch thêm
+  const getName = (b: BookingResponse) => {
+    if (b.userId) {
+      return b.fullName ?? "Chưa có tên user";
+    }
+    return b.guestName ?? "Chưa có tên guest";
+  };
+  const getShowtimeId = (b: BookingResponse) => b.showtimeId ?? "Chưa có id"; 
+  const getMovieTitle = (b: BookingResponse) => b.movieTitle ?? "Chưa có tên"; 
   const getPrice = (b: BookingResponse) => b.finalPrice;
   const getPaymentMethod = (b: BookingResponse) => b.paymentMethod ?? "Chưa có";
 
@@ -162,7 +167,7 @@ export default function BookingManagementTable(): React.JSX.Element {
       "bookingCode",
       "user",
       "showtime",
-      "theater",
+      "movie",
       "status",
       "paymentMethod",
       "price",
@@ -172,8 +177,8 @@ export default function BookingManagementTable(): React.JSX.Element {
       b.bookingId,
       b.bookingCode,
       getName(b),
-      getShowtimeName(b),
-      getTheaterName(b),
+      getShowtimeId(b),
+      getMovieTitle(b),
       b.status,
       getPaymentMethod(b),
       getPrice(b),
@@ -271,7 +276,7 @@ export default function BookingManagementTable(): React.JSX.Element {
                   Lịch chiếu
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-yellow-400 uppercase">
-                  Rạp
+                  Phim
                 </th>
                 <th className="px-6 py-3 text-center text-sm font-bold text-yellow-400 uppercase">
                   Trạng thái
@@ -309,10 +314,10 @@ export default function BookingManagementTable(): React.JSX.Element {
                     </td>
                     <td className="px-6 py-3 text-yellow-100">{getName(b)}</td>
                     <td className="px-6 py-3 text-yellow-100">
-                      {getShowtimeName(b)}
+                      {getShowtimeId(b)}
                     </td>
                     <td className="px-6 py-3 text-yellow-100">
-                      {getTheaterName(b)}
+                      {getMovieTitle(b)}
                     </td>
 
                     <td className="px-6 py-3 text-center">
@@ -397,45 +402,50 @@ export default function BookingManagementTable(): React.JSX.Element {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField
-                label="Booking Code"
+                label="Mã Booking"
                 value={modalBooking.bookingCode}
                 disabled
               />
-              <InputField label="User" value={getName(modalBooking)} disabled />
+              <InputField label="Tên khách hàng" value={getName(modalBooking)} disabled />
               <InputField
-                label="Showtime"
-                value={getShowtimeName(modalBooking)}
+                label="Lịch chiếu"
+                value={getShowtimeId(modalBooking)}
                 disabled
               />
               <InputField
-                label="Theater"
-                value={getTheaterName(modalBooking)}
+                label="Phim"
+                value={getMovieTitle(modalBooking)}
                 disabled
               />
-              <InputField label="Status" value={modalBooking.status} disabled />
+              <InputField label="Trạng thái" value={modalBooking.status} disabled />
               <InputField
-                label="Payment Method"
+                label="Phương thức thanh toán"
                 value={getPaymentMethod(modalBooking)}
                 disabled
               />
               <InputField
-                label="Total Price"
+                label="Tổng tiền"
                 value={modalBooking.totalPrice}
                 disabled
               />
               <InputField
-                label="Discount Amount"
+                label="Giảm giá"
                 value={modalBooking.discountAmount}
                 disabled
               />
               <InputField
-                label="Final Price"
+                label="Thành tiền"
                 value={modalBooking.finalPrice}
                 disabled
               />
               <InputField
-                label="Created At"
+                label="Tạo lúc"
                 value={modalBooking.createdAt}
+                disabled
+              />
+              <InputField
+                label="Câp nhật lúc"
+                value={modalBooking.updatedAt}
                 disabled
               />
             </div>

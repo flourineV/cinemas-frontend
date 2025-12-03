@@ -43,7 +43,10 @@ export interface BookingResponse {
   bookingId: string; // UUID
   bookingCode: string;
   userId?: string; // UUID
+  fullName?: string; // From user-profile-service
   showtimeId: string; // UUID
+  movieId?: string;
+  movieTitle?: string;
   guestName?: string;
   guestEmail?: string;
 
