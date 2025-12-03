@@ -60,9 +60,6 @@ export interface BookingResponse {
   transactionId?: string;
 
   seats: BookingSeatResponse[];
-
-  createdAt: string; // LocalDateTime -> string ISO
-  updatedAt: string;
 }
 
 // Map từ BookingCriteria.java 

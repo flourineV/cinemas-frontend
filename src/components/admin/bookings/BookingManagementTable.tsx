@@ -21,9 +21,11 @@ import { InputField } from "@/components/ui/FormFields";
 
 const STATUS_LABELS: Record<string, string> = {
   ALL: "Tất cả",
-  PENDING: "Đang chờ",
+  AWAITING_PAYMENT: "Đang chờ",
   CONFIRMED: "Đã xác nhận",
   EXPIRED: "Hết hạn",
+  CANCELLED: "Đã hủy",
+  REFUNDED: "Đã hoàn tiền",
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -181,8 +183,7 @@ export default function BookingManagementTable(): React.JSX.Element {
       getMovieTitle(b),
       b.status,
       getPaymentMethod(b),
-      getPrice(b),
-      b.createdAt,
+      getPrice(b)
     ]);
     const csv = [headers, ...rows]
       .map((r) =>
@@ -436,16 +437,6 @@ export default function BookingManagementTable(): React.JSX.Element {
               <InputField
                 label="Thành tiền"
                 value={modalBooking.finalPrice}
-                disabled
-              />
-              <InputField
-                label="Tạo lúc"
-                value={modalBooking.createdAt}
-                disabled
-              />
-              <InputField
-                label="Câp nhật lúc"
-                value={modalBooking.updatedAt}
                 disabled
               />
             </div>

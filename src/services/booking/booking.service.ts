@@ -4,7 +4,6 @@ import type {
   CreateBookingRequest,
   FinalizeBookingRequest,
   BookingResponse,
-  BookingCriteria,
 } from "@/types/booking/booking.type";
 
 export const bookingService = {
@@ -17,24 +16,8 @@ export const bookingService = {
   },
 
   // GET /api/bookings/admin/search
-  getBookings: async (
-    criteria: BookingCriteria,
-    page = 0,
-    size = 10,
-    sortBy = "createdAt",
-    sortDir = "desc"
-  ): Promise<PageResponse<BookingResponse>> => {
-    const params = {
-      ...criteria,
-      page,
-      size,
-      sortBy,
-      sortDir,
-    };
-    const res = await bookingClient.get<PageResponse<BookingResponse>>(
-      "/admin/search",
-      { params }
-    );
+  getBookings: async (params: any): Promise<PageResponse<BookingResponse>> => {
+    const res = await bookingClient.get("/admin/search", { params });
     return res.data;
   },
 

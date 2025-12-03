@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
+import TimePicker from 'react-time-picker';
+import 'react-time-picker/dist/TimePicker.css';
+import 'react-clock/dist/Clock.css';
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { provinceService } from "@/services/showtime/provinceService";
 import { theaterService } from "@/services/showtime/theaterService";
@@ -62,10 +65,10 @@ export default function ShowtimeTable({
         roomId: roomFilter || undefined,
         movieId: movieFilter || undefined,
         showtimeId: debouncedSearch || undefined,
-        startOfDay: startOfDayFilter ? dayjs(startOfDayFilter).format("YYYY-MM-DDTHH:mm") : undefined,
-        endOfDay: endOfDayFilter ? dayjs(endOfDayFilter).format("YYYY-MM-DDTHH:mm") : undefined,
-        fromTime: fromTimeFilter || undefined,
-        toTime: toTimeFilter || undefined,
+        startOfDay: startOfDayFilter ? `${startOfDayFilter}T00:00:00` : undefined, 
+        endOfDay: endOfDayFilter ? `${endOfDayFilter}T00:00:00` : undefined,
+        fromTime: fromTimeFilter || undefined,  // HH:mm format
+        toTime: toTimeFilter || undefined,     // HH:mm format
       };
 
       const pageResp = await showtimeService.adminSearch(
@@ -320,11 +323,11 @@ export default function ShowtimeTable({
         <div className="flex items-center relative flex-1">
           <label className="sr-only">Start of Day</label>
           <input
-            type="datetime-local"
+            type="date"
             className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
             value={startOfDayFilter}
             onChange={(e) => {
-              setStartOfDayFilter(e.target.value);
+              setStartOfDayFilter(e.target.value); // YYYY-MM-DD
               setPaging((p) => ({ ...p, page: 1 }));
             }}
             placeholder="Ngày giờ bắt đầu"
@@ -335,11 +338,11 @@ export default function ShowtimeTable({
         <div className="flex items-center relative flex-1">
           <label className="sr-only">End of Day</label>
           <input
-            type="datetime-local"
+            type="date"
             className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
             value={endOfDayFilter}
             onChange={(e) => {
-              setEndOfDayFilter(e.target.value);
+              setEndOfDayFilter(e.target.value); // YYYY-MM-DD
               setPaging((p) => ({ ...p, page: 1 }));
             }}
             placeholder="Ngày giờ kết thúc"
@@ -349,30 +352,32 @@ export default function ShowtimeTable({
         {/* From Time */}
         <div className="flex items-center relative flex-1">
           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/70" />
-          <input
-            type="time"
+          <TimePicker
             className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            value={fromTimeFilter}
-            onChange={(e) => {
-              setFromTimeFilter(e.target.value);
+            value={fromTimeFilter || undefined}
+            onChange={(value) => {
+              setFromTimeFilter(value || "");
               setPaging((p) => ({ ...p, page: 1 }));
             }}
-            placeholder="Giờ bắt đầu"
+            format="HH:mm"
+            clearIcon={null}
+            clockIcon={null}
           />
         </div>
 
         {/* To Time */}
         <div className="flex items-center relative flex-1">
           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/70" />
-          <input
-            type="time"
+          <TimePicker
             className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            value={toTimeFilter}
-            onChange={(e) => {
-              setToTimeFilter(e.target.value);
+            value={toTimeFilter || undefined}
+            onChange={(value) => {
+              setToTimeFilter(value || "");
               setPaging((p) => ({ ...p, page: 1 }));
             }}
-            placeholder="Giờ kết thúc"
+            format="HH:mm"
+            clearIcon={null}
+            clockIcon={null}
           />
         </div>
       </div>
