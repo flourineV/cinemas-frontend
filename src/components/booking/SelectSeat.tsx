@@ -12,6 +12,7 @@ import { websocketService } from "@/services/websocket/websocketService";
 import { useGuestSessionContext } from "@/contexts/GuestSessionContext";
 import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
 import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
+import { ArrowRight } from "lucide-react";
 
 interface SelectSeatProps {
   showtimeId: string;
@@ -37,6 +38,8 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
   const { getUserOrGuestId } = useGuestSessionContext();
 
   const selectedSeatsRef = useRef<ShowtimeSeatResponse[]>(selectedSeats);
+  const manualUnlockRef = useRef<Set<string>>(new Set()); // Track ghế unlock bằng tay
+
   useEffect(() => {
     selectedSeatsRef.current = selectedSeats;
   }, [selectedSeats]);
@@ -109,22 +112,31 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         );
 
         if (wasSelected) {
-          try {
-            await Swal.fire({
-              icon: "warning",
-              title: "Hết thời gian giữ ghế",
-              text: "Ghế bạn đang giữ đã bị giải phóng. Vui lòng chọn lại ghế!",
-              confirmButtonColor: "#eab308",
-              scrollbarPadding: false,
-            });
-          } catch (err) {
-            console.warn(err);
-          }
+          // Kiểm tra xem có phải unlock bằng tay không
+          const isManualUnlock = manualUnlockRef.current.has(payload.seatId);
 
-          setSelectedSeats([]);
-          selectedSeatsRef.current = [];
-          onSeatSelect([]);
-          if (onSeatLock) onSeatLock(null);
+          if (isManualUnlock) {
+            // Unlock bằng tay - không hiện alert, chỉ xóa khỏi tracking
+            manualUnlockRef.current.delete(payload.seatId);
+          } else {
+            // Expire hoặc bị chiếm - hiện alert và reset TẤT CẢ ghế
+            try {
+              await Swal.fire({
+                icon: "warning",
+                title: "Hết thời gian giữ ghế",
+                text: "Ghế bạn đang giữ đã bị giải phóng. Vui lòng chọn lại ghế!",
+                confirmButtonColor: "#eab308",
+                scrollbarPadding: false,
+              });
+            } catch (err) {
+              console.warn(err);
+            }
+
+            setSelectedSeats([]);
+            selectedSeatsRef.current = [];
+            onSeatSelect([]);
+            if (onSeatLock) onSeatLock(null);
+          }
         }
       }
     };
@@ -134,6 +146,70 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
       unsubscribe();
     };
   }, [showtimeId, onSeatSelect, onSeatLock]);
+
+  // === CLEANUP: Unlock ghế khi unmount hoặc reload ===
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (selectedSeatsRef.current.length > 0) {
+        // Hiển thị browser confirmation dialog
+        e.preventDefault();
+        e.returnValue = "Bạn đang giữ ghế. Reload sẽ mất chỗ ngồi đã chọn!";
+
+        const identity = getSafeIdentity();
+        const seatIds = selectedSeatsRef.current.map((s) => s.seatId);
+
+        // Tạo URL với query params cho unlock-batch
+        const baseUrl = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api"}/showtimes/seat-lock/unlock-batch`;
+        const params = new URLSearchParams({
+          showtimeId: showtimeId,
+          seatIds: seatIds.join(","),
+        });
+
+        if (identity.userId) {
+          params.append("userId", identity.userId);
+        }
+        if (identity.guestSessionId) {
+          params.append("guestSessionId", identity.guestSessionId);
+        }
+
+        const apiUrl = `${baseUrl}?${params.toString()}`;
+
+        // sendBeacon: gửi POST request đồng bộ, không bị cancel khi trang đóng
+        // Dùng empty blob vì params đã ở URL
+        navigator.sendBeacon(
+          apiUrl,
+          new Blob([], { type: "application/json" })
+        );
+
+        return e.returnValue;
+      }
+    };
+
+    // Đăng ký event listener
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Cleanup khi component unmount (chuyển trang trong app)
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+
+      if (selectedSeatsRef.current.length > 0) {
+        const identity = getSafeIdentity();
+        // Unlock từng ghế một khi unmount (chuyển trang trong app)
+        selectedSeatsRef.current.forEach((seat) => {
+          seatLockService
+            .unlockSingleSeat(
+              showtimeId,
+              seat.seatId,
+              identity.userId,
+              identity.guestSessionId
+            )
+            .catch((error) => {
+              console.error(`Failed to unlock seat ${seat.seatId}:`, error);
+            });
+        });
+      }
+    };
+  }, [showtimeId]);
 
   // === DATA FETCHING ===
   useEffect(() => {
@@ -184,25 +260,27 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
 
   // === TOGGLE SEAT LOGIC ===
   const toggleSeat = async (seat: ShowtimeSeatResponse) => {
-    if (seat.status === "BOOKED" || seat.status === "LOCKED") return;
-
     const isCurrentlySelected = selectedSeats.some(
       (s) => s.seatId === seat.seatId
     );
-    const isCoupleSeat = seat.type === "COUPLE";
 
     // LẤY IDENTITY AN TOÀN TẠI THỜI ĐIỂM CLICK
     const identity = getSafeIdentity();
 
-    // CASE 1: BỎ CHỌN (UNLOCK)
+    // CASE 1: BỎ CHỌN (UNLOCK) - Cho phép bỏ chọn ghế mình đã chọn
     if (isCurrentlySelected) {
       try {
+        // Đánh dấu là unlock bằng tay
+        manualUnlockRef.current.add(seat.seatId);
+
         await seatLockService.unlockSingleSeat(
           showtimeId,
           seat.seatId,
           identity.userId,
           identity.guestSessionId
         );
+
+        // Chỉ xóa ghế này, không reset tất cả
         const updatedSeats = selectedSeats.filter(
           (s) => s.seatId !== seat.seatId
         );
@@ -211,9 +289,15 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         onSeatSelect(updatedSeats);
       } catch (error) {
         console.error("Failed to unlock seat:", error);
+        manualUnlockRef.current.delete(seat.seatId);
       }
       return;
     }
+
+    // Chặn ghế đã booked hoặc locked bởi người khác
+    if (seat.status === "BOOKED" || seat.status === "LOCKED") return;
+
+    const isCoupleSeat = seat.type === "COUPLE";
 
     // CASE 2: CHỌN MỚI (LOCK)
 
@@ -227,30 +311,34 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
 
     if (isCoupleSeat) {
       if (ticketCounts.coupleCount === 0)
-        return Swal.fire(
-          "Chưa chọn vé đôi",
-          "Vui lòng chọn vé đôi trước!",
-          "warning"
-        );
+        return Swal.fire({
+          title: "Chưa chọn vé đôi",
+          text: "Vui lòng chọn vé đôi trước!",
+          icon: "warning",
+          scrollbarPadding: false,
+        });
       if (selectedCoupleSeats >= ticketCounts.coupleCount)
-        return Swal.fire(
-          "Đã đủ ghế đôi",
-          `Bạn chỉ mua ${ticketCounts.coupleCount} vé đôi!`,
-          "warning"
-        );
+        return Swal.fire({
+          title: "Đã đủ ghế đôi",
+          text: `Bạn chỉ mua ${ticketCounts.coupleCount} vé đôi!`,
+          icon: "warning",
+          scrollbarPadding: false,
+        });
     } else {
       if (ticketCounts.normalCount === 0)
-        return Swal.fire(
-          "Chưa chọn vé đơn",
-          "Vui lòng chọn vé đơn trước!",
-          "warning"
-        );
+        return Swal.fire({
+          title: "Chưa chọn vé đơn",
+          text: "Vui lòng chọn vé đơn trước!",
+          icon: "warning",
+          scrollbarPadding: false,
+        });
       if (selectedNormalSeats >= ticketCounts.normalCount)
-        return Swal.fire(
-          "Đã đủ ghế đơn",
-          `Bạn chỉ mua ${ticketCounts.normalCount} vé đơn!`,
-          "warning"
-        );
+        return Swal.fire({
+          title: "Đã đủ ghế đơn",
+          text: `Bạn chỉ mua ${ticketCounts.normalCount} vé đơn!`,
+          icon: "warning",
+          scrollbarPadding: false,
+        });
     }
 
     try {
@@ -281,15 +369,21 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         onSeatSelect(updatedSeats);
         if (onSeatLock) onSeatLock(lockResponse.ttl ?? null);
       } else if (lockResponse.status === "ALREADY_LOCKED") {
-        await Swal.fire(
-          "Ghế đã được giữ",
-          "Ghế này vừa được người khác chọn.",
-          "warning"
-        );
+        await Swal.fire({
+          title: "Ghế đã được giữ",
+          text: "Ghế này vừa được người khác chọn.",
+          icon: "warning",
+          scrollbarPadding: false,
+        });
       }
     } catch (error) {
       console.error("Failed to lock seat:", error);
-      await Swal.fire("Lỗi", "Không thể chọn ghế. Vui lòng thử lại!", "error");
+      await Swal.fire({
+        title: "Lỗi",
+        text: "Không thể chọn ghế. Vui lòng thử lại!",
+        icon: "error",
+        scrollbarPadding: false,
+      });
     }
   };
 
@@ -311,6 +405,28 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     <div className="flex flex-col items-center w-full">
       {/* Màn hình cong */}
       <div className="relative w-[70%] h-28 flex justify-center mb-10">
+        {/* Mũi tên lối vào - bên trái màn hình */}
+        <div className="absolute -left-12 top-2/3 -translate-y-1/2 -translate-x-full hidden lg:flex items-center gap-2 pr-6">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-zinc-600 text-xs font-medium uppercase tracking-wider whitespace-nowrap">
+              Lối vào
+            </span>
+            <svg
+              className="w-8 h-8 text-yellow-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+          </div>
+        </div>
+
         <svg
           viewBox="0 0 1000 100"
           className="w-full h-full"
@@ -319,11 +435,11 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
           <path
             d="M 0 80 Q 500 0 1000 80"
             fill="none"
-            stroke="white"
+            stroke="#27272a"
             strokeWidth="4"
           />
         </svg>
-        <span className="absolute bottom-2 text-white text-lg font-extrabold text-center w-full">
+        <span className="absolute bottom-2 text-zinc-800 text-lg font-extrabold text-center w-full">
           MÀN HÌNH
         </span>
       </div>
@@ -351,7 +467,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
               key={row}
               className="w-full flex justify-center items-center relative px-10"
             >
-              <span className="absolute left-4 md:left-10 text-sm text-gray-300 font-semibold w-6 text-center">
+              <span className="absolute left-4 md:left-10 text-sm text-zinc-800 font-semibold w-6 text-center">
                 {row}
               </span>
               <div className="flex gap-4">
@@ -385,7 +501,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
                     colorClass =
                       "cursor-pointer " +
                       (!isCouple
-                        ? "bg-yellow-400 text-black font-bold shadow-lg shadow-yellow-400/50"
+                        ? "bg-yellow-300 text-black font-bold border border-zinc-800"
                         : "scale-105");
                   }
                   // PRIORITY 2: Ghế đã booked
@@ -408,7 +524,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
                     else
                       colorClass = isCouple
                         ? "cursor-pointer hover:scale-105"
-                        : "bg-white text-black hover:bg-yellow-200 cursor-pointer";
+                        : "bg-white text-black hover:bg-yellow-200 cursor-pointer border border-zinc-800";
                   }
 
                   const containerClasses =
@@ -435,7 +551,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
                             preserveAspectRatio="none"
                             className={`h-full w-16 transition-colors ${
                               isSelected
-                                ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]"
+                                ? "text-yellow-400"
                                 : isBooked
                                   ? "text-gray-300"
                                   : isLocked
@@ -443,7 +559,11 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
                                     : "text-white hover:text-yellow-200"
                             }`}
                           >
-                            <path d="M8 0 L26 0 L32 6 L38 0 L56 0 A8 8 0 0 1 64 8 L64 32 A8 8 0 0 1 56 40 L38 40 L32 34 L26 40 L8 40 A8 8 0 0 1 0 32 L0 8 A8 8 0 0 1 8 0 Z" />
+                            <path
+                              d="M8 0 L26 0 L32 6 L38 0 L56 0 A8 8 0 0 1 64 8 L64 32 A8 8 0 0 1 56 40 L38 40 L32 34 L26 40 L8 40 A8 8 0 0 1 0 32 L0 8 A8 8 0 0 1 8 0 Z"
+                              stroke="#27272a"
+                              strokeWidth="1"
+                            />
                             <text
                               x="50%"
                               y="55%"
@@ -472,13 +592,13 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
       </div>
 
       {/* Chú thích */}
-      <div className="flex gap-4 mt-8 text-sm flex-wrap justify-center text-white pt-5">
+      <div className="flex gap-4 mt-8 text-sm flex-wrap justify-center text-zinc-800 pt-5">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-md bg-white border border-gray-300" />
+          <div className="w-10 h-10 rounded-md bg-white border border-zinc-800" />
           <span>Ghế thường</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-md bg-purple-500" />
+          <div className="w-10 h-10 rounded-md bg-purple-500 border border-zinc-800" />
           <span>Ghế VIP</span>
         </div>
         <div className="flex items-center gap-2">
@@ -488,21 +608,25 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
               fill="currentColor"
               className="w-full h-full text-white"
             >
-              <path d="M8 0 L26 0 L32 6 L38 0 L56 0 A8 8 0 0 1 64 8 L64 32 A8 8 0 0 1 56 40 L38 40 L32 34 L26 40 L8 40 A8 8 0 0 1 0 32 L0 8 A8 8 0 0 1 8 0 Z" />
+              <path
+                d="M8 0 L26 0 L32 6 L38 0 L56 0 A8 8 0 0 1 64 8 L64 32 A8 8 0 0 1 56 40 L38 40 L32 34 L26 40 L8 40 A8 8 0 0 1 0 32 L0 8 A8 8 0 0 1 8 0 Z"
+                stroke="#27272a"
+                strokeWidth="0.8"
+              />
             </svg>
           </div>
           <span>Ghế đôi</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-md bg-yellow-400" />
+          <div className="w-10 h-10 rounded-md bg-yellow-400 border border-zinc-800" />
           <span>Ghế chọn</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-md bg-orange-500 opacity-70" />
+          <div className="w-10 h-10 rounded-md bg-orange-500 opacity-70 border border-zinc-800" />
           <span>Đang giữ chỗ</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-md bg-gray-600" />
+          <div className="w-10 h-10 rounded-md bg-gray-600 border border-zinc-800" />
           <span>Đã đặt</span>
         </div>
       </div>

@@ -17,6 +17,7 @@ interface CustomSelectProps {
   buttonClassName?: string;
   dropdownClassName?: string;
   dropdownPosition?: "bottom" | "top";
+  variant?: "dark" | "light";
 }
 
 export function CustomSelect({
@@ -29,6 +30,7 @@ export function CustomSelect({
   buttonClassName = "",
   dropdownClassName = "",
   dropdownPosition = "bottom",
+  variant = "dark",
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement | null>(null);
@@ -41,12 +43,32 @@ export function CustomSelect({
   const positionClasses =
     dropdownPosition === "top" ? "bottom-full mb-2" : "mt-2";
 
+  // Variant styles
+  const buttonStyles =
+    variant === "light"
+      ? "bg-white border-gray-300 text-gray-800 hover:bg-gray-50"
+      : "bg-black border-yellow-500/50 text-white hover:bg-zinc-900";
+
+  const dropdownStyles =
+    variant === "light"
+      ? "bg-white border-gray-300"
+      : "bg-black border-yellow-500/50";
+
+  const optionStyles = (isSelected: boolean) =>
+    variant === "light"
+      ? isSelected
+        ? "text-yellow-600 bg-gray-100 font-semibold"
+        : "text-gray-700 hover:bg-yellow-500 hover:text-white"
+      : isSelected
+        ? "text-yellow-300 bg-black/50 font-semibold"
+        : "text-yellow-100/80 hover:bg-yellow-300 hover:text-black";
+
   return (
     <div className={`relative ${className}`} ref={selectRef}>
       <button
         onClick={() => !disabled && setIsOpen((s) => !s)}
         disabled={disabled}
-        className={`flex items-center justify-between w-full px-5 py-3 text-base font-medium bg-black/40 border border-yellow-400/40 rounded-lg text-white hover:bg-black/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${buttonClassName}`}
+        className={`flex items-center justify-between w-full px-5 py-3 text-base font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${buttonStyles} ${buttonClassName}`}
       >
         <span>{displayText}</span>
         <ChevronDown
@@ -58,7 +80,7 @@ export function CustomSelect({
 
       {isOpen && !disabled && (
         <div
-          className={`absolute right-0 w-full rounded-md shadow-lg bg-black/60 backdrop-blur-md border border-yellow-400/40 z-20 animate-fadeIn max-h-60 overflow-y-auto ${positionClasses} ${dropdownClassName}`}
+          className={`absolute right-0 w-full rounded-md shadow-lg border z-20 animate-fadeIn max-h-60 overflow-y-auto ${positionClasses} ${dropdownStyles} ${dropdownClassName}`}
         >
           <div className="py-1">
             {options.map((option) => (
@@ -68,11 +90,9 @@ export function CustomSelect({
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`block w-full text-left px-5 py-3 text-base transition-colors ${
+                className={`block w-full text-left px-5 py-3 text-base transition-colors ${optionStyles(
                   value === option.value
-                    ? "text-yellow-300 bg-black/50 font-semibold"
-                    : "text-yellow-100/80 hover:bg-yellow-300 hover:text-black"
-                }`}
+                )}`}
               >
                 {option.label}
               </button>

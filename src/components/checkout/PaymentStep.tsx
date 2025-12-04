@@ -175,82 +175,78 @@ const PaymentStep: React.FC<Props> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.35 }}
-      className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 space-y-6"
+      className="space-y-6"
     >
-      <h2 className="text-2xl font-bold text-gray-800">
-        Phương thức thanh toán
-      </h2>
-      <p className="text-sm text-gray-600">
-        Chọn một phương thức để hoàn tất thanh toán.
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        {["momo", "card", "visa"].map((method) => (
-          <label
-            key={method}
-            className={`p-4 rounded-lg border-2 cursor-pointer transition ${
-              paymentMethod === method
-                ? "bg-yellow-500 text-white border-yellow-500"
-                : "bg-gray-50 border-gray-300 hover:border-yellow-400"
-            }`}
-          >
-            <input
-              type="radio"
-              name="pay"
-              className="hidden"
-              checked={paymentMethod === method}
-              onChange={() => setPaymentMethod(method)}
-            />
-            <div className="font-semibold">
-              {method === "momo"
-                ? "Momo"
-                : method === "card"
-                  ? "Thẻ nội địa"
-                  : "Thẻ quốc tế"}
-            </div>
-            <div className="text-sm text-gray-300">
-              {method === "momo"
-                ? "Thanh toán qua ví Momo"
-                : method === "card"
-                  ? "Ngân hàng nội địa"
-                  : "Visa / MasterCard"}
-            </div>
-          </label>
-        ))}
+      {/* Danh sách mã giảm giá */}
+      <div>
+        <h3 className="text-2xl font-bold text-zinc-800 mb-4">
+          Mã giảm giá <span className="text-yellow-500">có sẵn</span>
+        </h3>
+        {loading ? (
+          <div className="text-zinc-600 text-center py-8">Đang tải...</div>
+        ) : promotions.length === 0 ? (
+          <div className="text-zinc-600 text-center py-8 bg-zinc-100 rounded-xl border border-zinc-300">
+            Không có mã giảm giá nào
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {promotions.map((promo) => {
+              const isSelected = appliedPromo?.code === promo.code;
+              return (
+                <div
+                  key={promo.code}
+                  onClick={() => onApplyPromo(isSelected ? null : promo)}
+                  className={`relative cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 ${
+                    isSelected
+                      ? "bg-yellow-500 border-yellow-600 shadow-lg scale-105"
+                      : "bg-white border-zinc-300 hover:border-yellow-400 hover:shadow-md"
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute -top-2 -right-2 bg-zinc-900 text-yellow-500 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm border-2 border-yellow-500">
+                      ✓
+                    </div>
+                  )}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div
+                        className={`font-bold text-lg mb-1 ${isSelected ? "text-black" : "text-zinc-800"}`}
+                      >
+                        {promo.code}
+                      </div>
+                      <div
+                        className={`text-sm mb-2 ${isSelected ? "text-zinc-900" : "text-zinc-600"}`}
+                      >
+                        {promo.description}
+                      </div>
+                      <div
+                        className={`text-xs font-semibold ${isSelected ? "text-zinc-800" : "text-yellow-600"}`}
+                      >
+                        {promo.discountType === "PERCENTAGE"
+                          ? `Giảm ${promo.discountValue}%`
+                          : `Giảm ${Number(promo.discountValue).toLocaleString()}đ`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      <div className="mt-4">
-        <label className="text-sm text-gray-700 font-semibold">
-          Mã giảm giá
-        </label>
-        <div className="flex items-center mt-2 gap-2">
-          <input
-            value={appliedPromo?.code || ""}
-            readOnly
-            placeholder="Chưa áp dụng"
-            className="flex-1 bg-gray-50 p-3 rounded-l-lg border-2 border-gray-300 text-gray-900"
-          />
-          <button
-            type="button"
-            onClick={handleSelectPromo}
-            className="bg-yellow-500 text-white font-semibold py-3 px-4 rounded-r-lg whitespace-nowrap hover:bg-yellow-600 transition"
-          >
-            Chọn mã
-          </button>
-        </div>
-      </div>
-
-      <div className="flex justify-between mt-6">
+      {/* Buttons */}
+      <div className="flex justify-between mt-10">
         <button
           onClick={onPrev}
-          className="bg-gray-300 text-gray-800 py-3 px-6 rounded-lg hover:bg-gray-400 transition font-semibold"
+          className="bg-zinc-800 text-white py-3 px-6 rounded-lg hover:bg-zinc-700 transition font-semibold border border-zinc-700"
           disabled={isProcessing}
         >
           Quay lại
         </button>
         <button
           onClick={handlePayment}
-          className="bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isProcessing}
         >
           {isProcessing ? "Đang xử lý..." : "Xác nhận & Thanh toán"}

@@ -40,6 +40,30 @@ export const seatLockService = {
   },
 
   /**
+   * Unlock multiple seats (batch)
+   */
+  unlockBatchSeats: async (
+    showtimeId: string,
+    seatIds: string[],
+    userId?: string,
+    guestSessionId?: string
+  ): Promise<SeatLockResponse[]> => {
+    const res = await showtimeClient.post<SeatLockResponse[]>(
+      "/seat-lock/unlock-batch",
+      null,
+      {
+        params: {
+          showtimeId,
+          seatIds: seatIds.join(","), // Convert array to comma-separated string
+          userId,
+          guestSessionId,
+        },
+      }
+    );
+    return res.data;
+  },
+
+  /**
    * Lock multiple seats (batch)
    */
   lockSeats: async (data: SeatLockRequest): Promise<SeatLockResponse[]> => {

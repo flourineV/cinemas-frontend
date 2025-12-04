@@ -16,8 +16,8 @@ import type { PromotionResponse } from "@/types/promotion/promotion.type";
 const STEPS = [
   { id: 1, label: "THÔNG TIN KHÁCH HÀNG" },
   { id: 2, label: "CHỌN BẮP NƯỚC" },
-  { id: 3, label: "THANH TOÁN" },
-  { id: 4, label: "THÔNG TIN VÉ PHIM" },
+  { id: 3, label: "MÃ GIẢM GIÁ" },
+  { id: 4, label: "THANH TOÁN" },
 ];
 
 export default function CheckoutPage() {
@@ -167,7 +167,7 @@ export default function CheckoutPage() {
             <div className="flex flex-col space-y-8 lg:col-span-2">
               <div className="text-center lg:text-left">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-500 mb-6 uppercase tracking-tighter">
-                  THANH TOÁN
+                  THANH <span className="text-black">TOÁN</span>
                 </h1>
                 {/* Steps Bar */}
                 <div className="flex justify-between items-start w-full mt-16">
@@ -269,7 +269,7 @@ export default function CheckoutPage() {
 
             {/* RIGHT COLUMN */}
             <div className="lg:col-span-1">
-              <div className="sticky top-4">
+              <div className="sticky" style={{ top: "6rem" }}>
                 <BookingSummary
                   booking={booking}
                   selectedCombos={selectedCombos}

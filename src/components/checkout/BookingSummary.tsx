@@ -48,7 +48,7 @@ const BookingSummary: React.FC<Props> = ({
 
   return (
     <aside className="space-y-4 relative">
-      <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 sticky top-28 shadow-lg">
+      <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg">
         {/* Header row with title + TTL on the right */}
         <div className="flex items-start justify-between">
           <h3 className="text-xl font-extrabold text-gray-800">
@@ -137,15 +137,6 @@ const BookingSummary: React.FC<Props> = ({
               <span>Tổng</span>
               <span>{finalTotal.toLocaleString()} VND</span>
             </div>
-          </div>
-
-          <div className="mt-6">
-            <button
-              onClick={() => goToStep(4)}
-              className="w-full bg-yellow-500 text-white font-bold py-3 rounded-lg hover:bg-yellow-600 transition"
-            >
-              Thanh toán
-            </button>
           </div>
         </div>
       </div>

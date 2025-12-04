@@ -288,7 +288,9 @@ const Home = () => {
               <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
             </div>
           ) : nowPlaying.length === 0 ? (
-            <p className="text-white text-center">Không có phim nào</p>
+            <p className="text-black text-center">
+              Hiện tại chưa có phim nào được chiếu
+            </p>
           ) : (
             renderCarousel(nowPlayingCarousel, nowPlaying)
           )}
@@ -327,7 +329,9 @@ const Home = () => {
               <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
             </div>
           ) : upcoming.length === 0 ? (
-            <p className="text-white text-center">Không có phim nào</p>
+            <p className="text-black text-center">
+              Hiện tại chưa có phim nào sắp ra mắt
+            </p>
           ) : (
             renderCarousel(upcomingCarousel, upcoming)
           )}

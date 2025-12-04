@@ -30,14 +30,6 @@ const STATUS_LABELS: Record<string, string> = {
   archived: "Lưu trữ",
 };
 
-// frontend status key => backend enum
-const STATUS_MAP: Record<string, string | undefined> = {
-  ALL: undefined,           // không gửi status nếu ALL
-  nowPlaying: "NOW_PLAYING",
-  upcoming: "UPCOMING",
-  archived: "ARCHIVED",
-};
-
 const ITEMS_PER_PAGE = 10;
 
 export default function MovieManagementTable(): React.JSX.Element {
@@ -357,7 +349,7 @@ export default function MovieManagementTable(): React.JSX.Element {
                 className="flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-black/40 border border-yellow-400/40 rounded-lg text-white hover:bg-black/50"
               >
                 <span className="whitespace-nowrap">
-                  {selectedGenre === "ALL" ? "All Genres" : selectedGenre}
+                  {selectedGenre === "ALL" ? "Tất cả thể loại" : selectedGenre}
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform ${
@@ -380,7 +372,7 @@ export default function MovieManagementTable(): React.JSX.Element {
                           : "text-yellow-100/80 hover:bg-black/40"
                       }`}
                     >
-                      All Genres
+                      Tất cả thể loại
                     </button>
 
                     {allGenres.map((g) => (

@@ -43,7 +43,10 @@ export interface BookingResponse {
   bookingId: string; // UUID
   bookingCode: string;
   userId?: string; // UUID
+  fullName?: string; // From user-profile-service
   showtimeId: string; // UUID
+  movieId?: string;
+  movieTitle?: string;
   guestName?: string;
   guestEmail?: string;
 
@@ -57,9 +60,6 @@ export interface BookingResponse {
   transactionId?: string;
 
   seats: BookingSeatResponse[];
-
-  createdAt: string; // LocalDateTime -> string ISO
-  updatedAt: string;
 }
 
 // Map từ BookingCriteria.java 

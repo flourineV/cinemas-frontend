@@ -100,6 +100,29 @@ export const showtimeService = {
    *  - filters: object containing optional provinceId, theaterId, roomId, movieId, showtimeId
    *  - page, size, sortBy, sortType
    */
+  adminSearch: async (
+    criteria: any,
+    page = 0,
+    size = 10,
+    sortBy = "startTime",
+    sortType = "desc"
+  ): Promise<PageResponse<ShowtimeDetailResponse>> => {
+    const params = {
+      ...criteria,
+      page,
+      size,
+      sortBy,
+      sortType,
+    };
+
+    const res = await showtimeClient.get<PageResponse<ShowtimeDetailResponse>>(
+      "/admin/search",
+      { params }
+    );
+
+    return res.data;
+  },
+
   async getAllAvailableShowtimes(
     filters: {
       provinceId?: string;
