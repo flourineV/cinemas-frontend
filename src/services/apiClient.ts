@@ -73,3 +73,10 @@ export const paymentClient: AxiosInstance = applyInterceptors(
     headers: { "Content-Type": "application/json" },
   })
 );
+
+export const reviewClient: AxiosInstance = applyInterceptors(
+  axios.create({
+    baseURL: `${baseURL}/reviews`,
+    headers: { "Content-Type": "application/json" },
+  })
+);

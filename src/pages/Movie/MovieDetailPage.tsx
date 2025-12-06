@@ -16,6 +16,7 @@ import { formatAgeRating } from "@/utils/formatAgeRating";
 import { movieService } from "@/services/movie/movieService";
 import type { MovieDetail } from "@/types/movie/movie.type";
 import TrailerModalForDetail from "@/components/movie/TrailerModalForDetail";
+import MovieComments from "@/components/comment/MovieComments";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import MovieShowtime from "../Showtime/MovieShowtime";
@@ -89,7 +90,7 @@ export default function MovieDetailPage() {
     <Layout>
       <div className="min-h-screen">
         {/* Section 1: Movie Info with Poster Background */}
-        <div className="relative pt-20 pb-24">
+        <div className="relative pt-20 pb-10">
           {/* Background with movie poster */}
           <div
             className="absolute inset-0 z-0"
@@ -215,6 +216,13 @@ export default function MovieDetailPage() {
               </div>
             </div>
           </motion.div>
+        </div>
+
+        {/* Section Reviews */}
+        <div className="bg-gray-100 py-10">
+          <div className="max-w-5xl mx-auto px-4">
+            <MovieComments movieId={movie.id} />
+          </div>
         </div>
 
         {/* Section 2: Showtimes with White Background */}

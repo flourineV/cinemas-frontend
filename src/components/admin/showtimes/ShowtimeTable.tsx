@@ -65,8 +65,8 @@ export default function ShowtimeTable({
         roomId: roomFilter || undefined,
         movieId: movieFilter || undefined,
         showtimeId: debouncedSearch || undefined,
-        startOfDay: startOfDayFilter ? `${startOfDayFilter}T00:00:00` : undefined, 
-        endOfDay: endOfDayFilter ? `${endOfDayFilter}T00:00:00` : undefined,
+        startOfDay: startOfDayFilter ? startOfDayFilter : undefined, 
+        endOfDay: endOfDayFilter ? endOfDayFilter : undefined,
         fromTime: fromTimeFilter || undefined,  // HH:mm format
         toTime: toTimeFilter || undefined,     // HH:mm format
       };
