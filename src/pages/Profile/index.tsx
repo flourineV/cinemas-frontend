@@ -1,194 +1,51 @@
-// src/pages/Profile/index.tsx
-
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../../components/layout/Layout";
 import { userProfileService } from "@/services/userprofile/userProfileService";
+import { bookingService } from "@/services/booking/booking.service";
+import { movieService } from "@/services/movie/movieService";
 import type { UserProfileResponse } from "@/types/userprofile/userprofile.type";
 import { useAuthStore } from "../../stores/authStore";
-import { User, Camera, Calendar } from "lucide-react";
-import { FaChevronDown } from "react-icons/fa";
+import { getPosterUrl } from "@/utils/getPosterUrl";
+import { useNavigate } from "react-router-dom";
+import {
+  User,
+  Award,
+  LogOut,
+  Edit2,
+  Save,
+  X,
+  History,
+  Heart,
+  Ticket,
+  TrendingUp,
+} from "lucide-react";
 
-// --- Constants ---
-const GENDER_OPTIONS = [
-  { label: "Nam", value: "MALE" },
-  { label: "Nữ", value: "FEMALE" },
-  { label: "Khác", value: "OTHER" },
-];
+type TabType = "info" | "bookings" | "favorites" | "loyalty";
 
-// ========================================================
-// InputField component
-// ========================================================
-const InputField = ({
-  label,
-  value,
-  name,
-  onChange,
-  disabled = false,
-  type = "text",
-}: {
-  label: string;
-  value: string | number | undefined | null;
-  name: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  disabled?: boolean;
-  type?: string;
-}) => {
-  const isDate = type === "date";
-  const displayValue =
-    value === null || value === undefined ? "" : value.toString();
-  const displayPlaceholder = disabled && !displayValue;
-
-  const baseClass = `p-2 border rounded-md text-white focus:ring-yellow-500 focus:border-yellow-500`;
-  const disabledClass =
-    "border-gray-600 bg-slate-700 text-gray-300 cursor-default";
-  const enabledClass = "border-yellow-500 bg-slate-800";
-
-  const displayedInputValue = (() => {
-    if (displayPlaceholder) return "Chưa có";
-    if (isDate && disabled && displayValue) {
-      const date = new Date(displayValue);
-      return isNaN(date.getTime())
-        ? displayValue
-        : date.toLocaleDateString("vi-VN");
-    }
-    return displayValue;
-  })();
-
-  const inputType = isDate && disabled ? "text" : type;
-
-  return (
-    <div className="flex flex-col">
-      <label className="text-gray-300 text-sm font-medium mb-2">{label}:</label>
-      <div className="relative">
-        <input
-          type={inputType}
-          name={name}
-          value={isDate && !disabled ? displayValue : displayedInputValue}
-          placeholder={
-            displayPlaceholder ? "Chưa có" : `Nhập ${label.toLowerCase()}`
-          }
-          onChange={onChange}
-          className={`${baseClass} w-full ${disabled ? disabledClass : enabledClass}`}
-          disabled={disabled}
-          min="1900-01-01"
-          max={new Date().toISOString().split("T")[0]}
-        />
-        {isDate && disabled && (
-          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ========================================================
-// GenderDropdown component
-// ========================================================
-const GenderDropdown = ({
-  label,
-  value,
-  name,
-  onChange,
-  disabled = false,
-}: {
-  label: string;
-  value: string | undefined | null;
-  name: string;
-  onChange: (e: { name: string; value: string }) => void;
-  disabled?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = GENDER_OPTIONS.find((opt) => opt.value === value);
-
-  const handleSelect = (option: (typeof GENDER_OPTIONS)[0]) => {
-    onChange({ name, value: option.value });
-    setIsOpen(false);
-  };
-
-  const displayLabel = selectedOption
-    ? selectedOption.label
-    : disabled
-      ? "Chưa có"
-      : "Chọn giới tính";
-
-  if (disabled) {
-    return (
-      <InputField
-        label={label}
-        value={displayLabel}
-        name={name}
-        onChange={() => {}}
-        disabled={true}
-      />
-    );
-  }
-
-  return (
-    <div className="flex flex-col">
-      <label className="text-gray-300 text-sm font-medium mb-2">{label}:</label>
-      <div className="relative inline-block text-left w-full z-20">
-        <button
-          type="button"
-          className="inline-flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-white bg-slate-800 border border-yellow-500 rounded-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400 transition-all"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {displayLabel}
-          <FaChevronDown
-            className={`-mr-1 ml-2 h-4 w-4 transition-transform ${
-              isOpen ? "rotate-180 text-yellow-400" : ""
-            }`}
-          />
-        </button>
-
-        {isOpen && (
-          <div className="absolute left-0 mt-2 w-full rounded-md shadow-lg bg-slate-800 ring-1 ring-black ring-opacity-5">
-            {GENDER_OPTIONS.map((option) => (
-              <a
-                key={option.value}
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleSelect(option);
-                }}
-                className={`block px-4 py-2 text-sm ${
-                  value === option.value
-                    ? "bg-yellow-700 text-white"
-                    : "text-gray-300 hover:bg-slate-700 hover:text-white"
-                }`}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ========================================================
-// Main Profile Page
-// ========================================================
 const Profile = () => {
   const { user, signout } = useAuthStore();
-
-  const [initialProfile, setInitialProfile] =
-    useState<UserProfileResponse | null>(null);
-  const [editableProfile, setEditableProfile] =
-    useState<UserProfileResponse | null>(null);
-
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editData, setEditData] = useState<Partial<UserProfileResponse>>({});
+  const [activeTab, setActiveTab] = useState<TabType>("info");
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [displayedBookings, setDisplayedBookings] = useState<any[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [hasMoreBookings, setHasMoreBookings] = useState(true);
+  const [favoriteMovies, setFavoriteMovies] = useState<any[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
 
-  // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id) return;
       try {
         const data = await userProfileService.getProfileByUserId(user.id);
-        setInitialProfile(data);
-        setEditableProfile(data);
+        setProfile(data);
+        setEditData(data);
       } catch (err) {
         console.error("Lỗi khi lấy profile:", err);
       } finally {
@@ -198,270 +55,625 @@ const Profile = () => {
     fetchProfile();
   }, [user?.id]);
 
-  // Input handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setEditableProfile((prev) => (prev ? { ...prev, [name]: value } : null));
-  };
-
-  const handleDropdownChange = ({
-    name,
-    value,
-  }: {
-    name: string;
-    value: string;
-  }) => {
-    setEditableProfile((prev) => (prev ? { ...prev, [name]: value } : null));
-  };
-
-  const handleEdit = () => setIsEditing(true);
-  const handleCancel = () => {
-    setEditableProfile(initialProfile);
-    setIsEditing(false);
-  };
-
-  // Save updated profile
-  const handleSaveInfo = async () => {
-    if (!editableProfile || !user?.id) return;
-
-    const dataToUpdate = {
-      fullName: editableProfile.fullName,
-      dateOfBirth: editableProfile.dateOfBirth,
-      gender: editableProfile.gender,
-      phoneNumber: editableProfile.phoneNumber,
-      nationalId: editableProfile.nationalId,
-      address: editableProfile.address,
+  // Fetch bookings
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!user?.id) return;
+      setBookingsLoading(true);
+      try {
+        const data = await bookingService.getBookingsByUser(user.id);
+        console.log("📦 All bookings:", data);
+        // Filter only CONFIRMED bookings
+        const confirmedBookings = data.filter(
+          (b: any) => b.status === "CONFIRMED"
+        );
+        console.log("✅ Confirmed bookings:", confirmedBookings);
+        setBookings(confirmedBookings);
+        setDisplayedBookings(confirmedBookings.slice(0, 10));
+        setHasMoreBookings(confirmedBookings.length > 10);
+      } catch (error) {
+        console.error("Lỗi khi lấy bookings:", error);
+      } finally {
+        setBookingsLoading(false);
+      }
     };
 
+    if (activeTab === "bookings") {
+      fetchBookings();
+    }
+  }, [user?.id, activeTab]);
+
+  // Fetch favorite movies
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!user?.id) return;
+      setFavoritesLoading(true);
+      try {
+        const favorites = await userProfileService.getFavorites(user.id);
+        // Fetch movie details for each favorite
+        const moviePromises = favorites.map((fav) =>
+          movieService.getMovieDetail(fav.tmdbId.toString())
+        );
+        const movies = await Promise.all(moviePromises);
+        setFavoriteMovies(movies);
+      } catch (error) {
+        console.error("Lỗi khi lấy phim yêu thích:", error);
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+
+    if (activeTab === "favorites") {
+      fetchFavorites();
+    }
+  }, [user?.id, activeTab]);
+
+  const loadMoreBookings = () => {
+    const currentLength = displayedBookings.length;
+    const nextBatch = bookings.slice(currentLength, currentLength + 10);
+    setDisplayedBookings([...displayedBookings, ...nextBatch]);
+    setHasMoreBookings(currentLength + 10 < bookings.length);
+  };
+
+  const handleSave = async () => {
+    if (!user?.id) return;
     setIsSaving(true);
     try {
-      const updatedData = await userProfileService.updateProfile(
-        user.id,
-        dataToUpdate
-      );
-      alert("Thông tin đã được lưu thành công!");
-      setInitialProfile(updatedData);
-      setEditableProfile(updatedData);
-      setIsEditing(false);
+      const updated = await userProfileService.updateProfile(user.id, {
+        fullName: editData.fullName,
+        gender: editData.gender as "MALE" | "FEMALE" | "OTHER" | undefined,
+        phoneNumber: editData.phoneNumber,
+        address: editData.address,
+        avatarUrl: editData.avatarUrl,
+      });
+      setProfile(updated);
+      setEditData(updated);
+      setIsModalOpen(false);
     } catch (error) {
-      console.error("Lỗi khi cập nhật profile:", error);
-      alert("Không thể lưu thông tin. Vui lòng thử lại.");
+      console.error("Lỗi khi cập nhật:", error);
+      alert("Không thể lưu thông tin!");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleChangePassword = () => {
-    alert("Chức năng Đổi mật khẩu đang được phát triển!");
-  };
-
-  const handleLogout = () => signout();
-
-  // ================== Render ==================
-  if (isLoading)
+  if (isLoading) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center text-white">
-          Đang tải thông tin...
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-yellow-600 text-xl">Đang tải...</div>
         </div>
       </Layout>
     );
+  }
 
-  const profile = editableProfile;
-  if (!profile)
+  if (!profile) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center text-red-400">
-          Không thể tải thông tin người dùng.
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-red-600 text-xl">Không thể tải thông tin!</div>
         </div>
       </Layout>
     );
+  }
 
-  const fullName = profile.fullName || profile.username || "Chưa cập nhật";
-  const loyaltyPoint = profile.loyaltyPoint ?? 0;
-  const rank = profile.rankName || "Mới";
+  const loyaltyPercent = Math.min((profile.loyaltyPoint / 1000) * 100, 100);
+
+  const tabs = [
+    { id: "info" as TabType, label: "Thông tin", icon: User },
+    { id: "bookings" as TabType, label: "Lịch sử đặt vé", icon: Ticket },
+    { id: "favorites" as TabType, label: "Phim yêu thích", icon: Heart },
+    { id: "loyalty" as TabType, label: "Điểm thưởng", icon: TrendingUp },
+  ];
 
   return (
     <Layout>
-      <div className="relative min-h-screen text-white">
-        <div className="absolute inset-x-0 h-40 md:h-72 z-0">
-          <div
-            className="absolute inset-0 bg-center bg-cover"
-            style={{ backgroundImage: "url('/background_profile.jpg')" }}
-          />
-          <div className="absolute inset-0 bg-black/30" />
+      <div className="min-h-screen bg-gray-50">
+        {/* Header Section */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-5xl mx-auto px-4 py-8">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-tr from-yellow-400 via-yellow-500 to-yellow-600 p-1">
+                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white">
+                    {profile.avatarUrl ? (
+                      <img
+                        src={profile.avatarUrl}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-16 h-16 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Info */}
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex flex-col md:flex-row items-center md:items-center gap-4 mb-4">
+                  <h1 className="text-2xl font-light text-gray-900">
+                    {profile.username}
+                  </h1>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditData(profile);
+                        setIsModalOpen(true);
+                      }}
+                      className="px-4 py-1.5 bg-transparent border border-gray-300 text-gray-900 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Chỉnh sửa trang cá nhân
+                    </button>
+                    <button
+                      onClick={signout}
+                      className="px-4 py-1.5 bg-transparent border border-gray-300 text-gray-900 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Đăng xuất
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex justify-center md:justify-start gap-8 mb-4">
+                  <div className="text-center">
+                    <span className="block text-gray-900 font-semibold">
+                      12
+                    </span>
+                    <span className="text-gray-600 text-sm">vé đã đặt</span>
+                  </div>
+                  <div className="text-center">
+                    <span className="block text-gray-900 font-semibold">8</span>
+                    <span className="text-gray-600 text-sm">
+                      phim yêu thích
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="block text-gray-900 font-semibold">
+                      {profile.loyaltyPoint}
+                    </span>
+                    <span className="text-gray-600 text-sm">điểm</span>
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div className="space-y-1">
+                  <p className="text-gray-900 font-semibold">
+                    {profile.fullName || "Chưa cập nhật"}
+                  </p>
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 text-sm">
+                    <Award className="w-4 h-4 text-yellow-500" />
+                    <span>Hạng {profile.rankName || "Bronze"}</span>
+                  </div>
+                  {profile.email && (
+                    <p className="text-gray-600 text-sm">{profile.email}</p>
+                  )}
+                </div>
+
+                {/* Loyalty Progress */}
+                <div className="mt-4 max-w-md">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-gray-600">Tiến độ lên hạng</span>
+                    <span className="text-yellow-600 font-semibold">
+                      {profile.loyaltyPoint}/1000
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div
+                      className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${loyaltyPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto pt-32 flex flex-col md:flex-row gap-8 items-start">
-          {/* Left Card */}
-          <div className="md:w-1/3 flex flex-col items-center p-6 rounded-xl shadow-2xl bg-white/10 backdrop-blur-xl border border-gray-500">
-            <div className="relative w-48 h-48 mb-4 group">
-              {profile.avatarUrl ? (
-                <img
-                  src={profile.avatarUrl}
-                  alt="Avatar"
-                  className="w-full h-full rounded-full border-4 border-yellow-400 object-cover group-hover:opacity-60 transition"
+        {/* Tabs */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="flex justify-center gap-16">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 py-4 border-t transition-colors ${
+                      isActive
+                        ? "border-gray-900 text-gray-900"
+                        : "border-transparent text-gray-400 hover:text-gray-600"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider hidden md:inline">
+                      {tab.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          {activeTab === "info" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto"
+            >
+              <InfoItem
+                label="Họ và tên"
+                value={profile.fullName || "Chưa cập nhật"}
+              />
+              <InfoItem label="Email" value={profile.email} />
+              <InfoItem
+                label="Số điện thoại"
+                value={profile.phoneNumber || "Chưa cập nhật"}
+              />
+              <InfoItem
+                label="Giới tính"
+                value={
+                  profile.gender === "MALE"
+                    ? "Nam"
+                    : profile.gender === "FEMALE"
+                      ? "Nữ"
+                      : profile.gender === "OTHER"
+                        ? "Khác"
+                        : "Chưa cập nhật"
+                }
+              />
+              <div className="md:col-span-2">
+                <InfoItem
+                  label="Địa chỉ"
+                  value={profile.address || "Chưa cập nhật"}
                 />
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "bookings" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {bookingsLoading ? (
+                <div className="text-center py-16">
+                  <div className="text-gray-500">Đang tải...</div>
+                </div>
+              ) : displayedBookings.length === 0 ? (
+                <div className="text-center py-16">
+                  <Ticket className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Chưa có lịch sử đặt vé
+                  </h3>
+                  <p className="text-gray-500">
+                    Các vé bạn đặt sẽ hiển thị ở đây
+                  </p>
+                </div>
               ) : (
-                <div className="w-full h-full rounded-full border-4 border-yellow-400 bg-gray-600 flex items-center justify-center group-hover:opacity-80 transition">
-                  <User className="w-24 h-24 text-white" />
+                <div className="space-y-4">
+                  {displayedBookings.map((booking) => (
+                    <div
+                      key={booking.bookingId}
+                      className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-200"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {booking.movieTitle || "Phim"}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Mã đặt vé: {booking.bookingCode}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            booking.status === "CONFIRMED"
+                              ? "bg-green-100 text-green-700"
+                              : booking.status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {booking.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                        <div className="text-gray-600">
+                          <span className="font-medium">Rạp:</span>{" "}
+                          {booking.showtime?.theaterName || "N/A"}
+                        </div>
+                        <div className="text-gray-600">
+                          <span className="font-medium">Phòng:</span>{" "}
+                          {booking.showtime?.roomName || "N/A"}
+                        </div>
+                        <div className="text-gray-600 col-span-2">
+                          <span className="font-medium">Thời gian:</span>{" "}
+                          {booking.showtime?.startTime
+                            ? new Date(
+                                booking.showtime.startTime
+                              ).toLocaleString("vi-VN")
+                            : "N/A"}
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          Ghế:{" "}
+                          <span className="font-semibold text-gray-900">
+                            {booking.seats
+                              ?.map((s: any) => s.seatNumber || s)
+                              .join(", ") || "N/A"}
+                          </span>
+                        </div>
+                        <div className="text-lg font-bold text-yellow-600">
+                          {booking.totalPrice?.toLocaleString() || 0} VNĐ
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {hasMoreBookings && (
+                    <button
+                      onClick={loadMoreBookings}
+                      className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition"
+                    >
+                      Xem thêm
+                    </button>
+                  )}
                 </div>
               )}
-              <div
-                onClick={() => document.getElementById("avatarInput")?.click()}
-                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition"
-              >
-                <Camera className="w-8 h-8 text-white drop-shadow-lg" />
-              </div>
-              <input
-                id="avatarInput"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) console.log("File chọn:", file);
-                }}
-              />
-              <div
-                className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gray-300 text-slate-800 text-xs font-bold py-2 px-6 shadow-md whitespace-nowrap"
-                style={{
-                  clipPath:
-                    "polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%)",
-                }}
-              >
-                Thành viên "{rank}"
-              </div>
-            </div>
+            </motion.div>
+          )}
 
-            <p className="text-2xl font-bold mb-1 text-center">{fullName}</p>
-            <div className="w-full mb-6 mt-7">
-              <p className="text-sm font-medium mb-1">
-                Điểm thành viên: {loyaltyPoint}/1000
-              </p>
-              <div className="w-full bg-gray-600 rounded-full h-2.5">
-                <div
-                  className="bg-yellow-400 h-2.5 rounded-full"
-                  style={{
-                    width: `${Math.min((loyaltyPoint / 1000) * 100, 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <button className="w-full py-2 mb-4 bg-green-600 hover:bg-green-700 rounded-md font-semibold transition">
-              Xem lợi ích
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full py-2 bg-red-600 hover:bg-red-700 rounded-md font-semibold transition"
+          {activeTab === "favorites" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              Đăng xuất
-            </button>
-          </div>
+              {favoritesLoading ? (
+                <div className="text-center py-16">
+                  <div className="text-gray-500">Đang tải...</div>
+                </div>
+              ) : favoriteMovies.length === 0 ? (
+                <div className="text-center py-16">
+                  <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Chưa có phim yêu thích
+                  </h3>
+                  <p className="text-gray-500">
+                    Các phim bạn yêu thích sẽ hiển thị ở đây
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {favoriteMovies.map((movie) => (
+                    <div
+                      key={movie.id}
+                      onClick={() => navigate(`/movie/${movie.id}`)}
+                      className="group cursor-pointer"
+                    >
+                      <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all">
+                        <img
+                          src={getPosterUrl(movie.posterUrl)}
+                          alt={movie.title}
+                          className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <h4 className="text-white font-semibold text-sm line-clamp-2">
+                              {movie.title}
+                            </h4>
+                            <p className="text-gray-300 text-xs mt-1">
+                              {movie.releaseDate}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <h4 className="mt-2 text-gray-900 font-medium text-sm line-clamp-2">
+                        {movie.title}
+                      </h4>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
 
-          {/* Right Card */}
-          <div className="md:w-2/3 p-6 rounded-xl shadow-2xl bg-white/10 backdrop-blur-xl border border-gray-500 flex-grow">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
-              THÔNG TIN KHÁCH HÀNG
-            </h2>
+          {activeTab === "loyalty" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-3xl mx-auto"
+            >
+              {/* Loyalty Card */}
+              <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl p-8 mb-8 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <p className="text-sm opacity-90 mb-1">Hạng thành viên</p>
+                    <h2 className="text-3xl font-bold">
+                      {profile.rankName || "Bronze"}
+                    </h2>
+                  </div>
+                  <Award className="w-16 h-16 opacity-30" />
+                </div>
+                <div className="mb-4">
+                  <p className="text-sm opacity-90 mb-2">Điểm hiện tại</p>
+                  <p className="text-4xl font-bold">{profile.loyaltyPoint}</p>
+                </div>
+                <div className="bg-white/20 rounded-full h-2 mb-2">
+                  <div
+                    className="bg-white/40 h-2 rounded-full transition-all"
+                    style={{ width: `${loyaltyPercent}%` }}
+                  />
+                </div>
+                <p className="text-sm opacity-90">
+                  Còn {1000 - profile.loyaltyPoint} điểm để lên hạng tiếp theo
+                </p>
+              </div>
 
-            <div className="space-y-4 mb-8 border-b border-gray-600 pb-6">
-              <h3 className="text-xl font-semibold mb-3">Thông tin cơ bản:</h3>
+              {/* Loyalty History */}
+              <div className="bg-white rounded-xl p-6 shadow">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Lịch sử điểm thưởng
+                </h3>
+                <div className="text-center py-16">
+                  <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Chưa có lịch sử giao dịch</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
 
-              <InputField
-                label="Họ và tên"
-                value={profile.fullName}
-                name="fullName"
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-              <InputField
-                label="Ngày sinh"
-                value={profile.dateOfBirth}
-                name="dateOfBirth"
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                type="date"
-              />
-              <GenderDropdown
-                label="Giới tính"
-                value={profile.gender}
-                name="gender"
-                onChange={handleDropdownChange}
-                disabled={!isEditing}
-              />
-              <InputField
-                label="Số điện thoại"
-                value={profile.phoneNumber}
-                name="phoneNumber"
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-              <InputField
-                label="Email"
-                value={profile.email}
-                name="email"
-                onChange={handleInputChange}
-                disabled={true}
-              />
-              <InputField
-                label="CCCD/CMND"
-                value={profile.nationalId}
-                name="nationalId"
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-              <InputField
-                label="Địa chỉ"
-                value={profile.address}
-                name="address"
-                onChange={handleInputChange}
-                disabled={!isEditing}
+        {/* Edit Modal */}
+        <AnimatePresence>
+          {isModalOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsModalOpen(false)}
+                className="fixed inset-0 bg-black/50 z-50"
               />
 
-              <div className="flex justify-end pt-2 space-x-4">
-                {isEditing ? (
-                  <>
+              {/* Modal */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              >
+                <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Chỉnh sửa thông tin
+                    </h2>
                     <button
-                      onClick={handleCancel}
-                      className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50"
-                      disabled={isSaving}
+                      onClick={() => setIsModalOpen(false)}
+                      className="text-gray-400 hover:text-gray-600 transition"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Họ và tên
+                      </label>
+                      <input
+                        type="text"
+                        value={editData.fullName || ""}
+                        onChange={(e) =>
+                          setEditData({ ...editData, fullName: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Số điện thoại
+                      </label>
+                      <input
+                        type="tel"
+                        value={editData.phoneNumber || ""}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            phoneNumber: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Giới tính
+                      </label>
+                      <select
+                        value={editData.gender || ""}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            gender: e.target.value as
+                              | "MALE"
+                              | "FEMALE"
+                              | "OTHER",
+                          })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      >
+                        <option value="">Chọn giới tính</option>
+                        <option value="MALE">Nam</option>
+                        <option value="FEMALE">Nữ</option>
+                        <option value="OTHER">Khác</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Địa chỉ
+                      </label>
+                      <input
+                        type="text"
+                        value={editData.address || ""}
+                        onChange={(e) =>
+                          setEditData({ ...editData, address: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+                    <button
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
                     >
                       Hủy
                     </button>
                     <button
-                      onClick={handleSaveInfo}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50"
+                      onClick={handleSave}
                       disabled={isSaving}
+                      className="px-6 py-2.5 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition disabled:opacity-50 flex items-center gap-2"
                     >
-                      {isSaving ? "Đang lưu..." : "Lưu"}
+                      <Save className="w-4 h-4" />
+                      {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
                     </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleEdit}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-md transition"
-                  >
-                    Chỉnh sửa
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={handleChangePassword}
-                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition"
-              >
-                Đổi mật khẩu
-              </button>
-            </div>
-          </div>
-        </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </Layout>
   );
 };
+
+// Info Item Component
+const InfoItem = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-500 mb-1">
+      {label}
+    </label>
+    <p className="text-gray-900 font-medium">{value}</p>
+  </div>
+);
 
 export default Profile;

@@ -4,6 +4,10 @@ import type {
   UserProfileUpdateRequest,
   UserProfileResponse,
 } from "@/types/userprofile/userprofile.type";
+import type {
+  FavoriteMovieRequest,
+  FavoriteMovieResponse,
+} from "@/types/userprofile/favorite.type";
 
 export const userProfileService = {
   createProfile: async (
@@ -43,5 +47,37 @@ export const userProfileService = {
       loyaltyPoint
     );
     return res.data;
+  },
+
+  getRankAndDiscount: async (
+    userId: string
+  ): Promise<{ rankName: string; discountRate: number }> => {
+    const res = await profileClient.get<{
+      rankName: string;
+      discountRate: number;
+    }>(`/profiles/${userId}/rank`);
+    return res.data;
+  },
+
+  // Favorite Movies
+  addFavorite: async (
+    data: FavoriteMovieRequest
+  ): Promise<FavoriteMovieResponse> => {
+    const res = await profileClient.post<FavoriteMovieResponse>(
+      "/profiles/favorites",
+      data
+    );
+    return res.data;
+  },
+
+  getFavorites: async (userId: string): Promise<FavoriteMovieResponse[]> => {
+    const res = await profileClient.get<FavoriteMovieResponse[]>(
+      `/profiles/favorites/${userId}`
+    );
+    return res.data;
+  },
+
+  removeFavorite: async (userId: string, tmdbId: number): Promise<void> => {
+    await profileClient.delete(`/profiles/favorites/${userId}/${tmdbId}`);
   },
 };

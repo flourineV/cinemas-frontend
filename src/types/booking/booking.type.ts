@@ -1,3 +1,11 @@
+export type BookingStatus =
+  | "PENDING"
+  | "AWAITING_PAYMENT"
+  | "CONFIRMED"
+  | "CANCELLED"
+  | "REFUNDED"
+  | "EXPIRED";
+
 export interface SeatSelectionDetail {
   seatId: string;
   seatType: string;
@@ -62,21 +70,20 @@ export interface BookingResponse {
   seats: BookingSeatResponse[];
 }
 
-// Map từ BookingCriteria.java 
+// Map từ BookingCriteria.java
 export interface BookingCriteria {
-  userId?: string;         // UUID
-  showtimeId?: string;     // UUID
-  theaterId?: string;      // UUID
+  userId?: string; // UUID
+  showtimeId?: string; // UUID
+  theaterId?: string; // UUID
   bookingCode?: string;
-  status?: string;         // PENDING, CONFIRMED, CANCELLED, v.v.
+  status?: string; // PENDING, CONFIRMED, CANCELLED, v.v.
   paymentMethod?: string;
   guestName?: string;
   guestEmail?: string;
 
-  fromDate?: string;       // ISO string, map từ LocalDateTime
-  toDate?: string;         // ISO string
+  fromDate?: string; // ISO string, map từ LocalDateTime
+  toDate?: string; // ISO string
 
-  minPrice?: number;       // BigDecimal -> number
-  maxPrice?: number;       // BigDecimal -> number
+  minPrice?: number; // BigDecimal -> number
+  maxPrice?: number; // BigDecimal -> number
 }
-

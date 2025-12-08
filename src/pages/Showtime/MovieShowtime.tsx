@@ -374,7 +374,16 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
 
         Swal.close();
         navigate("/checkout", {
-          state: { booking, ttl: seatLockTTL, ttlTimestamp: Date.now() },
+          state: {
+            booking: {
+              ...booking,
+              movieTitle,
+              showtime: selectedShowtime,
+              seats: selectedSeats,
+            },
+            ttl: seatLockTTL,
+            ttlTimestamp: Date.now(),
+          },
         });
       } else {
         const pendingData = {

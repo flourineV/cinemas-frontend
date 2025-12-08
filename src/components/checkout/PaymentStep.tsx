@@ -19,6 +19,10 @@ interface Props {
   onApplyPromo: (promo: PromotionResponse | null) => void;
   bookingId: string;
   selectedCombos: Record<string, SelectedComboItem>;
+  userId?: string;
+  useRankDiscount: boolean;
+  onToggleRankDiscount: (value: boolean) => void;
+  onRankDiscountValueChange: (value: number) => void;
   onNext: () => void;
   onPrev: () => void;
 }
@@ -32,11 +36,24 @@ const PaymentStep: React.FC<Props> = ({
   onApplyPromo,
   bookingId,
   selectedCombos,
+  userId,
+  useRankDiscount,
+  onToggleRankDiscount,
+  onRankDiscountValueChange,
   onPrev,
 }) => {
   const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [userRank, setUserRank] = useState<string | null>(null);
+  const [rankDiscountPercent, setRankDiscountPercent] = useState<number>(0);
+
+  console.log(
+    "🎨 PaymentStep render - userRank:",
+    userRank,
+    "rankDiscountPercent:",
+    rankDiscountPercent
+  );
 
   useEffect(() => {
     const fetchPromotions = async () => {
@@ -51,6 +68,29 @@ const PaymentStep: React.FC<Props> = ({
     };
     fetchPromotions();
   }, []);
+
+  useEffect(() => {
+    const fetchRankDiscount = async () => {
+      console.log("🎯 PaymentStep - userId:", userId);
+      if (userId) {
+        try {
+          const { userProfileService } = await import(
+            "@/services/userprofile/userProfileService"
+          );
+          const data = await userProfileService.getRankAndDiscount(userId);
+          console.log("🎯 PaymentStep - rank data:", data);
+          setUserRank(data.rankName);
+          setRankDiscountPercent(data.discountRate);
+          onRankDiscountValueChange(data.discountRate);
+        } catch (error) {
+          console.error("❌ Failed to fetch rank discount:", error);
+        }
+      } else {
+        console.log("⚠️ No userId provided to PaymentStep");
+      }
+    };
+    fetchRankDiscount();
+  }, [userId, onRankDiscountValueChange]);
 
   const handleSelectPromo = async () => {
     let selectedPromo: PromotionResponse | null = appliedPromo;
@@ -177,11 +217,51 @@ const PaymentStep: React.FC<Props> = ({
       transition={{ duration: 0.35 }}
       className="space-y-6"
     >
+      {/* Rank Discount Card */}
+      {userRank && rankDiscountPercent >= 0 && (
+        <div className="mb-6">
+          <h3 className="text-2xl font-bold text-zinc-800 mb-4">
+            Giảm giá theo hạng
+          </h3>
+          <div
+            onClick={() => onToggleRankDiscount(!useRankDiscount)}
+            className={`relative cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 ${
+              useRankDiscount
+                ? "bg-yellow-500 border-yellow-600 shadow-lg"
+                : "bg-white border-zinc-300 hover:border-yellow-400 hover:shadow-md"
+            }`}
+          >
+            {useRankDiscount && (
+              <div className="absolute -top-2 -right-2 bg-zinc-900 text-yellow-500 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm border-2 border-yellow-500">
+                ✓
+              </div>
+            )}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div
+                  className={`font-bold text-lg mb-1 ${useRankDiscount ? "text-black" : "text-zinc-800"}`}
+                >
+                  Hạng {userRank}
+                </div>
+                <div
+                  className={`text-sm mb-2 ${useRankDiscount ? "text-zinc-900" : "text-zinc-600"}`}
+                >
+                  Giảm giá dành riêng cho thành viên hạng {userRank}
+                </div>
+                <div
+                  className={`text-xs font-semibold ${useRankDiscount ? "text-zinc-800" : "text-yellow-600"}`}
+                >
+                  Giảm {rankDiscountPercent}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Danh sách mã giảm giá */}
       <div>
-        <h3 className="text-2xl font-bold text-zinc-800 mb-4">
-          Mã giảm giá <span className="text-yellow-500">có sẵn</span>
-        </h3>
+        <h3 className="text-2xl font-bold text-zinc-800 mb-4">Mã giảm giá</h3>
         {loading ? (
           <div className="text-zinc-600 text-center py-8">Đang tải...</div>
         ) : promotions.length === 0 ? (
@@ -198,7 +278,7 @@ const PaymentStep: React.FC<Props> = ({
                   onClick={() => onApplyPromo(isSelected ? null : promo)}
                   className={`relative cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 ${
                     isSelected
-                      ? "bg-yellow-500 border-yellow-600 shadow-lg scale-105"
+                      ? "bg-yellow-500 border-yellow-600 shadow-lg"
                       : "bg-white border-zinc-300 hover:border-yellow-400 hover:shadow-md"
                   }`}
                 >

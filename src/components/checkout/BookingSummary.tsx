@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { SelectedComboItem } from "./SelectComboStep";
 import type { PromotionResponse } from "@/types/promotion/promotion.type";
+import { userProfileService } from "@/services/userprofile/userProfileService";
 
 interface Props {
   booking: any;
@@ -9,6 +10,8 @@ interface Props {
   appliedPromo: PromotionResponse | null;
   discountValue: number;
   finalTotal: number;
+  useRankDiscount: boolean;
+  rankDiscountValue: number;
   goToStep: (step: number) => void;
   ttl?: number | null; // <-- new prop: ttl in seconds, null = chưa lock ghế
 }
@@ -28,10 +31,31 @@ const BookingSummary: React.FC<Props> = ({
   appliedPromo,
   discountValue,
   finalTotal,
+  useRankDiscount,
+  rankDiscountValue,
   goToStep,
   ttl = null,
 }) => {
+  const [userRank, setUserRank] = useState<string | null>(null);
+
   const combosArray = Object.values(selectedCombos).filter((c) => c.qty > 0);
+
+  // Fetch user rank
+  useEffect(() => {
+    const fetchRank = async () => {
+      try {
+        const userId = booking?.userId;
+        if (userId) {
+          const data = await userProfileService.getRankAndDiscount(userId);
+          setUserRank(data.rankName);
+        }
+      } catch (error) {
+        console.error("Failed to fetch rank:", error);
+      }
+    };
+
+    fetchRank();
+  }, [booking?.userId]);
 
   // timeToShow: nếu ttl === null => show default 5:00
   const timeToShow = ttl === null ? DEFAULT_TTL_DISPLAY : ttl;
@@ -47,7 +71,7 @@ const BookingSummary: React.FC<Props> = ({
           : "bg-yellow-200 text-black";
 
   return (
-    <aside className="space-y-4 relative">
+    <aside className="space-y-4 lg:sticky lg:top-20 self-start">
       <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg">
         {/* Header row with title + TTL on the right */}
         <div className="flex items-start justify-between">
@@ -70,32 +94,60 @@ const BookingSummary: React.FC<Props> = ({
         <div className="mt-3 text-sm text-gray-700">
           <div className="flex justify-between">
             <span>Phim</span>
-            <span className="font-semibold">{booking.movieTitle}</span>
+            <span className="font-semibold">
+              {booking.movieTitle || booking.movie?.title || "N/A"}
+            </span>
           </div>
           <div className="flex justify-between mt-2">
             <span>Rạp</span>
             <span className="font-semibold">
-              {booking.showtime?.theaterName ?? booking.showtime?.cinemaName}
+              {booking.showtime?.theaterName ??
+                booking.showtime?.cinemaName ??
+                booking.theater?.name ??
+                booking.cinemaName ??
+                "N/A"}
             </span>
           </div>
           <div className="flex justify-between mt-2">
             <span>Phòng</span>
-            <span className="font-semibold">{booking.showtime?.roomName}</span>
+            <span className="font-semibold">
+              {booking.showtime?.roomName ?? booking.roomName ?? "N/A"}
+            </span>
           </div>
           <div className="flex justify-between mt-2">
             <span>Thời gian</span>
             <span className="font-semibold">
               {booking.showtime?.startTime
-                ? new Date(booking.showtime.startTime).toLocaleString()
-                : booking.showtime?.time}
+                ? new Date(booking.showtime.startTime).toLocaleString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : (booking.showtime?.time ?? booking.startTime ?? "N/A")}
             </span>
           </div>
           <div className="flex justify-between mt-2">
             <span>Ghế</span>
             <span className="font-semibold">
-              {(booking.seats || []).map((s: any) => s.seatNumber).join(", ")}
+              {(booking.seats || [])
+                .map((s: any) => s.seatNumber || s)
+                .join(", ") || "N/A"}
             </span>
           </div>
+
+          {/* User Rank */}
+          {userRank && (
+            <div className="mt-3 pt-3 border-t border-gray-300">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Hạng thành viên</span>
+                <span className="font-bold text-yellow-600 text-lg">
+                  {userRank}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="mt-3">
             <div className="font-semibold text-gray-800">Combo</div>
@@ -131,6 +183,12 @@ const BookingSummary: React.FC<Props> = ({
                     ? `${appliedPromo.discountValue}%`
                     : discountValue.toLocaleString() + " VND"}
                 </span>
+              </div>
+            )}
+            {useRankDiscount && rankDiscountValue > 0 && userRank && (
+              <div className="flex justify-between text-green-600 mt-2">
+                <span>Giảm giá hạng {userRank}</span>
+                <span>-{rankDiscountValue}%</span>
               </div>
             )}
             <div className="flex justify-between text-yellow-600 font-bold mt-3 text-lg">

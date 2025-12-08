@@ -38,6 +38,8 @@ export default function CheckoutPage() {
     null
   );
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [useRankDiscount, setUseRankDiscount] = useState(false);
+  const [rankDiscountValue, setRankDiscountValue] = useState(0);
 
   // --- 1. NHẬN DỮ LIỆU ---
   useEffect(() => {
@@ -49,6 +51,7 @@ export default function CheckoutPage() {
 
     if (stateData.booking) {
       // === CASE A: User (Đã có booking) ===
+      console.log("📦 Booking data from API:", stateData.booking);
       setBooking(stateData.booking);
       setUserLoggedIn(true);
       setActiveStep(2); // Nhảy Step 2
@@ -71,6 +74,7 @@ export default function CheckoutPage() {
       setupTTL(stateData.pendingData.ttl, stateData.pendingData.ttlTimestamp);
 
       // Mock booking cho Summary hiển thị
+      console.log("📦 Guest pending data:", stateData.pendingData);
       setBooking({
         totalPrice: stateData.pendingData.totalPrice,
         movieTitle: stateData.pendingData.movieTitle,
@@ -148,8 +152,15 @@ export default function CheckoutPage() {
 
   const finalTotal = useMemo(() => {
     const total = (booking?.totalPrice ?? 0) + comboTotal;
-    return Math.max(total - discountValue, 0);
-  }, [booking, comboTotal, discountValue]);
+    let totalDiscount = discountValue;
+
+    // Add rank discount if enabled
+    if (useRankDiscount && rankDiscountValue > 0) {
+      totalDiscount += Math.round(total * (rankDiscountValue / 100));
+    }
+
+    return Math.max(total - totalDiscount, 0);
+  }, [booking, comboTotal, discountValue, useRankDiscount, rankDiscountValue]);
 
   // --- Navigation Handlers ---
   const handleNextStep = () => setActiveStep((prev) => prev + 1);
@@ -247,6 +258,10 @@ export default function CheckoutPage() {
                         onApplyPromo={setAppliedPromo}
                         bookingId={booking?.id || booking?.bookingId || ""}
                         selectedCombos={selectedCombos}
+                        userId={booking?.userId}
+                        useRankDiscount={useRankDiscount}
+                        onToggleRankDiscount={setUseRankDiscount}
+                        onRankDiscountValueChange={setRankDiscountValue}
                         onNext={handleNextStep}
                         onPrev={handlePrevStep}
                       />
@@ -269,18 +284,18 @@ export default function CheckoutPage() {
 
             {/* RIGHT COLUMN */}
             <div className="lg:col-span-1">
-              <div className="sticky" style={{ top: "6rem" }}>
-                <BookingSummary
-                  booking={booking}
-                  selectedCombos={selectedCombos}
-                  comboTotal={comboTotal}
-                  appliedPromo={appliedPromo}
-                  discountValue={discountValue}
-                  finalTotal={finalTotal}
-                  goToStep={setActiveStep}
-                  ttl={timeLeft}
-                />
-              </div>
+              <BookingSummary
+                booking={booking}
+                selectedCombos={selectedCombos}
+                comboTotal={comboTotal}
+                appliedPromo={appliedPromo}
+                discountValue={discountValue}
+                finalTotal={finalTotal}
+                useRankDiscount={useRankDiscount}
+                rankDiscountValue={rankDiscountValue}
+                goToStep={setActiveStep}
+                ttl={timeLeft}
+              />
             </div>
           </div>
         </main>

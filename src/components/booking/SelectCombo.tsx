@@ -110,7 +110,7 @@ const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center justify-center gap-4 mt-3">
+                <div className="flex items-center justify-end gap-4 mt-3">
                   <button
                     type="button"
                     aria-label="Giảm"
@@ -133,7 +133,7 @@ const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
                     type="button"
                     aria-label="Tăng"
                     onClick={() => handleChange(c.id, 1)}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-yellow-500 text-black font-bold text-xl transition-all hover:bg-yellow-400 active:scale-95 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+                    className="w-10 h-10 pb-1 flex items-center justify-center rounded-lg bg-yellow-500 text-black font-bold text-xl transition-all hover:bg-yellow-400 active:scale-95 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
                   >
                     +
                   </button>

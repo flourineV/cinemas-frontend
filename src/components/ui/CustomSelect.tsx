@@ -47,12 +47,12 @@ export function CustomSelect({
   const buttonStyles =
     variant === "light"
       ? "bg-white border-gray-300 text-gray-800 hover:bg-gray-50"
-      : "bg-black border-yellow-500/50 text-white hover:bg-zinc-900";
+      : "bg-transparent border-zinc-800 text-zinc-800";
 
   const dropdownStyles =
     variant === "light"
       ? "bg-white border-gray-300"
-      : "bg-black border-yellow-500/50";
+      : "bg-white border-zinc-800";
 
   const optionStyles = (isSelected: boolean) =>
     variant === "light"

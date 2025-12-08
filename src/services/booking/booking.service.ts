@@ -29,9 +29,7 @@ export const bookingService = {
 
   // GET /api/bookings/user/{userId}
   getBookingsByUser: async (userId: string): Promise<BookingResponse[]> => {
-    const res = await bookingClient.get<BookingResponse[]>(
-      `/bookings/user/${userId}`
-    );
+    const res = await bookingClient.get<BookingResponse[]>(`/user/${userId}`);
     return res.data;
   },
 
@@ -49,9 +47,7 @@ export const bookingService = {
 
   // POST /api/bookings/{id}/cancel
   cancelBooking: async (id: string): Promise<BookingResponse> => {
-    const res = await bookingClient.post<BookingResponse>(
-      `/${id}/cancel`
-    );
+    const res = await bookingClient.post<BookingResponse>(`/${id}/cancel`);
     return res.data;
   },
 

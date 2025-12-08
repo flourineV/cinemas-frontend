@@ -158,8 +158,11 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         const identity = getSafeIdentity();
         const seatIds = selectedSeatsRef.current.map((s) => s.seatId);
 
+        console.log("[BEFOREUNLOAD] Attempting to unlock seats:", seatIds);
+        console.log("[BEFOREUNLOAD] Identity:", identity);
+
         // Tạo URL với query params cho unlock-batch
-        const baseUrl = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api"}/showtimes/seat-lock/unlock-batch`;
+        const baseUrl = `${import.meta.env.VITE_GATEWAY_URL}/showtimes/seat-lock/unlock-batch`;
         const params = new URLSearchParams({
           showtimeId: showtimeId,
           seatIds: seatIds.join(","),
@@ -174,8 +177,22 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
 
         const apiUrl = `${baseUrl}?${params.toString()}`;
 
-        // sendBeacon: gửi POST request đồng bộ, không bị cancel khi trang đóng
-        // Dùng empty blob vì params đã ở URL
+        // Thử gửi request với fetch keepalive (backup cho sendBeacon)
+        try {
+          fetch(apiUrl, {
+            method: "POST",
+            keepalive: true, // Đảm bảo request không bị cancel khi trang đóng
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }).catch(() => {
+            // Ignore errors vì trang đang đóng
+          });
+        } catch (err) {
+          console.error("Failed to send unlock request:", err);
+        }
+
+        // Fallback: cũng thử sendBeacon
         navigator.sendBeacon(
           apiUrl,
           new Blob([], { type: "application/json" })
@@ -524,7 +541,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
                     else
                       colorClass = isCouple
                         ? "cursor-pointer hover:scale-105"
-                        : "bg-white text-black hover:bg-yellow-200 cursor-pointer border border-zinc-800";
+                        : "bg-white text-black hover:bg-yellow-300 cursor-pointer border border-zinc-800";
                   }
 
                   const containerClasses =
