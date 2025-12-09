@@ -64,7 +64,7 @@ export const userProfileService = {
     data: FavoriteMovieRequest
   ): Promise<FavoriteMovieResponse> => {
     const res = await profileClient.post<FavoriteMovieResponse>(
-      "/profiles/favorites",
+      "/favorites",
       data
     );
     return res.data;
@@ -72,12 +72,19 @@ export const userProfileService = {
 
   getFavorites: async (userId: string): Promise<FavoriteMovieResponse[]> => {
     const res = await profileClient.get<FavoriteMovieResponse[]>(
-      `/profiles/favorites/${userId}`
+      `/favorites/${userId}`
     );
     return res.data;
   },
 
   removeFavorite: async (userId: string, tmdbId: number): Promise<void> => {
-    await profileClient.delete(`/profiles/favorites/${userId}/${tmdbId}`);
+    await profileClient.delete(`/favorites/${userId}/${tmdbId}`);
+  },
+
+  isFavorite: async (userId: string, tmdbId: number): Promise<boolean> => {
+    const res = await profileClient.get<boolean>(
+      `/favorites/check/${userId}/${tmdbId}`
+    );
+    return res.data;
   },
 };

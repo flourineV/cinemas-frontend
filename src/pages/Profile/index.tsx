@@ -90,11 +90,15 @@ const Profile = () => {
       setFavoritesLoading(true);
       try {
         const favorites = await userProfileService.getFavorites(user.id);
-        // Fetch movie details for each favorite
+        console.log("📦 Favorites from API:", favorites);
+
+        // Fetch movie details for each favorite using movieId
         const moviePromises = favorites.map((fav) =>
-          movieService.getMovieDetail(fav.tmdbId.toString())
+          movieService.getMovieDetail(fav.movieId)
         );
         const movies = await Promise.all(moviePromises);
+        console.log("🎬 Movies fetched:", movies);
+
         setFavoriteMovies(movies);
       } catch (error) {
         console.error("Lỗi khi lấy phim yêu thích:", error);
@@ -455,31 +459,55 @@ const Profile = () => {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {favoriteMovies.map((movie) => (
-                    <div
-                      key={movie.id}
-                      onClick={() => navigate(`/movie/${movie.id}`)}
-                      className="group cursor-pointer"
-                    >
-                      <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all">
-                        <img
-                          src={getPosterUrl(movie.posterUrl)}
-                          alt={movie.title}
-                          className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <h4 className="text-white font-semibold text-sm line-clamp-2">
-                              {movie.title}
-                            </h4>
-                            <p className="text-gray-300 text-xs mt-1">
-                              {movie.releaseDate}
-                            </p>
+                    <div key={movie.id} className="group relative">
+                      {/* Remove button */}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!user?.id) return;
+                          try {
+                            await userProfileService.removeFavorite(
+                              user.id,
+                              movie.tmdbId
+                            );
+                            setFavoriteMovies((prev) =>
+                              prev.filter((m) => m.id !== movie.id)
+                            );
+                          } catch (error) {
+                            console.error("Error removing favorite:", error);
+                            alert("Không thể xóa phim yêu thích!");
+                          }
+                        }}
+                        className="absolute top-2 right-2 z-10 w-8 h-8 bg-black/60 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="w-4 h-4 text-white" />
+                      </button>
+
+                      <div
+                        onClick={() => navigate(`/movie/${movie.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all">
+                          <img
+                            src={getPosterUrl(movie.posterUrl)}
+                            alt={movie.title}
+                            className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                              <h4 className="text-white font-semibold text-sm line-clamp-2">
+                                {movie.title}
+                              </h4>
+                              <p className="text-gray-300 text-xs mt-1">
+                                {movie.releaseDate}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                        <h4 className="mt-2 text-gray-900 font-medium text-sm line-clamp-2">
+                          {movie.title}
+                        </h4>
                       </div>
-                      <h4 className="mt-2 text-gray-900 font-medium text-sm line-clamp-2">
-                        {movie.title}
-                      </h4>
                     </div>
                   ))}
                 </div>

@@ -4,6 +4,7 @@ export interface FavoriteMovieRequest {
 }
 
 export interface FavoriteMovieResponse {
+  movieId: string;
   tmdbId: number;
   addedAt: string;
 }

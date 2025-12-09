@@ -266,21 +266,43 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
           "@/services/pricing/pricingService"
         );
         const allPrices = await pricingService.getAllSeatPrices();
-        let total = 0;
+
+        // Tạo queue cho từng loại ghế
+        const ticketQueues: Record<string, string[]> = {};
         Object.entries(selectedTickets).forEach(([key, count]) => {
-          const [seatType, ticketType] = key.split("-");
+          const parts = key.split("-");
+          const seatType = parts[0];
+          const ticketType = parts.slice(1).join("-");
+          ticketQueues[seatType] = ticketQueues[seatType] || [];
+          for (let i = 0; i < count; i++)
+            ticketQueues[seatType].push(ticketType);
+        });
+
+        let total = 0;
+
+        // Tính giá dựa trên ghế đã chọn
+        selectedSeats.forEach((seat) => {
+          const seatType = seat.type ?? "NORMAL";
+          const queue = ticketQueues[seatType] || [];
+          const ticketType = queue.length ? queue.shift()! : "ADULT";
+
+          // Tìm giá tương ứng với loại ghế và loại vé
           const price = allPrices.find(
             (p) => p.seatType === seatType && p.ticketType === ticketType
           );
-          if (price) total += Number(price.basePrice) * count;
+
+          if (price) {
+            total += Number(price.basePrice);
+          }
         });
+
         setTotalPrice(total);
       } catch (error) {
         console.error(error);
       }
     };
     calculateTotal();
-  }, [selectedTickets]);
+  }, [selectedTickets, selectedSeats]);
 
   useEffect(() => {
     const totalTickets = Object.values(selectedTickets).reduce(

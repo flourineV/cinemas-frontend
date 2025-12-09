@@ -11,6 +11,7 @@ import {
   MonitorPlay,
   Heart,
   MessageCircle,
+  Star,
 } from "lucide-react";
 import Layout from "../../components/layout/Layout";
 import { getPosterUrl } from "../../utils/getPosterUrl";
@@ -24,6 +25,7 @@ import "dayjs/locale/vi";
 import MovieShowtime from "../Showtime/MovieShowtime";
 import { userProfileService } from "@/services/userprofile/userProfileService";
 import { useAuthStore } from "@/stores/authStore";
+import { reviewService } from "@/services/review/review.service";
 dayjs.locale("vi");
 
 type TabType = "info" | "comments";
@@ -37,6 +39,8 @@ export default function MovieDetailPage() {
   const [activeTab, setActiveTab] = useState<TabType>("info");
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [avgRating, setAvgRating] = useState<number>(0);
+  const [reviewCount, setReviewCount] = useState<number>(0);
 
   useEffect(() => {
     if (!id) return;
@@ -55,19 +59,38 @@ export default function MovieDetailPage() {
     fetchMovie();
   }, [id]);
 
-  // Check if movie is in favorites
+  // Check if movie is in favorites - Sử dụng API isFavorite
   useEffect(() => {
     const checkFavorite = async () => {
       if (!user?.id || !movie?.tmdbId) return;
       try {
-        const favorites = await userProfileService.getFavorites(user.id);
-        setIsFavorite(favorites.some((fav) => fav.tmdbId === movie.tmdbId));
+        const isFav = await userProfileService.isFavorite(
+          user.id,
+          movie.tmdbId
+        );
+        setIsFavorite(isFav);
       } catch (err) {
         console.error("Error checking favorite:", err);
       }
     };
     checkFavorite();
   }, [user?.id, movie?.tmdbId]);
+
+  // Load rating info
+  useEffect(() => {
+    const loadRating = async () => {
+      if (!movie?.id) return;
+      try {
+        const avg = await reviewService.getAverageRating(movie.id);
+        const reviews = await reviewService.getReviewsByMovie(movie.id);
+        setAvgRating(avg || 0);
+        setReviewCount(reviews.length);
+      } catch (err) {
+        console.error("Error loading rating:", err);
+      }
+    };
+    loadRating();
+  }, [movie?.id]);
 
   const handleToggleFavorite = async () => {
     if (!user?.id || !movie?.tmdbId) {
@@ -140,11 +163,7 @@ export default function MovieDetailPage() {
     <Layout>
       <div className="min-h-screen">
         {/* Section 1: Movie Info with Poster Background */}
-<<<<<<< HEAD
-        <div className="relative pt-20 pb-24 min-h-[900px]">
-=======
         <div className="relative pt-20 pb-10">
->>>>>>> 5e24ed50c7f8f0e0137439a9acb298a25701d6d9
           {/* Background with movie poster */}
           <div
             className="absolute inset-0 z-0"
@@ -167,18 +186,32 @@ export default function MovieDetailPage() {
           >
             {/* Main Content Card */}
             <div className="rounded-2xl">
-              <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col md:flex-row gap-6 md:items-stretch">
                 {/* Poster */}
-                <div className="w-full md:w-[300px] lg:w-[350px] flex-shrink-0 mx-auto md:mx-0">
+                <div className="w-full md:w-[300px] lg:w-[350px] flex-shrink-0 mx-auto md:mx-0 flex flex-col">
                   <img
                     src={getPosterUrl(movie.posterUrl)}
                     alt={movie.title}
                     className="w-full h-auto object-cover rounded-xl shadow-2xl border-2 border-yellow-500 transition-all"
                   />
+
+                  {/* Rating dưới poster */}
+                  <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Star className="text-yellow-500 fill-yellow-500 w-6 h-6" />
+                      <span className="text-white text-2xl font-bold">
+                        {avgRating.toFixed(1)}
+                      </span>
+                      <span className="text-white/60 text-lg">/ 5</span>
+                    </div>
+                    <p className="text-center text-white/80 text-sm">
+                      {reviewCount} lượt đánh giá
+                    </p>
+                  </div>
                 </div>
 
                 {/* Movie Info */}
-                <div className="flex-1 flex flex-col text-gray-800">
+                <div className="flex-1 flex flex-col text-gray-800 min-h-0">
                   <div className="flex items-start justify-between mb-6">
                     <h1 className="text-3xl md:text-4xl font-extrabold text-white flex-1">
                       {movie.title}
@@ -229,13 +262,14 @@ export default function MovieDetailPage() {
                     </div>
                   </div>
 
-                  {/* Tab Content */}
-                  <div className="mt-6">
+                  {/* Tab Content - flex-1 để chiếm hết không gian */}
+                  <div className="mt-6 flex-1 flex flex-col min-h-0">
                     {activeTab === "info" && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
+                        className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
                       >
                         {/* Movie Details */}
                         <div className="space-y-3 text-sm md:text-base mb-6">
@@ -337,15 +371,9 @@ export default function MovieDetailPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="text-center py-16"
+                        className="flex-1 flex flex-col min-h-0"
                       >
-                        <MessageCircle className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-white mb-2">
-                          Chưa có bình luận
-                        </h3>
-                        <p className="text-white/60">
-                          Hãy là người đầu tiên bình luận về phim này
-                        </p>
+                        <MovieComments movieId={movie.id} userId={user?.id} />
                       </motion.div>
                     )}
                   </div>
@@ -353,13 +381,6 @@ export default function MovieDetailPage() {
               </div>
             </div>
           </motion.div>
-        </div>
-
-        {/* Section Reviews */}
-        <div className="bg-gray-100 py-10">
-          <div className="max-w-5xl mx-auto px-4">
-            <MovieComments movieId={movie.id} />
-          </div>
         </div>
 
         {/* Section 2: Showtimes with White Background */}
