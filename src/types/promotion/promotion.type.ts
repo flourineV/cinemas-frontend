@@ -21,6 +21,7 @@ export interface PromotionResponse {
   isActive: boolean;
   isOneTimeUse: boolean;
   description?: string;
+  promoDisplayUrl?: string;
 }
 
 export interface PromotionValidationResponse {

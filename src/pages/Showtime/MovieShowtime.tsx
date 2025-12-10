@@ -410,6 +410,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
       } else {
         const pendingData = {
           requestData: baseRequest,
+          movieId,
           movieTitle,
           showtime: selectedShowtime,
           totalPrice,
@@ -488,7 +489,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
             DANH SÁCH RẠP
           </span>
           {provinces.length > 0 && (
-            <div className="w-full md:w-[260px] -mr-24">
+            <div className="w-full md:w-[220px] -mr-24">
               <CustomSelect
                 options={provinces.map((p) => ({
                   value: p.id,
@@ -497,7 +498,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
                 value={selectedProvinceId}
                 onChange={setSelectedProvinceId}
                 placeholder="Chọn tỉnh/thành phố"
-                variant="dark"
+                variant="gold"
               />
             </div>
           )}

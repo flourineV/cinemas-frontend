@@ -11,6 +11,7 @@ export interface TheaterResponse {
   address: string;
   description: string;
   provinceName: string;
+  imageUrl?: string;
 }
 
 export interface ShowtimeInfo {

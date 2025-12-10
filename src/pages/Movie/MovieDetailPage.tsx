@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -26,12 +26,14 @@ import MovieShowtime from "../Showtime/MovieShowtime";
 import { userProfileService } from "@/services/userprofile/userProfileService";
 import { useAuthStore } from "@/stores/authStore";
 import { reviewService } from "@/services/review/review.service";
+import Swal from "sweetalert2";
 dayjs.locale("vi");
 
 type TabType = "info" | "comments";
 
 export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,10 @@ export default function MovieDetailPage() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [avgRating, setAvgRating] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
+  const [userRating, setUserRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [hasBooked, setHasBooked] = useState<boolean>(false);
+  const [checkingBooking, setCheckingBooking] = useState<boolean>(true);
 
   useEffect(() => {
     if (!id) return;
@@ -76,21 +82,45 @@ export default function MovieDetailPage() {
     checkFavorite();
   }, [user?.id, movie?.tmdbId]);
 
-  // Load rating info
+  // Load rating info and check booking status
   useEffect(() => {
-    const loadRating = async () => {
+    const loadRatingAndBooking = async () => {
       if (!movie?.id) return;
       try {
+        // Load average rating and reviews
         const avg = await reviewService.getAverageRating(movie.id);
         const reviews = await reviewService.getReviewsByMovie(movie.id);
         setAvgRating(avg || 0);
         setReviewCount(reviews.length);
+
+        // Check if user has booked this movie
+        if (user?.id) {
+          setCheckingBooking(true);
+          const booked = await reviewService.checkUserBookedMovie(
+            user.id,
+            movie.id
+          );
+          setHasBooked(booked);
+
+          // Load user's existing rating if they have booked
+          if (booked) {
+            const myRating = await reviewService.getMyRating(movie.id);
+            if (myRating) {
+              setUserRating(myRating.rating);
+            }
+          }
+        } else {
+          setHasBooked(false);
+        }
       } catch (err) {
-        console.error("Error loading rating:", err);
+        console.error("Error loading rating/booking:", err);
+        setHasBooked(false);
+      } finally {
+        setCheckingBooking(false);
       }
     };
-    loadRating();
-  }, [movie?.id]);
+    loadRatingAndBooking();
+  }, [movie?.id, user?.id]);
 
   const handleToggleFavorite = async () => {
     if (!user?.id || !movie?.tmdbId) {
@@ -115,6 +145,70 @@ export default function MovieDetailPage() {
       alert("Không thể cập nhật phim yêu thích!");
     } finally {
       setFavoriteLoading(false);
+    }
+  };
+
+  const handleRatingClick = async (rating: number) => {
+    if (!user) {
+      Swal.fire({
+        title: "Yêu cầu đăng nhập",
+        text: "Bạn cần đăng nhập để đánh giá phim",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Đăng nhập",
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "#f59e0b",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/auth");
+        }
+      });
+      return;
+    }
+
+    if (!hasBooked) {
+      Swal.fire({
+        title: "Chưa đặt vé phim này",
+        text: "Bạn cần đặt vé xem phim này để có thể đánh giá",
+        icon: "info",
+        showCancelButton: true,
+        confirmButtonText: "Đặt vé ngay",
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "#f59e0b",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Scroll to showtime section
+          const showtimeSection = document.querySelector("#showtime-section");
+          if (showtimeSection) {
+            showtimeSection.scrollIntoView({ behavior: "smooth" });
+          }
+        }
+      });
+      return;
+    }
+
+    try {
+      await reviewService.upsertRating(movie!.id, { rating });
+      setUserRating(rating);
+
+      // Reload average rating
+      const newAvg = await reviewService.getAverageRating(movie!.id);
+      setAvgRating(newAvg || 0);
+
+      Swal.fire({
+        title: "Đánh giá thành công!",
+        text: `Bạn đã đánh giá ${rating} sao cho phim này`,
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Error rating movie:", error);
+      Swal.fire({
+        title: "Lỗi",
+        text: "Không thể gửi đánh giá. Vui lòng thử lại sau.",
+        icon: "error",
+      });
     }
   };
 
@@ -163,7 +257,7 @@ export default function MovieDetailPage() {
     <Layout>
       <div className="min-h-screen">
         {/* Section 1: Movie Info with Poster Background */}
-        <div className="relative pt-20 pb-10">
+        <div className="relative pt-20 pb-48">
           {/* Background with movie poster */}
           <div
             className="absolute inset-0 z-0"
@@ -196,14 +290,83 @@ export default function MovieDetailPage() {
                   />
 
                   {/* Rating dưới poster */}
-                  <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Star className="text-yellow-500 fill-yellow-500 w-6 h-6" />
-                      <span className="text-white text-2xl font-bold">
-                        {avgRating.toFixed(1)}
-                      </span>
-                      <span className="text-white/60 text-lg">/ 5</span>
+                  <div className="mt-4 rounded-lg p-4">
+                    {/* Combined Rating Display - 5 sao chung */}
+                    <div className="flex items-center justify-center gap-1 mb-3">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        // Priority: hover > user rating > average rating
+                        let starState = "empty";
+
+                        if (hoverRating > 0) {
+                          // Khi đang hover, chỉ hiển thị đúng số sao hover
+                          starState = star <= hoverRating ? "hover" : "empty";
+                        } else {
+                          // Khi không hover, hiển thị user rating hoặc average rating
+                          const displayRating =
+                            userRating > 0 ? userRating : avgRating;
+                          if (star <= Math.floor(displayRating)) {
+                            starState = "filled";
+                          } else if (
+                            star === Math.ceil(displayRating) &&
+                            displayRating % 1 >= 0.5
+                          ) {
+                            starState = "half";
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => handleRatingClick(star)}
+                            onMouseEnter={() =>
+                              !checkingBooking && setHoverRating(star)
+                            }
+                            onMouseLeave={() => setHoverRating(0)}
+                            disabled={checkingBooking}
+                            className={`transition-transform ${
+                              checkingBooking
+                                ? "cursor-not-allowed opacity-50"
+                                : "cursor-pointer hover:scale-110"
+                            }`}
+                          >
+                            <Star
+                              size={32}
+                              className={`${
+                                starState === "hover"
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : starState === "filled"
+                                    ? "fill-yellow-500 text-yellow-500"
+                                    : starState === "half"
+                                      ? "fill-yellow-500/50 text-yellow-500"
+                                      : "text-white/30"
+                              } transition-colors`}
+                            />
+                          </button>
+                        );
+                      })}
                     </div>
+
+                    {/* Rating Info */}
+                    <div className="flex items-center justify-center gap-4 mb-2">
+                      <div className="text-center">
+                        <span className="text-white text-xl font-bold">
+                          {avgRating.toFixed(1)}
+                        </span>
+                        <span className="text-white/60 text-sm ml-1">/ 5</span>
+                      </div>
+                      {userRating > 0 && (
+                        <>
+                          <div className="w-px h-6 bg-white/30"></div>
+                          <div className="text-center">
+                            <span className="text-yellow-400 text-sm font-semibold">
+                              Bạn: {userRating}/5
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
                     <p className="text-center text-white/80 text-sm">
                       {reviewCount} lượt đánh giá
                     </p>
@@ -219,16 +382,16 @@ export default function MovieDetailPage() {
                     <button
                       onClick={handleToggleFavorite}
                       disabled={favoriteLoading}
-                      className="flex-shrink-0 ml-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all disabled:opacity-50"
+                      className="group flex-shrink-0 ml-4 p-3 rounded-full transition-all disabled:opacity-50"
                       title={
                         isFavorite ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"
                       }
                     >
                       <Heart
-                        className={`w-6 h-6 transition-colors ${
+                        className={`w-6 h-6 transition-all duration-200 ${
                           isFavorite
                             ? "fill-red-500 text-red-500"
-                            : "text-white"
+                            : "text-white group-hover:fill-red-500 group-hover:text-red-500"
                         }`}
                       />
                     </button>
@@ -262,47 +425,47 @@ export default function MovieDetailPage() {
                     </div>
                   </div>
 
-                  {/* Tab Content - flex-1 để chiếm hết không gian */}
-                  <div className="mt-6 flex-1 flex flex-col min-h-0">
+                  {/* Tab Content - chiều cao cố định và scroll */}
+                  <div className="mt-6 flex-1 overflow-hidden">
                     {activeTab === "info" && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+                        className="h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
                       >
                         {/* Movie Details */}
                         <div className="space-y-3 text-sm md:text-base mb-6">
                           <div className="flex items-center gap-3">
-                            <Film className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                            <Film className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
                               {movie.genres.join(", ")}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Clock className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                            <Clock className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
                               {movie.time} phút
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Languages className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                            <Languages className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
                               {movie.spokenLanguages.join(", ")}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Globe className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                            <Globe className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">{movie.country}</span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <ShieldCheck className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                            <ShieldCheck className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
                               {formatAgeRating(movie.age)}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Calendar className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                            <Calendar className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
                               {movie.releaseDate}
                             </span>
@@ -316,7 +479,7 @@ export default function MovieDetailPage() {
                               trailerUrl={movie.trailer}
                               icon={
                                 <span className="flex items-center gap-2 group cursor-pointer -ml-3">
-                                  <MonitorPlay className="w-6 h-6 text-orange-500 group-hover:text-yellow-700 transition-colors" />
+                                  <MonitorPlay className="w-6 h-6 text-yellow-500 group-hover:text-yellow-700 transition-colors" />
                                   <span className="text-white group-hover:text-yellow-700 group-hover:underline text-lg font-semibold transition-colors">
                                     Xem Trailer
                                   </span>
@@ -371,9 +534,23 @@ export default function MovieDetailPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="flex-1 flex flex-col min-h-0"
+                        className="h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
                       >
-                        <MovieComments movieId={movie.id} userId={user?.id} />
+                        <MovieComments
+                          movieId={movie.id}
+                          userId={user?.id}
+                          hasBooked={hasBooked}
+                          onCommentSubmit={() => {
+                            // Reload reviews after submit
+                            if (movie?.id) {
+                              reviewService
+                                .getReviewsByMovie(movie.id)
+                                .then((reviews) =>
+                                  setReviewCount(reviews.length)
+                                );
+                            }
+                          }}
+                        />
                       </motion.div>
                     )}
                   </div>
@@ -384,7 +561,7 @@ export default function MovieDetailPage() {
         </div>
 
         {/* Section 2: Showtimes with White Background */}
-        <div className="bg-gray-100 py-10">
+        <div id="showtime-section" className="bg-gray-100 py-10">
           <div className="max-w-6xl mx-auto px-4">
             <MovieShowtime
               movieId={movie.id}

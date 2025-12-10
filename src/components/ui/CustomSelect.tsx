@@ -7,6 +7,8 @@ interface SelectOption {
   label: string;
 }
 
+type Variant = "dark" | "light" | "gold" | "outline" | "glass";
+
 interface CustomSelectProps {
   options: SelectOption[];
   value: string;
@@ -17,7 +19,7 @@ interface CustomSelectProps {
   buttonClassName?: string;
   dropdownClassName?: string;
   dropdownPosition?: "bottom" | "top";
-  variant?: "dark" | "light";
+  variant?: Variant;
 }
 
 export function CustomSelect({
@@ -43,25 +45,59 @@ export function CustomSelect({
   const positionClasses =
     dropdownPosition === "top" ? "bottom-full mb-2" : "mt-2";
 
-  // Variant styles
+  // === BUTTON STYLES ===
   const buttonStyles =
     variant === "light"
       ? "bg-white border-gray-300 text-gray-800 hover:bg-gray-50"
-      : "bg-transparent border-zinc-800 text-zinc-800";
+      : variant === "gold"
+        ? "bg-black border-yellow-400 text-yellow-300"
+        : variant === "outline"
+          ? "bg-transparent border-2 border-zinc-600 text-zinc-700 hover:bg-zinc-100"
+          : variant === "glass"
+            ? "backdrop-blur-md bg-white/20 border-white/30 text-white shadow-lg hover:bg-white/30"
+            : "bg-transparent border-zinc-800 text-zinc-800"; // dark mặc định
 
+  // === DROPDOWN STYLES ===
   const dropdownStyles =
     variant === "light"
       ? "bg-white border-gray-300"
-      : "bg-white border-zinc-800";
+      : variant === "gold"
+        ? "bg-black border-yellow-400 text-yellow-200"
+        : variant === "outline"
+          ? "bg-white border-zinc-600"
+          : variant === "glass"
+            ? "backdrop-blur-xl bg-white/10 border-white/40 text-white"
+            : "bg-white border-zinc-800";
 
-  const optionStyles = (isSelected: boolean) =>
-    variant === "light"
+  // === OPTION STYLES ===
+  const optionStyles = (isSelected: boolean) => {
+    if (variant === "gold") {
+      return isSelected
+        ? "bg-yellow-500 text-black font-semibold"
+        : "text-yellow-200 hover:bg-yellow-400 hover:text-black";
+    }
+
+    if (variant === "outline") {
+      return isSelected
+        ? "bg-zinc-200 text-black font-semibold"
+        : "text-zinc-700 hover:bg-zinc-100";
+    }
+
+    if (variant === "glass") {
+      return isSelected
+        ? "bg-white/30 text-black font-semibold"
+        : "text-white hover:bg-white/20";
+    }
+
+    // Giữ nguyên logic dark/light
+    return variant === "light"
       ? isSelected
         ? "text-yellow-600 bg-gray-100 font-semibold"
         : "text-gray-700 hover:bg-yellow-500 hover:text-white"
       : isSelected
         ? "text-yellow-300 bg-black/50 font-semibold"
         : "text-yellow-100/80 hover:bg-yellow-300 hover:text-black";
+  };
 
   return (
     <div className={`relative ${className}`} ref={selectRef}>

@@ -1,11 +1,54 @@
 // src/services/review/review.service.ts
-import { reviewClient } from "../apiClient";
-import type { ReviewRequest, ReviewResponse } from "@/types/review/review.type";
+import { reviewClient, bookingClient } from "../apiClient";
+import type {
+  ReviewRequest,
+  ReviewResponse,
+  RatingRequest,
+  RatingResponse,
+} from "@/types/review/review.type";
 
 export const reviewService = {
-  // CREATE
+  // CREATE REVIEW (for comments only)
   createReview: async (data: ReviewRequest): Promise<ReviewResponse> => {
     const res = await reviewClient.post<ReviewResponse>("", data);
+    return res.data;
+  },
+
+  // UPSERT RATING (new method for rating)
+  upsertRating: async (
+    movieId: string,
+    data: RatingRequest
+  ): Promise<RatingResponse> => {
+    const res = await reviewClient.post<RatingResponse>(
+      `/movie/${movieId}/rate`,
+      data
+    );
+    return res.data;
+  },
+
+  // GET MY RATING
+  getMyRating: async (movieId: string): Promise<RatingResponse | null> => {
+    try {
+      const res = await reviewClient.get<RatingResponse>(
+        `/movie/${movieId}/my-rating`
+      );
+      return res.data;
+    } catch (error: any) {
+      if (error.response?.status === 204) {
+        return null; // No rating found
+      }
+      throw error;
+    }
+  },
+
+  // CHECK IF USER BOOKED MOVIE
+  checkUserBookedMovie: async (
+    userId: string,
+    movieId: string
+  ): Promise<boolean> => {
+    const res = await bookingClient.get<boolean>(
+      `/check?userId=${userId}&movieId=${movieId}`
+    );
     return res.data;
   },
 
@@ -25,9 +68,7 @@ export const reviewService = {
 
   // GET ALL REVIEWS OF MOVIE
   getReviewsByMovie: async (movieId: string): Promise<ReviewResponse[]> => {
-    const res = await reviewClient.get<ReviewResponse[]>(
-      `/movie/${movieId}`
-    );
+    const res = await reviewClient.get<ReviewResponse[]>(`/movie/${movieId}`);
     return res.data;
   },
 

@@ -1,84 +1,81 @@
 import { fnbClient } from "../apiClient";
-import type {
-  FnbItemRequest,
-  FnbItemResponse,
-  FnbCalculationItem,
-  FnbCalculationResponse,
-} from "@/types/fnb/fnb.type";
+import { theaterService } from "../showtime/theaterService";
+import type { TheaterResponse } from "@/types/showtime/theater.type";
 
-import { mockFnbData } from "@/mocks/mockFnb";
+export interface FnbItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  category: string;
+  available: boolean;
+}
+
+export interface FnbOrderRequest {
+  theaterId: string;
+  items: {
+    fnbItemId: string;
+    quantity: number;
+  }[];
+  customerInfo: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+  };
+}
+
+export interface FnbOrderResponse {
+  id: string;
+  theaterId: string;
+  theaterName: string;
+  items: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    subtotal: number;
+  }[];
+  totalAmount: number;
+  customerInfo: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+  };
+  status: string;
+  createdAt: string;
+}
 
 export const fnbService = {
-  // [GET] Lấy danh sách tất cả F&B items
-  getAllFnbItems: async (): Promise<FnbItemResponse[]> => {
-    try {
-      const res = await fnbClient.get<FnbItemResponse[]>("");
-      return res.data;
-    } catch (err) {
-      console.warn("⚠️ BE không chạy — dùng mock F&B để debug UI.");
-      return mockFnbData;
-    }
+  // Get all theaters (sử dụng theaterService có sẵn)
+  getTheaters: async (): Promise<TheaterResponse[]> => {
+    return await theaterService.getAllTheaters();
   },
 
-  // [GET] Lấy chi tiết 1 item theo ID
-  getFnbItemById: async (id: string): Promise<FnbItemResponse> => {
-    try {
-      const res = await fnbClient.get<FnbItemResponse>(`/${id}`);
-      return res.data;
-    } catch (err) {
-      console.warn("⚠️ BE không chạy — xem mock F&B data để debug UI.");
-
-      const found = mockFnbData.find(x => x.id === id);
-      if (found) return found;
-
-      throw new Error("Item not found in mock");
-    }
+  // Get FnB items by theater
+  getFnbItems: async (theaterId: string): Promise<FnbItem[]> => {
+    const response = await fnbClient.get<FnbItem[]>(
+      `/items?theaterId=${theaterId}`
+    );
+    return response.data;
   },
 
-  // [POST] Tạo mới 1 item
-  createFnbItem: async (data: FnbItemRequest): Promise<FnbItemResponse> => {
-    const res = await fnbClient.post<FnbItemResponse>("", data);
-    return res.data;
+  // Create FnB order
+  createOrder: async (
+    orderData: FnbOrderRequest
+  ): Promise<FnbOrderResponse> => {
+    const response = await fnbClient.post<FnbOrderResponse>(
+      "/orders",
+      orderData
+    );
+    return response.data;
   },
 
-  // [PUT] Cập nhật F&B item
-  updateFnbItem: async (
-    id: string,
-    data: FnbItemRequest
-  ): Promise<FnbItemResponse> => {
-    const res = await fnbClient.put<FnbItemResponse>(`/${id}`, data);
-    return res.data;
-  },
-
-  // [DELETE] Xóa F&B item
-  deleteFnbItem: async (id: string): Promise<void> => {
-    await fnbClient.delete(`/${id}`);
-  },
-
-  // [POST] Tính tổng giá trị của các item đã chọn
-  calculateFnbPrice: async (
-    selectedItems: FnbCalculationItem[]
-  ): Promise<FnbCalculationResponse> => {
-    try {
-      const res = await fnbClient.post<FnbCalculationResponse>("/calculate",
-      { selectedFnbItems: selectedItems });
-      return res.data;
-    } catch (err) {
-      console.warn("⚠️ BE không chạy — tự tính bằng mock để debug UI.");
-
-      let total = 0;
-      const breakdown: Record<string, number> = {};
-
-      selectedItems.forEach(item => {
-        const found = mockFnbData.find(x => x.id === item.id);
-        if (found) {
-          const price = found.unitPrice * item.quantity;
-          breakdown[item.id] = price;
-          total += price;
-        }
-      });
-
-      return { totalPrice: total, breakdown };
-    }
+  // Get order by ID
+  getOrderById: async (orderId: string): Promise<FnbOrderResponse> => {
+    const response = await fnbClient.get<FnbOrderResponse>(
+      `/orders/${orderId}`
+    );
+    return response.data;
   },
 };

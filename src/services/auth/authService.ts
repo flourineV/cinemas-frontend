@@ -20,8 +20,9 @@ export const authService = {
   refreshToken: (data: TokenRefreshRequest) =>
     authClient.post<JwtResponse>("/refreshtoken", data),
 
-  forgotPassword: (data: ForgotPasswordRequest) =>
-    authClient.post("/forgot-password", data),
+  sendOtp: (data: { email: string }) => authClient.post("/send-otp", data),
+
+  resendOtp: () => authClient.post("/resend-otp"),
 
   resetPassword: (data: ResetPasswordRequest) =>
     authClient.post("/reset-password", data),

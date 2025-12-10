@@ -91,8 +91,12 @@ export default function CheckoutPage() {
       const now = Date.now();
       const passed = Math.floor((now - timestamp) / 1000);
       const remaining = ttl - passed;
-      if (remaining <= 0) handleExpired();
-      else setTimeLeft(remaining);
+      if (remaining <= 0) {
+        // Không auto redirect, chỉ set timeLeft = 0 để trigger SweetAlert
+        setTimeLeft(0);
+      } else {
+        setTimeLeft(remaining);
+      }
     }
   };
 
@@ -110,21 +114,45 @@ export default function CheckoutPage() {
       handleExpired();
       return;
     }
-    const timer = setInterval(
-      () => setTimeLeft((p) => (p && p > 0 ? p - 1 : 0)),
-      1000
-    );
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev && prev > 0) {
+          const newValue = prev - 1;
+          // Khi countdown về 0, hiển thị SweetAlert
+          if (newValue === 0) {
+            handleExpired();
+          }
+          return newValue;
+        }
+        return prev;
+      });
+    }, 1000);
     return () => clearInterval(timer);
   }, [timeLeft]);
 
   const handleExpired = () => {
+    // Lấy movieId từ nhiều nguồn khác nhau
+    const movieId =
+      booking?.movieId ||
+      booking?.movie?.id ||
+      pendingData?.movieId ||
+      pendingData?.requestData?.movieId;
+
+    const redirectPath = movieId ? `/movies/${movieId}` : "/";
+
     Swal.fire({
       icon: "error",
       title: "Hết thời gian giữ ghế",
       text: "Vui lòng thực hiện đặt vé lại!",
+      confirmButtonText: "Đặt vé lại",
       confirmButtonColor: "#d97706",
       allowOutsideClick: false,
-    }).then(() => navigate("/"));
+    }).then((result) => {
+      if (result.isConfirmed) {
+        console.log("Redirecting to:", redirectPath);
+        navigate(redirectPath);
+      }
+    });
   };
 
   // --- Scroll ---

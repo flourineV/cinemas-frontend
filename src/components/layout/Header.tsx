@@ -60,14 +60,14 @@ const Header = () => {
               Lịch chiếu
             </Link>
             <Link
-              to="/promotions"
+              to="/popcorn-drink"
               className={`text-base transition-colors ${
-                location.pathname === "/promotions"
+                location.pathname === "/popcorn-drink"
                   ? "text-yellow-400 font-semibold"
                   : "hover:text-yellow-400"
               }`}
             >
-              Khuyến mãi
+              Đặt bắp nước
             </Link>
           </nav>
 

@@ -3,16 +3,22 @@ import Layout from "@/components/layout/Layout";
 import { useNavigate } from "react-router-dom";
 import { authService } from "@/services/auth/authService";
 import { motion } from "framer-motion";
-import { Mail, ArrowLeft, Loader2 } from "lucide-react";
+import { Mail, ArrowLeft, Loader2, Key, Lock } from "lucide-react";
+
+type Step = "email" | "otp" | "success";
 
 const ForgotPassword: React.FC = () => {
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -24,13 +30,62 @@ const ForgotPassword: React.FC = () => {
 
     try {
       setLoading(true);
-      await authService.forgotPassword({ email });
-      setSuccess(
-        "Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư!"
-      );
+      await authService.sendOtp({ email });
+      setStep("otp");
+      setSuccess("Mã OTP đã được gửi đến email của bạn!");
     } catch (err: any) {
       console.error(err);
-      setError("Không thể gửi email. Vui lòng thử lại sau.");
+      setError("Không thể gửi OTP. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!otp || otp.length !== 6) {
+      setError("Vui lòng nhập mã OTP 6 số.");
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      setError("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await authService.resetPassword({
+        email,
+        otp,
+        newPassword,
+      });
+      setStep("success");
+      setSuccess("Đặt lại mật khẩu thành công!");
+    } catch (err: any) {
+      console.error(err);
+      setError("Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      setLoading(true);
+      await authService.resendOtp();
+      setSuccess("Mã OTP mới đã được gửi!");
+    } catch (err: any) {
+      console.error(err);
+      setError("Không thể gửi lại OTP. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -77,91 +132,237 @@ const ForgotPassword: React.FC = () => {
 
             {/* Header */}
             <div className="text-center mt-8 mb-8">
-              <h2 className="text-3xl font-bold text-zinc-900 mb-2 tracking-tight">
-                Quên mật khẩu?
-              </h2>
-              <p className="text-gray-500 text-sm">
-                Nhập email của bạn để nhận liên kết đặt lại mật khẩu
-              </p>
+              {step === "email" && (
+                <>
+                  <h2 className="text-3xl font-bold text-zinc-900 mb-2 tracking-tight">
+                    Quên mật khẩu?
+                  </h2>
+                  <p className="text-gray-500 text-sm">
+                    Nhập email của bạn để nhận mã OTP
+                  </p>
+                </>
+              )}
+              {step === "otp" && (
+                <>
+                  <h2 className="text-3xl font-bold text-zinc-900 mb-2 tracking-tight">
+                    Nhập mã OTP
+                  </h2>
+                  <p className="text-gray-500 text-sm">
+                    Mã OTP đã được gửi đến {email}
+                  </p>
+                </>
+              )}
+              {step === "success" && (
+                <>
+                  <h2 className="text-3xl font-bold text-zinc-900 mb-2 tracking-tight">
+                    Thành công!
+                  </h2>
+                  <p className="text-gray-500 text-sm">
+                    Mật khẩu đã được đặt lại thành công
+                  </p>
+                </>
+              )}
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
-                  Email
-                </label>
-                <div className="relative group">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300">
-                    <Mail size={20} />
+            {/* Step 1: Email */}
+            {step === "email" && (
+              <form onSubmit={handleSendOtp} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+                    Email
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300">
+                      <Mail size={20} />
+                    </div>
+                    <input
+                      type="email"
+                      required
+                      className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl 
+                        text-zinc-800 placeholder-gray-400
+                        focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 
+                        transition-all duration-300 hover:border-zinc-300"
+                      placeholder="example@gmail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
                   </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl 
-                      text-zinc-800 placeholder-gray-400
-                      focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 
-                      transition-all duration-300 hover:border-zinc-300"
-                    placeholder="example@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
                 </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-zinc-900 text-yellow-400 py-3 rounded-xl font-bold 
+                    hover:bg-black hover:shadow-lg hover:shadow-yellow-400/20 
+                    active:scale-[0.98] transition-all duration-300 
+                    flex justify-center items-center gap-2 border border-zinc-800
+                    disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      <span>Đang gửi...</span>
+                    </>
+                  ) : (
+                    "Gửi mã OTP"
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Step 2: OTP + New Password */}
+            {step === "otp" && (
+              <form onSubmit={handleResetPassword} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+                    Mã OTP
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300">
+                      <Key size={20} />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl 
+                        text-zinc-800 placeholder-gray-400
+                        focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 
+                        transition-all duration-300 hover:border-zinc-300"
+                      placeholder="Nhập mã OTP 6 số"
+                      value={otp}
+                      onChange={(e) =>
+                        setOtp(e.target.value.replace(/\D/g, ""))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+                    Mật khẩu mới
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300">
+                      <Lock size={20} />
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl 
+                        text-zinc-800 placeholder-gray-400
+                        focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 
+                        transition-all duration-300 hover:border-zinc-300"
+                      placeholder="Nhập mật khẩu mới"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+                    Xác nhận mật khẩu
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300">
+                      <Lock size={20} />
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl 
+                        text-zinc-800 placeholder-gray-400
+                        focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 
+                        transition-all duration-300 hover:border-zinc-300"
+                      placeholder="Nhập lại mật khẩu mới"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-zinc-900 text-yellow-400 py-3 rounded-xl font-bold 
+                    hover:bg-black hover:shadow-lg hover:shadow-yellow-400/20 
+                    active:scale-[0.98] transition-all duration-300 
+                    flex justify-center items-center gap-2 border border-zinc-800
+                    disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      <span>Đang đặt lại...</span>
+                    </>
+                  ) : (
+                    "Đặt lại mật khẩu"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={loading}
+                  className="w-full text-zinc-600 hover:text-zinc-900 py-2 text-sm font-medium transition-colors"
+                >
+                  Gửi lại mã OTP
+                </button>
+              </form>
+            )}
+
+            {/* Step 3: Success */}
+            {step === "success" && (
+              <div className="text-center space-y-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg
+                    className="w-8 h-8 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="w-full bg-zinc-900 text-yellow-400 py-3 rounded-xl font-bold 
+                    hover:bg-black hover:shadow-lg hover:shadow-yellow-400/20 
+                    active:scale-[0.98] transition-all duration-300 
+                    flex justify-center items-center gap-2 border border-zinc-800"
+                >
+                  Đăng nhập ngay
+                </button>
               </div>
+            )}
 
-              {/* Error message */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-red-500 text-sm font-medium bg-red-50 py-2 px-3 rounded-lg text-center"
-                >
-                  {error}
-                </motion.div>
-              )}
-
-              {/* Success message */}
-              {success && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-green-600 text-sm font-medium bg-green-50 py-2 px-3 rounded-lg text-center"
-                >
-                  {success}
-                </motion.div>
-              )}
-
-              {/* Submit button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-zinc-900 text-yellow-400 py-3 rounded-xl font-bold 
-                  hover:bg-black hover:shadow-lg hover:shadow-yellow-400/20 
-                  active:scale-[0.98] transition-all duration-300 
-                  flex justify-center items-center gap-2 border border-zinc-800
-                  disabled:opacity-60 disabled:cursor-not-allowed"
+            {/* Error message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-500 text-sm font-medium bg-red-50 py-2 px-3 rounded-lg text-center mt-4"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    <span>Đang gửi...</span>
-                  </>
-                ) : (
-                  "Gửi liên kết đặt lại"
-                )}
-              </button>
-            </form>
+                {error}
+              </motion.div>
+            )}
 
-            {/* Footer info */}
-            <div className="mt-6 text-center">
-              <p className="text-xs text-gray-500">
-                Bạn sẽ nhận được email chứa hướng dẫn đặt lại mật khẩu trong vài
-                phút
-              </p>
-            </div>
+            {/* Success message */}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-green-600 text-sm font-medium bg-green-50 py-2 px-3 rounded-lg text-center mt-4"
+              >
+                {success}
+              </motion.div>
+            )}
           </div>
         </motion.div>
       </div>

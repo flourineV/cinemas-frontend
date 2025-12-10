@@ -12,8 +12,16 @@ export const promotionService = {
     return res.data;
   },
 
+  // Lấy các khuyến mãi đang active
+  getActivePromotions: async (): Promise<PromotionResponse[]> => {
+    const res = await promotionClient.get<PromotionResponse[]>("/active");
+    return res.data;
+  },
+
   // Validate promotion code
-  validatePromotionCode: async (code: string): Promise<PromotionValidationResponse> => {
+  validatePromotionCode: async (
+    code: string
+  ): Promise<PromotionValidationResponse> => {
     const res = await promotionClient.get<PromotionValidationResponse>(
       `/validate?code=${code}`
     );
@@ -21,13 +29,18 @@ export const promotionService = {
   },
 
   // Tạo mới promotion
-  createPromotion: async (data: PromotionRequest): Promise<PromotionResponse> => {
+  createPromotion: async (
+    data: PromotionRequest
+  ): Promise<PromotionResponse> => {
     const res = await promotionClient.post<PromotionResponse>("", data);
     return res.data;
   },
 
   // Cập nhật promotion
-  updatePromotion: async (id: string, data: PromotionRequest): Promise<PromotionResponse> => {
+  updatePromotion: async (
+    id: string,
+    data: PromotionRequest
+  ): Promise<PromotionResponse> => {
     const res = await promotionClient.put<PromotionResponse>(`/${id}`, data);
     return res.data;
   },

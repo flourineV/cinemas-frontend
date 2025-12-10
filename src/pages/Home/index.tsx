@@ -2,10 +2,8 @@ import Layout from "../../components/layout/Layout";
 import {
   ChevronLeft,
   ChevronRight,
-  MapPin,
   Clock,
   Globe,
-  ShieldAlert,
   ShieldCheck,
   TableProperties,
 } from "lucide-react";
@@ -19,11 +17,14 @@ import { useCarousel } from "@/hooks/useCarousel";
 
 // API service + types
 import { movieService } from "@/services/movie/movieService";
+import { promotionService } from "@/services/promotion/promotionService";
 import type { MovieSummary } from "@/types/movie/movie.type";
+import type { PromotionResponse } from "@/types/promotion/promotion.type";
 
 // Components
 import QuickBookingBar from "../../components/home/QuickBookingBar";
 import TrailerModal from "@/components/movie/TrailerModal";
+import ContactForm from "@/components/contact/ContactForm";
 // Utils
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import {
@@ -36,6 +37,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
   const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
+  const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
   const [loadingNowPlaying, setLoadingNowPlaying] = useState(true);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [catAnimation, setCatAnimation] = useState<any>(null);
@@ -84,12 +86,35 @@ const Home = () => {
   useEffect(() => {
     movieService
       .getNowPlaying(0, 12)
-      .then((res) => setNowPlaying(res.content || []))
+      .then((res) => {
+        console.log("Now Playing Response:", res);
+        setNowPlaying(res.content || []);
+      })
+      .catch((err) => {
+        console.error("Error fetching now playing:", err);
+        setNowPlaying([]);
+      })
       .finally(() => setLoadingNowPlaying(false));
+
     movieService
       .getUpcoming(0, 12)
-      .then((res) => setUpcoming(res.content || []))
+      .then((res) => {
+        console.log("Upcoming Response:", res);
+        setUpcoming(res.content || []);
+      })
+      .catch((err) => {
+        console.error("Error fetching upcoming:", err);
+        setUpcoming([]);
+      })
       .finally(() => setLoadingUpcoming(false));
+
+    promotionService
+      .getAllPromotions()
+      .then((res) => {
+        console.log("Promotions Response:", res);
+        setPromotions(res || []);
+      })
+      .catch((err) => console.error("Error fetching promotions:", err));
   }, []);
 
   // Carousels
@@ -345,6 +370,75 @@ const Home = () => {
               </Link>
             </div>
           )}
+        </section>
+
+        {/* ---------------- KHUYẾN MÃI ---------------- */}
+        {promotions.length > 0 && (
+          <section className="relative w-full max-w-5xl mx-auto mt-20">
+            <div className="relative flex items-center justify-center mb-10">
+              <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
+                KHUYẾN MÃI HOT
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 py-6">
+              {promotions.map((promo) => (
+                <div
+                  key={promo.id}
+                  className="relative bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all"
+                >
+                  {promo.promoDisplayUrl ? (
+                    <img
+                      src={promo.promoDisplayUrl}
+                      alt={promo.code}
+                      className="w-full h-48 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-48 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
+                      <div className="text-center p-6">
+                        <p className="text-4xl font-extrabold text-white mb-2">
+                          {promo.discountType === "PERCENTAGE"
+                            ? `${promo.discountValue}%`
+                            : `${promo.discountValue.toLocaleString()}đ`}
+                        </p>
+                        <p className="text-sm text-white/90">GIẢM GIÁ</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-4 bg-white">
+                    <p className="text-lg font-bold text-gray-900 mb-1 text-center mb-3">
+                      {promo.code}
+                    </p>
+                    {promo.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                        {promo.description}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mb-5">
+                      HSD: {new Date(promo.endDate).toLocaleDateString("vi-VN")}
+                    </p>
+                    <AnimatedButton
+                      variant="orange-to-f3ea28"
+                      className="w-full"
+                      onClick={() => navigate("/movies/now-playing")}
+                    >
+                      ĐẶT VÉ NGAY
+                    </AnimatedButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ---------------- LIÊN HỆ ---------------- */}
+        <section className="relative w-full max-w-5xl mx-auto mt-20 mb-10">
+          <div className="relative flex items-center justify-center mb-16">
+            <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
+              LIÊN HỆ VỚI CHÚNG TÔI
+            </h2>
+          </div>
+          <ContactForm />
         </section>
       </div>
     </Layout>

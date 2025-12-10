@@ -5,6 +5,9 @@ import RedirectReset from "@/pages/Auth/RedirectReset";
 import ResetPassword from "@/pages/Auth/ResetPassword";
 import About from "@/pages/About";
 import Promotions from "@/pages/Promotions";
+import PopcornDrinkPage from "@/pages/FnB/PopcornDrinkPage";
+import FnbCheckoutPage from "@/pages/FnB/FnbCheckoutPage";
+import ShowtimePage from "@/pages/Showtime/ShowtimePage";
 import Profile from "@/pages/Profile";
 import MovieDetailPage from "@/pages/Movie/MovieDetailPage";
 import NowPlayingPage from "@/pages/Movie/NowPlayingPage";
@@ -15,6 +18,7 @@ import StaffDashboard from "@/pages/Dashboard/Staff/StaffDashboard";
 import CheckoutPage from "@/pages/Checkout/CheckoutPage";
 import PaymentResult from "@/pages/Payment/PaymentResult";
 import TheaterDetail from "@/pages/Theater/TheaterDetail";
+import SearchPage from "@/pages/Search/SearchPage";
 
 import { UserRole } from "@/constants/UserRole";
 
@@ -22,6 +26,10 @@ export const publicRoutes = [
   { path: "/", element: <Home /> },
   { path: "/about", element: <About /> },
   { path: "/promotions", element: <Promotions /> },
+  { path: "/showtime", element: <ShowtimePage /> },
+  { path: "/popcorn-drink", element: <PopcornDrinkPage /> },
+  { path: "/fnb-checkout", element: <FnbCheckoutPage /> },
+  { path: "/search", element: <SearchPage /> },
   { path: "/movies/now-playing", element: <NowPlayingPage /> },
   { path: "/movies/upcoming", element: <UpcomingPage /> },
   { path: "/movies/:id", element: <MovieDetailPage /> },

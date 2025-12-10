@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { movieService } from "@/services/movie/movieService";
 import { getPosterUrl } from "@/utils/getPosterUrl";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { MovieSummary } from "@/types/movie/movie.type";
 import TrailerModal from "@/components/movie/TrailerModal";
-import { MapPin, Clock, Globe, ShieldAlert } from "lucide-react";
+import AnimatedButton from "@/components/ui/AnimatedButton";
+import { TableProperties, Clock, Globe, ShieldCheck } from "lucide-react";
 import {
   formatTitle,
   formatGenres,
@@ -14,6 +14,7 @@ import {
 } from "@/utils/format";
 
 const UpcomingPage = () => {
+  const navigate = useNavigate();
   const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,90 +27,104 @@ const UpcomingPage = () => {
 
   return (
     <Layout>
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-7xl mx-auto mt-12 px-4 text-white"
-      >
-        <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-400 text-center mb-8">
-          PHIM SẮP CHIẾU
-        </h1>
+      <div className="w-full min-h-screen pb-16 bg-gray-100">
+        <section className="w-full max-w-5xl mx-auto pt-8 px-4">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-500 text-center mb-8">
+            PHIM SẮP CHIẾU
+          </h1>
 
-        {loading ? (
-          <p className="text-center text-gray-400">Đang tải phim...</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-10">
-            {upcoming.map((movie, index) => (
-              <motion.div
-                key={movie.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="group relative flex flex-col transition"
-              >
-                {/* Poster */}
-                <Link
-                  to={`/movies/${movie.id}`}
-                  className="group relative flex flex-col transition"
-                >
-                  <div className="relative rounded-sm border border-gray-500 overflow-hidden shadow-md">
-                    <img
-                      src={getPosterUrl(movie.posterUrl)}
-                      alt={movie.title}
-                      className="w-full h-[450px] object-cover transition-transform duration-300 transform group-hover:scale-105"
-                    />
-                    {/* Overlay info khi hover */}
-                    <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center p-4 text-left">
-                      <h3 className="text-lg font-bold text-white mb-2">
-                        {formatTitle(movie.title)}
-                      </h3>
-                      <p className="text-xs font-light mb-1 flex items-center text-white">
-                        <MapPin size={14} className="mr-2 text-red-500" />{" "}
-                        {formatGenres(movie.genres)}
-                      </p>
-                      <p className="text-xs font-light mb-1 flex items-center text-white">
-                        <Clock size={14} className="mr-2 text-red-500" />{" "}
-                        {movie.time}’
-                      </p>
-                      <p className="text-xs font-light mb-1 flex items-center text-white">
-                        <Globe size={14} className="mr-2 text-red-500" />{" "}
-                        {formatSpokenLanguages(movie.spokenLanguages)}
-                      </p>
-                      <p className="text-xs font-light flex items-center text-white">
-                        <ShieldAlert size={14} className="mr-2 text-red-500" />{" "}
-                        {movie.age}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Tên phim bên dưới poster */}
-                  <div className="p-3 text-center text-white font-semibold h-[70px] flex items-center justify-center text-lg">
-                    {formatTitle(movie.title)}
-                  </div>
-                </Link>
-
-                {/* Trailer + Đặt vé */}
+          {loading ? (
+            <div className="flex justify-center items-center py-32">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+            </div>
+          ) : upcoming.length === 0 ? (
+            <div className="text-center py-32">
+              <p className="text-black text-lg">
+                Hiện tại chưa có phim nào sắp chiếu
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-16 py-6">
+              {upcoming.map((movie) => (
                 <div
-                  className={`flex w-full mt-2 space-x-2 px-3 pb-3 ${
-                    movie.trailer ? "justify-start" : "justify-center"
-                  }`}
+                  key={movie.id}
+                  className="relative flex flex-col transition"
                 >
-                  {movie.trailer && (
-                    <TrailerModal
-                      trailerUrl={movie.trailer}
-                      buttonLabel="Trailer"
-                    />
-                  )}
-                  <button className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2 px-3 rounded-sm transition-colors w-1/2">
-                    ĐẶT VÉ
-                  </button>
+                  <div className="group">
+                    <Link
+                      to={`/movies/${movie.id}`}
+                      className="relative flex flex-col transition"
+                    >
+                      <div className="relative rounded-sm border border-black overflow-hidden shadow-xl">
+                        <img
+                          src={getPosterUrl(movie.posterUrl)}
+                          alt={movie.title}
+                          className="w-full h-[400px] object-cover transition-transform duration-300 transform group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-4">
+                          <div className="text-white text-left">
+                            <h3 className="text-lg font-bold mb-2">
+                              {formatTitle(movie.title)}
+                            </h3>
+                            <p className="text-xs font-light mb-1 flex items-center">
+                              <TableProperties
+                                size={23}
+                                className="mr-2 text-orange-500 flex-shrink-0"
+                              />
+                              {formatGenres(movie.genres)}
+                            </p>
+                            <p className="text-xs font-light mb-2 flex items-center">
+                              <Clock
+                                size={23}
+                                className="mr-2 text-orange-500 flex-shrink-0"
+                              />
+                              {movie.time}'
+                            </p>
+                            <p className="text-xs font-light mb-2 flex items-center">
+                              <Globe
+                                size={23}
+                                className="mr-2 text-orange-500 flex-shrink-0"
+                              />
+                              {formatSpokenLanguages(movie.spokenLanguages)}
+                            </p>
+                            <p className="text-xs font-light flex items-center">
+                              <ShieldCheck
+                                size={23}
+                                className="mr-2 text-orange-500 flex-shrink-0"
+                              />
+                              {movie.age}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-2 flex items-center justify-center text-center text-black text-base font-extrabold h-[70px] uppercase">
+                        {formatTitle(movie.title)}
+                      </div>
+                    </Link>
+                  </div>
+                  <div
+                    className={`flex w-full mt-2 space-x-2 ${movie.trailer ? "justify-start" : "justify-center"}`}
+                  >
+                    {movie.trailer && (
+                      <TrailerModal
+                        trailerUrl={movie.trailer}
+                        buttonLabel="Trailer"
+                      />
+                    )}
+                    <AnimatedButton
+                      variant="orange-to-f3ea28"
+                      className="w-1/2"
+                      onClick={() => navigate(`/movies/${movie.id}`)}
+                    >
+                      ĐẶT VÉ
+                    </AnimatedButton>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.section>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </Layout>
   );
 };

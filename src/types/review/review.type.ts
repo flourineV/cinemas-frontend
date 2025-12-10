@@ -20,3 +20,17 @@ export interface ReviewResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface RatingRequest {
+  userId?: string; // Will be set by backend
+  rating: number;
+}
+
+export interface RatingResponse {
+  id: string;
+  movieId: string;
+  userId: string;
+  rating: number;
+  createdAt: string;
+  updatedAt: string;
+}
