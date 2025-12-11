@@ -16,7 +16,7 @@ const ForgotPassword: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -85,14 +85,14 @@ const ForgotPassword: React.FC = () => {
     setSuccess("");
 
     try {
-      setLoading(true);
+      setResendLoading(true);
       await authService.resendOtp({ email });
       setSuccess("Mã OTP mới đã được gửi!");
     } catch (err: any) {
       console.error(err);
       setError("Vui lòng resend sau 5p nữa");
     } finally {
-      setLoading(false);
+      setResendLoading(false);
     }
   };
 
@@ -309,10 +309,17 @@ const ForgotPassword: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  disabled={loading}
-                  className="w-full text-zinc-600 hover:text-zinc-900 py-2 text-sm font-medium transition-colors"
+                  disabled={resendLoading}
+                  className="w-full text-zinc-600 hover:text-zinc-900 py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                 >
-                  Gửi lại mã OTP
+                  {resendLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      <span>Đang gửi...</span>
+                    </>
+                  ) : (
+                    "Gửi lại mã OTP"
+                  )}
                 </button>
               </form>
             )}
