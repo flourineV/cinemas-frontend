@@ -14,6 +14,7 @@ export interface MovieSummary {
   startDate: string;
   endDate?: string;
   popularity?: number;
+  voteAverage?: number;
 }
 
 export interface MovieDetail {
@@ -35,4 +36,5 @@ export interface MovieDetail {
   startDate?: string;
   endDate?: string;
   popularity?: number;
+  voteAverage?: number;
 }

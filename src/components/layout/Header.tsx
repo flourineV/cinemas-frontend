@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { User, ChevronDown, Search } from "lucide-react";
+import { User, ChevronDown, Search, Settings } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -11,6 +11,10 @@ const Header = () => {
   const { user, signout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Check if user has access to dashboard
+  const hasAdminAccess =
+    user && ["admin", "manager", "staff"].includes(user.role);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,15 +114,29 @@ const Header = () => {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
                       <Link
                         to="/profile"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
+                        <User className="w-4 h-4" />
                         Hồ sơ cá nhân
                       </Link>
+
+                      {hasAdminAccess && (
+                        <Link
+                          to={`/dashboard/${user.role}`}
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Bảng điều khiển
+                        </Link>
+                      )}
+
+                      <hr className="my-1 border-gray-200" />
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

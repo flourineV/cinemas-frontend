@@ -4,7 +4,6 @@ import type {
   SignInRequest,
   JwtResponse,
   TokenRefreshRequest,
-  ForgotPasswordRequest,
   ResetPasswordRequest,
 } from "@/types/auth/auth.type";
 

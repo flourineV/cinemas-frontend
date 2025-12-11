@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import ShowtimeForm from "./ShowtimeForm";
+import OverviewShowtimeCards from "./OverviewShowtimeCards";
+import AddShowtimeForm from "./AddShowtimeForm";
 import ShowtimeTable from "./ShowtimeTable";
 
 export default function ShowtimeManagement(): React.JSX.Element {
@@ -10,7 +11,14 @@ export default function ShowtimeManagement(): React.JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Showtime Stats Overview */}
+      <OverviewShowtimeCards />
+
+      {/* Add Showtime Form */}
+      <AddShowtimeForm onSuccess={handleFormSuccess} />
+
+      {/* Showtime Table */}
       <ShowtimeTable refreshTrigger={refreshTrigger} />
     </div>
   );

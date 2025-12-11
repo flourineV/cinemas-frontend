@@ -1,11 +1,13 @@
 // src/app/(admin)/AdminDashboard.tsx  (hoặc đường dẫn file bạn đang dùng)
 "use client";
 import React, { useState } from "react";
-import Layout from "../../../components/layout/Layout";
+import Header from "../../../components/layout/Header";
 import { useAuthStore } from "@/stores/authStore";
+import { useScrollToTop } from "@/hooks/useScrollToTop";
 
 import OverviewCards from "@/components/admin/accounts/OverviewUserCards";
 import UserRegistrationChart from "@/components/admin/accounts/UserRegistrationChart";
+import RankDistributionChart from "@/components/admin/accounts/RankDistributionChart";
 import UserManagementTable from "@/components/admin/accounts/UserManagementTable";
 import MovieManagementTable from "@/components/admin/movies/MovieManagementTable";
 import ShowtimeManagement from "@/components/admin/showtimes/ShowtimeManagement";
@@ -21,80 +23,105 @@ type Tab = {
 const TABS: Tab[] = [
   {
     id: "accounts",
-    label: "Tài khoản",
+    label: "Quản lý tài khoản",
   },
-  { id: "facilities", label: "Quản lý cơ sở vật chất" },
-  { id: "reports", label: "Quản lý phim" },
+  { id: "movies", label: "Quản lý phim" },
   {
     id: "showtimes",
     label: "Quản lý lịch chiếu",
   },
   {
     id: "bookings",
-    label: "Quản lý giao dịch & thanh toán",
+    label: "Quản lý đặt vé",
   },
-  { id: "logs", label: "Quản lý dịch vụ" },
+  {
+    id: "payments",
+    label: "Quản lý thanh toán",
+  },
+  {
+    id: "notifications",
+    label: "Quản lý thông báo",
+  },
+  { id: "reviews", label: "Quản lý đánh giá" },
+  { id: "facilities", label: "Quản lý cơ sở vật chất" },
+  { id: "promotions", label: "Quản lý mã giảm giá" },
 ];
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<string>("accounts");
 
+  // Scroll to top when route changes
+  useScrollToTop();
+
   return (
-    <Layout>
-      <div className="min-h-screen bg-white">
-        <div className="flex">
-          {/* SIDEBAR */}
-          <div className="w-64 min-h-screen bg-white border-r border-gray-200 shadow-sm">
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                Admin Panel
-              </h1>
-              <p className="text-sm text-gray-600 mb-6">
-                Chào mừng {user?.username ?? "Quản trị viên"}
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="flex">
+        {/* SIDEBAR - Fixed */}
+        <div className="w-64 bg-white border-r border-gray-400 shadow-lg fixed h-full top-0 z-10 pt-16">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              Bảng Điều Khiển
+            </h1>
+            <p className="text-sm text-gray-600 mb-6">
+              Chào mừng {user?.username ?? "Quản trị viên"}
+            </p>
 
-              {/* SIDEBAR NAVIGATION */}
-              <nav className="space-y-2">
-                {TABS.map((tab) => {
-                  const isActive = tab.id === activeTab;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        isActive
-                          ? "bg-yellow-500 text-white shadow-sm"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
+            {/* SIDEBAR NAVIGATION */}
+            <nav className="space-y-2">
+              {TABS.map((tab) => {
+                const isActive = tab.id === activeTab;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      // Scroll to top instantly when switching tabs
+                      window.scrollTo({ top: 0, behavior: "auto" });
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-yellow-500 text-white shadow-md"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
+        </div>
 
-          {/* MAIN CONTENT */}
-          <div className="flex-1 p-8">
+        {/* MAIN CONTENT - Scrollable */}
+        <div className="flex-1 ml-64 pt-16">
+          <div className="p-8">
             <div className="max-w-6xl mx-auto">
               {activeTab === "accounts" && (
                 <div className="space-y-8">
                   <section>
-                    <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                      Tổng quan hệ thống tài khoản
-                    </h2>
                     <OverviewCards />
                   </section>
 
-                  <section>
-                    <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                      Biểu đồ: Số tài khoản đăng ký rạp (theo tháng)
-                    </h2>
-                    <UserRegistrationChart />
+                  <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                    <div className="flex flex-col">
+                      <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+                        Số tài khoản đăng ký rạp (theo tháng)
+                      </h2>
+                      <div className="flex-1">
+                        <UserRegistrationChart />
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+                        Phân bố hạng thành viên
+                      </h2>
+                      <div className="flex-1">
+                        <RankDistributionChart />
+                      </div>
+                    </div>
                   </section>
-
                   <section>
                     <h2 className="text-2xl font-semibold mb-6 text-gray-800">
                       Bảng quản lý tài khoản
@@ -113,7 +140,7 @@ const AdminDashboard: React.FC = () => {
                 </section>
               )}
 
-              {activeTab === "reports" && (
+              {activeTab === "movies" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
                     Quản lý phim
@@ -159,7 +186,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

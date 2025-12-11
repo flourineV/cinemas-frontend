@@ -58,4 +58,23 @@ export const movieManagementService = {
       params: { reason },
     });
   },
+
+  // Bulk add movies from TMDB
+  bulkFromTmdb: async (payload: {
+    tmdbIds: number[];
+    startDate: string;
+    endDate: string;
+  }): Promise<{
+    totalRequests: number;
+    successCount: number;
+    failedCount: number;
+    results: Array<{
+      tmdbId: number;
+      success: boolean;
+      message?: string;
+    }>;
+  }> => {
+    const res = await movieClient.post("/bulk-from-tmdb", payload);
+    return res.data;
+  },
 };

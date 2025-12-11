@@ -1,13 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../../components/layout/Layout";
-import { userProfileService } from "@/services/userprofile/userProfileService";
+import {
+  userProfileService,
+  loyaltyHistoryService,
+} from "@/services/userprofile";
 import { bookingService } from "@/services/booking/booking.service";
 import { movieService } from "@/services/movie/movieService";
-import type { UserProfileResponse } from "@/types/userprofile/userprofile.type";
+import type {
+  UserProfileResponse,
+  LoyaltyHistoryItem,
+} from "@/types/userprofile";
 import { useAuthStore } from "../../stores/authStore";
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import { useNavigate } from "react-router-dom";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import {
   User,
   Award,
@@ -19,6 +26,8 @@ import {
   Heart,
   Ticket,
   TrendingUp,
+  Camera,
+  Upload,
 } from "lucide-react";
 
 type TabType = "info" | "bookings" | "favorites" | "loyalty";
@@ -32,12 +41,22 @@ const Profile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState<Partial<UserProfileResponse>>({});
   const [activeTab, setActiveTab] = useState<TabType>("info");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [displayedBookings, setDisplayedBookings] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [hasMoreBookings, setHasMoreBookings] = useState(true);
   const [favoriteMovies, setFavoriteMovies] = useState<any[]>([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [loyaltyHistory, setLoyaltyHistory] = useState<LoyaltyHistoryItem[]>(
+    []
+  );
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+
+  // Lock body scroll when modal is open
+  useBodyScrollLock(isModalOpen);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -112,6 +131,30 @@ const Profile = () => {
     }
   }, [user?.id, activeTab]);
 
+  // Fetch loyalty history
+  useEffect(() => {
+    const fetchLoyaltyHistory = async () => {
+      if (!user?.id) return;
+      setLoyaltyLoading(true);
+      try {
+        const response = await loyaltyHistoryService.getUserLoyaltyHistory(
+          user.id,
+          1,
+          20
+        );
+        setLoyaltyHistory(response.content);
+      } catch (error) {
+        console.error("Lỗi khi lấy lịch sử điểm thưởng:", error);
+      } finally {
+        setLoyaltyLoading(false);
+      }
+    };
+
+    if (activeTab === "loyalty") {
+      fetchLoyaltyHistory();
+    }
+  }, [user?.id, activeTab]);
+
   const loadMoreBookings = () => {
     const currentLength = displayedBookings.length;
     const nextBatch = bookings.slice(currentLength, currentLength + 10);
@@ -119,20 +162,47 @@ const Profile = () => {
     setHasMoreBookings(currentLength + 10 < bookings.length);
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAvatarPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     if (!user?.id) return;
     setIsSaving(true);
     try {
+      let avatarUrl = editData.avatarUrl;
+
+      // Upload avatar if a new file is selected
+      if (avatarFile) {
+        const uploadResult = await userProfileService.uploadAvatar(
+          user.id,
+          avatarFile
+        );
+        avatarUrl = uploadResult.avatarUrl;
+      }
+
       const updated = await userProfileService.updateProfile(user.id, {
         fullName: editData.fullName,
         gender: editData.gender as "MALE" | "FEMALE" | "OTHER" | undefined,
         phoneNumber: editData.phoneNumber,
         address: editData.address,
-        avatarUrl: editData.avatarUrl,
+        avatarUrl: avatarUrl,
+        dateOfBirth: editData.dateOfBirth,
+        nationalId: editData.nationalId,
       });
       setProfile(updated);
       setEditData(updated);
       setIsModalOpen(false);
+      setAvatarFile(null);
+      setAvatarPreview("");
     } catch (error) {
       console.error("Lỗi khi cập nhật:", error);
       alert("Không thể lưu thông tin!");
@@ -204,6 +274,8 @@ const Profile = () => {
                     <button
                       onClick={() => {
                         setEditData(profile);
+                        setAvatarFile(null);
+                        setAvatarPreview("");
                         setIsModalOpen(true);
                       }}
                       className="px-4 py-1.5 bg-transparent border border-gray-300 text-gray-900 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
@@ -309,7 +381,7 @@ const Profile = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto"
+              className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
             >
               <InfoItem
                 label="Họ và tên"
@@ -332,12 +404,36 @@ const Profile = () => {
                         : "Chưa cập nhật"
                 }
               />
+              <InfoItem
+                label="Ngày sinh"
+                value={
+                  profile.dateOfBirth
+                    ? new Date(profile.dateOfBirth).toLocaleDateString("vi-VN")
+                    : "Chưa cập nhật"
+                }
+              />
+              <InfoItem
+                label="CMND/CCCD"
+                value={profile.nationalId || "Chưa cập nhật"}
+              />
               <div className="md:col-span-2">
                 <InfoItem
                   label="Địa chỉ"
                   value={profile.address || "Chưa cập nhật"}
                 />
               </div>
+              <InfoItem
+                label="Trạng thái"
+                value={profile.status === "ACTIVE" ? "Hoạt động" : "Bị khóa"}
+              />
+              <InfoItem
+                label="Ngày tạo"
+                value={
+                  profile.createdAt
+                    ? new Date(profile.createdAt).toLocaleDateString("vi-VN")
+                    : "N/A"
+                }
+              />
             </motion.div>
           )}
 
@@ -552,10 +648,72 @@ const Profile = () => {
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   Lịch sử điểm thưởng
                 </h3>
-                <div className="text-center py-16">
-                  <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Chưa có lịch sử giao dịch</p>
-                </div>
+                {loyaltyLoading ? (
+                  <div className="text-center py-16">
+                    <div className="text-gray-500">Đang tải...</div>
+                  </div>
+                ) : loyaltyHistory.length === 0 ? (
+                  <div className="text-center py-16">
+                    <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">Chưa có lịch sử giao dịch</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {loyaltyHistory.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                item.transactionType === "EARNED"
+                                  ? "bg-green-100 text-green-700"
+                                  : item.transactionType === "REDEEMED"
+                                    ? "bg-red-100 text-red-700"
+                                    : item.transactionType === "BONUS"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {item.transactionType === "EARNED"
+                                ? "Tích điểm"
+                                : item.transactionType === "REDEEMED"
+                                  ? "Đổi điểm"
+                                  : item.transactionType === "BONUS"
+                                    ? "Thưởng"
+                                    : "Hết hạn"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-900 font-medium">
+                            {item.description}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(item.createdAt).toLocaleString("vi-VN")}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`text-lg font-bold ${
+                              item.transactionType === "EARNED" ||
+                              item.transactionType === "BONUS"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {item.transactionType === "EARNED" ||
+                            item.transactionType === "BONUS"
+                              ? "+"
+                              : "-"}
+                            {Math.abs(item.points)}
+                          </span>
+                          <p className="text-xs text-gray-500">điểm</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -588,7 +746,11 @@ const Profile = () => {
                       Chỉnh sửa thông tin
                     </h2>
                     <button
-                      onClick={() => setIsModalOpen(false)}
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        setAvatarFile(null);
+                        setAvatarPreview("");
+                      }}
                       className="text-gray-400 hover:text-gray-600 transition"
                     >
                       <X className="w-6 h-6" />
@@ -596,81 +758,173 @@ const Profile = () => {
                   </div>
 
                   {/* Modal Body */}
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Họ và tên
-                      </label>
+                  <div className="p-6 space-y-6">
+                    {/* Avatar Upload Section */}
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-yellow-400 via-yellow-500 to-yellow-600 p-1">
+                          <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white">
+                            {avatarPreview ? (
+                              <img
+                                src={avatarPreview}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : editData.avatarUrl ? (
+                              <img
+                                src={editData.avatarUrl}
+                                alt="Avatar"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <User className="w-12 h-12 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-500 hover:bg-yellow-600 rounded-full flex items-center justify-center text-white transition"
+                        >
+                          <Camera className="w-4 h-4" />
+                        </button>
+                      </div>
                       <input
-                        type="text"
-                        value={editData.fullName || ""}
-                        onChange={(e) =>
-                          setEditData({ ...editData, fullName: e.target.value })
-                        }
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden"
                       />
+                      <p className="text-sm text-gray-500 text-center">
+                        Nhấn vào biểu tượng camera để thay đổi ảnh đại diện
+                      </p>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Số điện thoại
-                      </label>
-                      <input
-                        type="tel"
-                        value={editData.phoneNumber || ""}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            phoneNumber: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      />
-                    </div>
+                    {/* Form Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Họ và tên *
+                        </label>
+                        <input
+                          type="text"
+                          value={editData.fullName || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              fullName: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                          placeholder="Nhập họ và tên"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Giới tính
-                      </label>
-                      <select
-                        value={editData.gender || ""}
-                        onChange={(e) =>
-                          setEditData({
-                            ...editData,
-                            gender: e.target.value as
-                              | "MALE"
-                              | "FEMALE"
-                              | "OTHER",
-                          })
-                        }
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      >
-                        <option value="">Chọn giới tính</option>
-                        <option value="MALE">Nam</option>
-                        <option value="FEMALE">Nữ</option>
-                        <option value="OTHER">Khác</option>
-                      </select>
-                    </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Số điện thoại
+                        </label>
+                        <input
+                          type="tel"
+                          value={editData.phoneNumber || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              phoneNumber: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                          placeholder="Nhập số điện thoại"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Địa chỉ
-                      </label>
-                      <input
-                        type="text"
-                        value={editData.address || ""}
-                        onChange={(e) =>
-                          setEditData({ ...editData, address: e.target.value })
-                        }
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Giới tính
+                        </label>
+                        <select
+                          value={editData.gender || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              gender: e.target.value as
+                                | "MALE"
+                                | "FEMALE"
+                                | "OTHER",
+                            })
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        >
+                          <option value="">Chọn giới tính</option>
+                          <option value="MALE">Nam</option>
+                          <option value="FEMALE">Nữ</option>
+                          <option value="OTHER">Khác</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ngày sinh
+                        </label>
+                        <input
+                          type="date"
+                          value={editData.dateOfBirth || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              dateOfBirth: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          CMND/CCCD
+                        </label>
+                        <input
+                          type="text"
+                          value={editData.nationalId || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              nationalId: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                          placeholder="Nhập số CMND/CCCD"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Địa chỉ
+                        </label>
+                        <textarea
+                          value={editData.address || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              address: e.target.value,
+                            })
+                          }
+                          rows={3}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                          placeholder="Nhập địa chỉ đầy đủ"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* Modal Footer */}
                   <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
                     <button
-                      onClick={() => setIsModalOpen(false)}
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        setAvatarFile(null);
+                        setAvatarPreview("");
+                      }}
                       className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
                     >
                       Hủy

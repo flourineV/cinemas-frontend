@@ -46,4 +46,20 @@ export const movieService = {
     const res = await movieClient.get<MovieDetail>(`/${id}`);
     return res.data;
   },
+
+  // Get movie stats overview
+  getStatsOverview: async (): Promise<{
+    totalMovies: number;
+    nowPlaying: number;
+    upcoming: number;
+    archived: number;
+  }> => {
+    const res = await movieClient.get<{
+      totalMovies: number;
+      nowPlaying: number;
+      upcoming: number;
+      archived: number;
+    }>("/stats/overview");
+    return res.data;
+  },
 };

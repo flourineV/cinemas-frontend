@@ -12,6 +12,7 @@ import type { UserRegistrationStatsResponse } from "@/types/auth/stats.type";
 import { userAdminService } from "@/services/auth/userService";
 import { Download } from "lucide-react";
 import Swal from "sweetalert2";
+import * as XLSX from "xlsx";
 
 export default function UserRegistrationChart() {
   const [data, setData] = useState<UserRegistrationStatsResponse[]>([]);
@@ -53,63 +54,96 @@ export default function UserRegistrationChart() {
     URL.revokeObjectURL(url);
     Swal.fire({
       icon: "success",
-      title: "Exported",
+      title: "Đã xuất file CSV",
       timer: 1200,
       showConfirmButton: false,
-      background: "#0b1020",
-      color: "#fff",
+    });
+  }
+
+  function exportExcel() {
+    // Tạo workbook
+    const wb = XLSX.utils.book_new();
+
+    // Tạo worksheet data
+    const wsData = [
+      ["Năm", "Tháng", "Tổng số đăng ký"],
+      ...data.map((r) => [r.year, r.month, r.total]),
+    ];
+
+    // Tạo worksheet
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Tự động điều chỉnh độ rộng cột
+    const colWidths = [
+      { wch: 10 }, // Năm
+      { wch: 10 }, // Tháng
+      { wch: 20 }, // Tổng số đăng ký
+    ];
+    ws["!cols"] = colWidths;
+
+    // Thêm worksheet vào workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Thống kê đăng ký");
+
+    // Xuất file
+    XLSX.writeFile(
+      wb,
+      `user_registrations_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
+
+    Swal.fire({
+      icon: "success",
+      title: "Đã xuất file Excel",
+      timer: 1200,
+      showConfirmButton: false,
     });
   }
 
   return (
-    <div
-      className="
-      bg-black/60 backdrop-blur-md 
-      border border-yellow-400/40  
-      rounded-2xl shadow-2xl p-6
-      text-white
-    "
-    >
-      <div className="flex items-center justify-end mb-8">
+    <div className="bg-white border border-gray-400 rounded-lg p-6">
+      <div className="flex items-center justify-end mb-6 gap-2">
         <button
           onClick={exportCSV}
-          className="
-          flex items-center gap-2 px-3 py-1.5 
-          border border-yellow-400/40 
-          rounded-lg text-sm bg-black/40 
-          hover:bg-black/60 transition
-        "
+          className="flex items-center gap-2 px-3 py-2 border border-gray-400 rounded-lg text-sm bg-white text-gray-700 hover:bg-gray-50 transition"
         >
           <Download size={16} /> Export CSV
+        </button>
+
+        <button
+          onClick={exportExcel}
+          className="flex items-center gap-2 px-3 py-2 border border-gray-400 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 transition"
+        >
+          <Download size={16} /> Export Excel
         </button>
       </div>
 
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#979797ff" />
-            <XAxis dataKey="name" stroke="#e5e5e5" />
-            <YAxis allowDecimals={false} stroke="#e5e5e5" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="name" stroke="#6b7280" />
+            <YAxis allowDecimals={false} stroke="#6b7280" />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#0b1020",
-                borderColor: "#2d2d2d",
-                color: "#fff",
+                backgroundColor: "#ffffff",
+                borderColor: "#d1d5db",
+                color: "#374151",
+                borderRadius: "8px",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
               }}
-              itemStyle={{ color: "#fff" }}
+              itemStyle={{ color: "#374151" }}
             />
             <Line
               type="monotone"
               dataKey="total"
-              stroke="#facc15"
+              stroke="#3b82f6"
               strokeWidth={3}
-              dot={{ r: 4, stroke: "#facc15", fill: "#facc15" }}
+              dot={{ r: 4, stroke: "#3b82f6", fill: "#3b82f6" }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {loading && <div className="text-sm text-gray-400 mt-2">Loading...</div>}
+      {loading && <div className="text-sm text-gray-500 mt-2">Đang tải...</div>}
     </div>
   );
 }

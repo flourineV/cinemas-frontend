@@ -13,10 +13,7 @@ export const userProfileService = {
   createProfile: async (
     data: UserProfileRequest
   ): Promise<UserProfileResponse> => {
-    const res = await profileClient.post<UserProfileResponse>(
-      "/profiles",
-      data
-    );
+    const res = await profileClient.post<UserProfileResponse>("/", data);
     return res.data;
   },
 
@@ -38,12 +35,31 @@ export const userProfileService = {
     return res.data;
   },
 
+  uploadAvatar: async (
+    userId: string,
+    file: File
+  ): Promise<{ avatarUrl: string }> => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const res = await profileClient.post<{ avatarUrl: string }>(
+      `/${userId}/avatar`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return res.data;
+  },
+
   updateLoyalty: async (
     userId: string,
     loyaltyPoint: number
   ): Promise<UserProfileResponse> => {
     const res = await profileClient.patch<UserProfileResponse>(
-      `/profiles/${userId}/loyalty`,
+      `/${userId}/loyalty`,
       loyaltyPoint
     );
     return res.data;
@@ -55,7 +71,7 @@ export const userProfileService = {
     const res = await profileClient.get<{
       rankName: string;
       discountRate: number;
-    }>(`/profiles/${userId}/rank`);
+    }>(`/${userId}/rank`);
     return res.data;
   },
 
@@ -85,6 +101,18 @@ export const userProfileService = {
     const res = await profileClient.get<boolean>(
       `/favorites/check/${userId}/${tmdbId}`
     );
+    return res.data;
+  },
+
+  // Loyalty History
+  getLoyaltyHistory: async (
+    userId: string,
+    page: number = 1,
+    size: number = 10
+  ) => {
+    const res = await profileClient.get(`/loyalty-history/${userId}`, {
+      params: { page, size },
+    });
     return res.data;
   },
 };

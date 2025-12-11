@@ -42,7 +42,7 @@ export function CustomDropdown({
       <button
         onClick={() => !disabled && setIsOpen((s) => !s)}
         disabled={disabled}
-        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-black/40 border border-yellow-400/40 rounded-lg text-white hover:bg-black/50 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-white border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-50 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span>{displayText}</span>
         <ChevronDown
@@ -54,7 +54,7 @@ export function CustomDropdown({
 
       {isOpen && !disabled && (
         <div
-          className={`absolute right-0 w-48 rounded-md shadow-lg bg-black/60 backdrop-blur-md border border-yellow-400/40 z-20 animate-fadeIn ${positionClasses}`}
+          className={`absolute right-0 w-48 rounded-md shadow-lg bg-white border border-gray-400 z-20 animate-fadeIn ${positionClasses}`}
         >
           <div className="py-1">
             {options.map((option) => (
@@ -66,8 +66,8 @@ export function CustomDropdown({
                 }}
                 className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
                   value === option.value
-                    ? "text-yellow-300 bg-black/50 font-semibold"
-                    : "text-yellow-100/80 hover:bg-yellow-300 hover:text-black"
+                    ? "text-yellow-600 bg-yellow-50 font-semibold"
+                    : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 {option.label}

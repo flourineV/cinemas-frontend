@@ -82,6 +82,24 @@ export const showtimeService = {
     return res.data;
   },
 
+  async batchCreate(
+    payload: BatchShowtimeRequest
+  ): Promise<BatchShowtimeResponse> {
+    const res = await showtimeClient.post("/batch", payload);
+    return res.data;
+  },
+
+  async getStatsOverview(theaterId?: string): Promise<{
+    totalShowtimes: number;
+    activeShowtimes: number;
+    upcomingShowtimes: number;
+    weeklyShowtimes: number;
+  }> {
+    const params = theaterId ? { theaterId } : {};
+    const res = await showtimeClient.get("/stats/overview", { params });
+    return res.data;
+  },
+
   async updateShowtime(
     id: string,
     payload: ShowtimeRequest

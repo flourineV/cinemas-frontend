@@ -20,6 +20,8 @@ export interface UserProfileUpdateRequest {
   address?: string;
   avatarUrl?: string;
   gender?: Gender;
+  dateOfBirth?: string;
+  nationalId?: string;
 }
 
 export interface UserProfileResponse {

@@ -158,8 +158,8 @@ export default function BookingManagementTable(): React.JSX.Element {
     }
     return b.guestName ?? "Chưa có tên guest";
   };
-  const getShowtimeId = (b: BookingResponse) => b.showtimeId ?? "Chưa có id"; 
-  const getMovieTitle = (b: BookingResponse) => b.movieTitle ?? "Chưa có tên"; 
+  const getShowtimeId = (b: BookingResponse) => b.showtimeId ?? "Chưa có id";
+  const getMovieTitle = (b: BookingResponse) => b.movieTitle ?? "Chưa có tên";
   const getPrice = (b: BookingResponse) => b.finalPrice;
   const getPaymentMethod = (b: BookingResponse) => b.paymentMethod ?? "Chưa có";
 
@@ -183,7 +183,7 @@ export default function BookingManagementTable(): React.JSX.Element {
       getMovieTitle(b),
       b.status,
       getPaymentMethod(b),
-      getPrice(b)
+      getPrice(b),
     ]);
     const csv = [headers, ...rows]
       .map((r) =>
@@ -209,7 +209,7 @@ export default function BookingManagementTable(): React.JSX.Element {
 
   return (
     <>
-      <div className="bg-black/60 backdrop-blur-md border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div className="flex items-center w-full md:flex-1 relative">
@@ -407,7 +407,11 @@ export default function BookingManagementTable(): React.JSX.Element {
                 value={modalBooking.bookingCode}
                 disabled
               />
-              <InputField label="Tên khách hàng" value={getName(modalBooking)} disabled />
+              <InputField
+                label="Tên khách hàng"
+                value={getName(modalBooking)}
+                disabled
+              />
               <InputField
                 label="Lịch chiếu"
                 value={getShowtimeId(modalBooking)}
@@ -418,7 +422,11 @@ export default function BookingManagementTable(): React.JSX.Element {
                 value={getMovieTitle(modalBooking)}
                 disabled
               />
-              <InputField label="Trạng thái" value={modalBooking.status} disabled />
+              <InputField
+                label="Trạng thái"
+                value={modalBooking.status}
+                disabled
+              />
               <InputField
                 label="Phương thức thanh toán"
                 value={getPaymentMethod(modalBooking)}

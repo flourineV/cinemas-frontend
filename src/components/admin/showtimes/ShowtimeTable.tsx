@@ -4,16 +4,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Loader2,
   Trash2,
   Film,
   Building2,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
-import TimePicker from 'react-time-picker';
-import 'react-time-picker/dist/TimePicker.css';
-import 'react-clock/dist/Clock.css';
+import TimePicker from "react-time-picker";
+import "react-time-picker/dist/TimePicker.css";
+import "react-clock/dist/Clock.css";
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { provinceService } from "@/services/showtime/provinceService";
 import { theaterService } from "@/services/showtime/theaterService";
@@ -65,10 +64,10 @@ export default function ShowtimeTable({
         roomId: roomFilter || undefined,
         movieId: movieFilter || undefined,
         showtimeId: debouncedSearch || undefined,
-        startOfDay: startOfDayFilter ? startOfDayFilter : undefined, 
+        startOfDay: startOfDayFilter ? startOfDayFilter : undefined,
         endOfDay: endOfDayFilter ? endOfDayFilter : undefined,
-        fromTime: fromTimeFilter || undefined,  // HH:mm format
-        toTime: toTimeFilter || undefined,     // HH:mm format
+        fromTime: fromTimeFilter || undefined, // HH:mm format
+        toTime: toTimeFilter || undefined, // HH:mm format
       };
 
       const pageResp = await showtimeService.adminSearch(
@@ -76,7 +75,7 @@ export default function ShowtimeTable({
         page,
         ITEMS_PER_PAGE,
         "startTime",
-        "desc"
+        "asc"
       );
 
       setShowtimes(pageResp.data ?? []);
@@ -90,8 +89,6 @@ export default function ShowtimeTable({
       Swal.fire({
         icon: "error",
         title: "Không thể tải danh sách lịch chiếu",
-        background: "#0b1020",
-        color: "#fff",
       });
     } finally {
       setLoading(false);
@@ -190,14 +187,24 @@ export default function ShowtimeTable({
   };
 
   const goToNextPage = () => {
-    if (paging.page < paging.totalPages && !isRefreshing)
+    if (paging.page < paging.totalPages && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page + 1 }));
+    }
   };
 
   const goToPrevPage = () => {
-    if (paging.page > 1 && !isRefreshing)
+    if (paging.page > 1 && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page - 1 }));
+    }
   };
+
+  // Add useEffect to fetch when page changes
+  useEffect(() => {
+    if (!loading) {
+      fetchShowtimes(paging.page, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paging.page]);
 
   const deleteShowtime = async (id: string) => {
     const confirm = await Swal.fire({
@@ -206,8 +213,7 @@ export default function ShowtimeTable({
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Xóa",
-      background: "#0b1020",
-      color: "#fff",
+      confirmButtonColor: "#ef4444",
     });
     if (!confirm.isConfirmed) return;
 
@@ -218,8 +224,6 @@ export default function ShowtimeTable({
         title: "Đã xóa",
         timer: 900,
         showConfirmButton: false,
-        background: "#0b1020",
-        color: "#fff",
       });
       fetchShowtimes(paging.page);
     } catch (err) {
@@ -227,30 +231,32 @@ export default function ShowtimeTable({
       Swal.fire({
         icon: "error",
         title: "Xóa thất bại",
-        background: "#0b1020",
-        color: "#fff",
       });
     }
   };
 
   if (loading) {
     return (
-      <div className="text-center text-gray-400 py-10">
-        Đang tải danh sách lịch chiếu...
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-black/60 backdrop-blur-md border border-yellow-400/40 rounded-2xl p-6 shadow-2xl text-white">
+    <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-md">
       {/* Filters Row 1: Search, Province, Theater, Room */}
       <div className="flex flex-col md:flex-row gap-3 mb-3">
         <div className="flex items-center flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/70" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Tìm theo Showtime ID..."
-            className="w-full pl-10 pr-4 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white placeholder-white/60 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
+                      bg-white border border-gray-400
+                      text-gray-700 placeholder-gray-400
+                      focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
+                      transition"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -324,7 +330,7 @@ export default function ShowtimeTable({
           <label className="sr-only">Start of Day</label>
           <input
             type="date"
-            className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
             value={startOfDayFilter}
             onChange={(e) => {
               setStartOfDayFilter(e.target.value); // YYYY-MM-DD
@@ -339,7 +345,7 @@ export default function ShowtimeTable({
           <label className="sr-only">End of Day</label>
           <input
             type="date"
-            className="w-full px-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
             value={endOfDayFilter}
             onChange={(e) => {
               setEndOfDayFilter(e.target.value); // YYYY-MM-DD
@@ -351,9 +357,9 @@ export default function ShowtimeTable({
 
         {/* From Time */}
         <div className="flex items-center relative flex-1">
-          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/70" />
+          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <TimePicker
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
             value={fromTimeFilter || undefined}
             onChange={(value) => {
               setFromTimeFilter(value || "");
@@ -367,9 +373,9 @@ export default function ShowtimeTable({
 
         {/* To Time */}
         <div className="flex items-center relative flex-1">
-          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/70" />
+          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <TimePicker
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-black/30 border border-yellow-400/40 text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
             value={toTimeFilter || undefined}
             onChange={(value) => {
               setToTimeFilter(value || "");
@@ -382,29 +388,49 @@ export default function ShowtimeTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-yellow-400/40 relative">
+      <div className="overflow-x-auto rounded-lg border border-gray-400 relative">
         {isRefreshing && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
-            <Loader2 className="w-8 h-8 text-yellow-400 animate-spin" />
+          <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 rounded-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
           </div>
         )}
 
-        <table className="w-full text-sm">
-          <thead className="bg-yellow-500/20 text-yellow-300 uppercase text-xs">
+        <table
+          className="min-w-full divide-y divide-yellow-400/80 table-fixed"
+          style={{ tableLayout: "fixed", width: "100%" }}
+        >
+          <thead className="sticky top-0 z-10 border-b border-gray-400 bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left">Phim</th>
-              <th className="px-4 py-3 text-left">Rạp</th>
-              <th className="px-4 py-3 text-left">Phòng</th>
-              <th className="px-4 py-3 text-left">Thời gian bắt đầu</th>
-              <th className="px-4 py-3 text-left">Thời gian kết thúc</th>
-              <th className="px-4 py-3 text-center">Ghế</th>
-              <th className="px-4 py-3 text-center">Thao tác</th>
+              <th className="w-[200px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Phim
+              </th>
+              <th className="w-[180px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rạp
+              </th>
+              <th className="w-[100px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Phòng
+              </th>
+              <th className="w-[140px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Thời gian bắt đầu
+              </th>
+              <th className="w-[140px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Thời gian kết thúc
+              </th>
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ghế
+              </th>
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Thao tác
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-yellow-400/20">
+          <tbody className="divide-y divide-gray-400 relative bg-white">
             {showtimes.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                <td
+                  colSpan={7}
+                  className="text-center py-10 text-gray-500 italic text-sm"
+                >
                   Không có lịch chiếu nào
                 </td>
               </tr>
@@ -412,54 +438,67 @@ export default function ShowtimeTable({
               showtimes.map((st) => (
                 <tr
                   key={st.id}
-                  className="hover:bg-yellow-400/5 transition-colors"
+                  className={`transition duration-150 ${
+                    isRefreshing ? "opacity-60 pointer-events-none" : ""
+                  } hover:bg-gray-50`}
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-4 text-sm text-gray-900 text-left">
                     <div className="flex items-center gap-2">
-                      <Film size={16} className="text-yellow-400" />
-                      <span className="font-medium">{st.movieTitle}</span>
+                      <Film size={16} className="text-yellow-600" />
+                      <span className="font-medium truncate">
+                        {st.movieTitle}
+                      </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-4 text-sm text-gray-900 text-left">
                     <div className="flex items-center gap-2">
-                      <Building2 size={16} className="text-blue-400" />
+                      <Building2 size={16} className="text-blue-600" />
                       <div>
-                        <div className="font-medium">{st.theaterName}</div>
-                        <div className="text-xs text-gray-400">
+                        <div className="font-medium truncate">
+                          {st.theaterName}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
                           {st.provinceName}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-300">{st.roomName}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 text-gray-300">
-                      <Clock size={14} />
-                      {dayjs(st.startTime).format("DD/MM/YYYY HH:mm")}
+                  <td className="px-6 py-4 text-sm text-gray-900 text-left">
+                    {st.roomName}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-left">
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} className="text-gray-500" />
+                      <span className="text-xs">
+                        {dayjs(st.startTime).format("DD/MM/YYYY HH:mm")}
+                      </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 text-gray-300">
-                      <Clock size={14} />
-                      {dayjs(st.endTime).format("DD/MM/YYYY HH:mm")}
+                  <td className="px-6 py-4 text-sm text-gray-900 text-left">
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} className="text-gray-500" />
+                      <span className="text-xs">
+                        {dayjs(st.endTime).format("DD/MM/YYYY HH:mm")}
+                      </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-6 py-4 text-center">
                     <div className="text-xs">
-                      <div className="text-green-400">
+                      <div className="text-green-600 font-medium">
                         Trống: {st.availableSeats}
                       </div>
-                      <div className="text-red-400">
+                      <div className="text-red-600 font-medium">
                         Đã đặt: {st.bookedSeats}
                       </div>
-                      <div className="text-gray-400">Tổng: {st.totalSeats}</div>
+                      <div className="text-gray-500">Tổng: {st.totalSeats}</div>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-3 text-center text-base font-medium">
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => deleteShowtime(st.id)}
-                        className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"
+                        className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                        title="Xóa lịch chiếu"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -472,25 +511,34 @@ export default function ShowtimeTable({
         </table>
       </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-sm text-gray-400">
-          Trang {paging.page} / {paging.totalPages} - Tổng {paging.total} lịch
-          chiếu
-        </p>
-        <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-center pt-4 gap-3">
+        <span className="text-sm text-gray-700">
+          Trang {paging.page}/{paging.totalPages} • {paging.total} lịch chiếu
+        </span>
+
+        <div className="flex items-center space-x-2">
           <button
             onClick={goToPrevPage}
-            disabled={paging.page === 1 || isRefreshing}
-            className="p-2 rounded-lg bg-black/40 border border-yellow-400/40 text-white hover:bg-black/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={paging.page <= 1 || isRefreshing}
+            className={`p-2 rounded-md transition ${
+              paging.page <= 1 || isRefreshing
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft className="w-4 h-4" />
           </button>
+
           <button
             onClick={goToNextPage}
             disabled={paging.page >= paging.totalPages || isRefreshing}
-            className="p-2 rounded-lg bg-black/40 border border-yellow-400/40 text-white hover:bg-black/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`p-2 rounded-md transition ${
+              paging.page >= paging.totalPages || isRefreshing
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
-            <ChevronRight size={18} />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
