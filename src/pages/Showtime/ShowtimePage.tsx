@@ -1,29 +1,140 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { theaterService } from "@/services/showtime/theaterService";
-import type { TheaterResponse } from "@/types/showtime/theater.type";
-import { MapPin, Clock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { movieService } from "@/services/movie/movieService";
+import { CustomSelect } from "@/components/ui/CustomSelect";
+import type {
+  TheaterResponse,
+  MoviesWithTheatersResponse,
+} from "@/types/showtime/theater.type";
+import type { MovieSummary } from "@/types/movie/movie.type";
+import { Calendar, Film, MapPin } from "lucide-react";
+import { getPosterUrl } from "@/utils/getPosterUrl";
+import { useNavigate } from "react-router-dom";
+
+interface MovieWithShowtimes {
+  movie: MovieSummary;
+  theaters: Array<{
+    theaterId: string;
+    theaterName: string;
+    theaterAddress: string;
+    showtimes: Array<{
+      showtimeId: string;
+      startTime: string;
+      endTime: string;
+    }>;
+  }>;
+}
 
 const ShowtimePage = () => {
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
+  const [movies, setMovies] = useState<MovieSummary[]>([]);
+  const [movieShowtimes, setMovieShowtimes] = useState<MovieWithShowtimes[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
+  // Filter states
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedMovie, setSelectedMovie] = useState("");
+  const [selectedTheater, setSelectedTheater] = useState("");
+
+  // Generate date options (next 7 days)
+  const generateDateOptions = () => {
+    const options = [];
+    const today = new Date();
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const value = date.toISOString().split("T")[0];
+      const label =
+        i === 0
+          ? `Hôm Nay ${date.getDate()}/${date.getMonth() + 1}`
+          : i === 1
+            ? `Ngày Mai ${date.getDate()}/${date.getMonth() + 1}`
+            : `${date.getDate()}/${date.getMonth() + 1}`;
+
+      options.push({ value, label });
+    }
+    return options;
+  };
+
+  const dateOptions = generateDateOptions();
+
+  // Load initial data
   useEffect(() => {
-    const loadTheaters = async () => {
+    const loadInitialData = async () => {
       try {
-        const theaterList = await theaterService.getAllTheaters();
+        const [theaterList, nowPlayingRes] = await Promise.all([
+          theaterService.getAllTheaters(),
+          movieService.getNowPlaying(0, 50),
+        ]);
+
         setTheaters(theaterList);
+        setMovies(nowPlayingRes.content);
+
+        // Set default date to today
+        const today = dateOptions[0].value;
+        setSelectedDate(today);
       } catch (error) {
-        console.error("Error loading theaters:", error);
+        console.error("Error loading initial data:", error);
+      }
+    };
+    loadInitialData();
+  }, []);
+
+  // Load showtimes when filters change
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    const loadShowtimes = async () => {
+      try {
+        setLoading(true);
+
+        // Call API with filters
+        const showtimeData = await theaterService.getMoviesWithTheaters(
+          selectedDate,
+          selectedMovie || undefined,
+          selectedTheater || undefined
+        );
+
+        // Combine with movie details
+        const movieShowtimeResults: MovieWithShowtimes[] = [];
+
+        for (const item of showtimeData) {
+          // Find movie details
+          const movie = movies.find((m) => m.id === item.movieId);
+          if (movie) {
+            movieShowtimeResults.push({
+              movie,
+              theaters: item.theaters,
+            });
+          }
+        }
+
+        setMovieShowtimes(movieShowtimeResults);
+      } catch (error) {
+        console.error("Error loading showtimes:", error);
+        setMovieShowtimes([]);
       } finally {
         setLoading(false);
       }
     };
-    loadTheaters();
-  }, []);
 
-  if (loading) {
+    loadShowtimes();
+  }, [selectedDate, selectedMovie, selectedTheater, movies]);
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  if (loading && movieShowtimes.length === 0) {
     return (
       <Layout>
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -35,7 +146,7 @@ const ShowtimePage = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-100 pt-8 pb-16">
+      <div className="min-h-screen bg-gray-100 text-gray-900 pt-8 pb-16">
         <div className="max-w-6xl mx-auto px-4">
           {/* Header */}
           <div className="text-center mb-8">
@@ -43,85 +154,185 @@ const ShowtimePage = () => {
               LỊCH CHIẾU PHIM
             </h1>
             <p className="text-gray-600 text-lg">
-              Chọn rạp để xem lịch chiếu chi tiết
+              Tìm suất chiếu phù hợp với bạn
             </p>
           </div>
 
-          {/* Theaters Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {theaters.map((theater) => (
-              <Link
-                key={theater.id}
-                to={`/theater/${theater.id}`}
-                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 overflow-hidden group"
-              >
-                {/* Theater Image */}
-                {theater.imageUrl && (
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={theater.imageUrl}
-                      alt={theater.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="text-xl font-bold text-white mb-1">
-                        {theater.name}
-                      </h3>
-                    </div>
-                  </div>
-                )}
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {/* Date Filter */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-yellow-400 font-semibold">
+                <Calendar className="w-5 h-5" />
+                <span>1. Ngày</span>
+              </div>
+              <CustomSelect
+                variant="light"
+                options={dateOptions}
+                value={selectedDate}
+                onChange={setSelectedDate}
+                placeholder="Chọn ngày"
+              />
+            </div>
 
-                {/* Theater Info */}
-                <div className="p-6">
-                  {!theater.imageUrl && (
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">
-                      {theater.name}
-                    </h3>
-                  )}
+            {/* Movie Filter */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-yellow-400 font-semibold">
+                <Film className="w-5 h-5" />
+                <span>2. Phim</span>
+              </div>
+              <CustomSelect
+                variant="light"
+                options={[
+                  { value: "", label: "Chọn Phim" },
+                  ...movies.map((movie) => ({
+                    value: movie.id,
+                    label: movie.title,
+                  })),
+                ]}
+                value={selectedMovie}
+                onChange={setSelectedMovie}
+                placeholder="Chọn phim"
+              />
+            </div>
 
-                  <div className="flex items-start gap-2 text-gray-600 text-sm mb-3">
-                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <p className="line-clamp-2">{theater.address}</p>
-                  </div>
+            {/* Theater Filter */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-yellow-400 font-semibold">
+                <MapPin className="w-5 h-5" />
+                <span>3. Rạp</span>
+              </div>
+              <CustomSelect
+                variant="light"
+                options={[
+                  { value: "", label: "Chọn Rạp" },
+                  ...theaters.map((theater) => ({
+                    value: theater.id,
+                    label: theater.name,
+                  })),
+                ]}
+                value={selectedTheater}
+                onChange={setSelectedTheater}
+                placeholder="Chọn rạp"
+              />
+            </div>
+          </div>
 
-                  {theater.provinceName && (
-                    <p className="text-xs text-gray-500 mb-4">
-                      {theater.provinceName}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-yellow-600">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm font-semibold">
-                        Xem lịch chiếu
-                      </span>
-                    </div>
-                    <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center group-hover:bg-yellow-600 transition-colors">
-                      <svg
-                        className="w-4 h-4 text-black"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
+          {/* Results */}
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-yellow-500"></div>
+            </div>
+          ) : movieShowtimes.length > 0 ? (
+            <div className="space-y-8">
+              {movieShowtimes.map((movieShowtime) => (
+                <div
+                  key={movieShowtime.movie.id}
+                  className="bg-white rounded-xl shadow-lg p-6 border border-gray-200"
+                >
+                  <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Left: Movie Info */}
+                    <div className="lg:w-80 flex-shrink-0">
+                      {/* Movie Poster */}
+                      <div className="mb-4">
+                        <img
+                          src={getPosterUrl(movieShowtime.movie.posterUrl)}
+                          alt={movieShowtime.movie.title}
+                          className="w-full h-96 object-cover rounded-lg"
                         />
-                      </svg>
+                      </div>
+
+                      {/* Movie Details */}
+                      <div className="space-y-2">
+                        <h2 className="text-xl font-bold text-gray-900 uppercase">
+                          {movieShowtime.movie.title}
+                        </h2>
+
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span className="w-2 h-2 bg-gray-600 rounded-full"></span>
+                            <span>Kinh Dị</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span className="w-2 h-2 bg-gray-600 rounded-full"></span>
+                            <span>T{movieShowtime.movie.age}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span className="w-2 h-2 bg-gray-600 rounded-full"></span>
+                            <span>Việt Nam</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span className="w-2 h-2 bg-gray-600 rounded-full"></span>
+                            <span>Phụ Đề</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-yellow-600">
+                            <span className="w-2 h-2 bg-yellow-600 rounded-full"></span>
+                            <span>
+                              T13. Phim dành cho khán giả từ đủ 13 tuổi trở lên
+                              (13+)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Theater Showtimes */}
+                    <div className="flex-1">
+                      <div className="space-y-6">
+                        {movieShowtime.theaters.map((theaterData) => (
+                          <div
+                            key={theaterData.theaterId}
+                            className="border-b border-gray-300 pb-6 last:border-b-0"
+                          >
+                            {/* Theater Info */}
+                            <div className="mb-4">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                Cinestar
+                              </h3>
+                              <h4 className="text-xl font-bold text-gray-900 mb-2">
+                                {theaterData.theaterName}
+                              </h4>
+                              <p className="text-sm text-gray-600">
+                                {theaterData.theaterAddress}
+                              </p>
+                            </div>
+
+                            {/* Showtimes */}
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-gray-600 uppercase">
+                                STANDARD
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {theaterData.showtimes.map((showtime) => (
+                                  <button
+                                    key={showtime.showtimeId}
+                                    onClick={() =>
+                                      navigate(
+                                        `/booking/${showtime.showtimeId}`
+                                      )
+                                    }
+                                    className="px-4 py-2 border-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black font-semibold rounded transition-colors"
+                                  >
+                                    {formatTime(showtime.startTime)}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </Link>
-            ))}
-          </div>
-
-          {theaters.length === 0 && !loading && (
+              ))}
+            </div>
+          ) : (
             <div className="text-center py-16">
-              <p className="text-gray-500 text-xl">Hiện tại chưa có rạp nào</p>
+              <div className="text-6xl mb-4">🎬</div>
+              <p className="text-gray-600 text-xl mb-2">Chưa có suất chiếu</p>
+              <p className="text-gray-500">
+                Vui lòng thử chọn ngày hoặc rạp khác
+              </p>
             </div>
           )}
         </div>

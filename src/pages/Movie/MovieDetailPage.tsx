@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Star,
 } from "lucide-react";
+import { formatSpokenLanguages } from "@/utils/format";
 import Layout from "../../components/layout/Layout";
 import { getPosterUrl } from "../../utils/getPosterUrl";
 import { formatAgeRating } from "@/utils/formatAgeRating";
@@ -451,7 +452,7 @@ export default function MovieDetailPage() {
                           <div className="flex items-center gap-3">
                             <Languages className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
-                              {movie.spokenLanguages.join(", ")}
+                              {formatSpokenLanguages(movie.spokenLanguages)}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">

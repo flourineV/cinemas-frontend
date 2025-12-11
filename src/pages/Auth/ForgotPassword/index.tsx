@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { useNavigate } from "react-router-dom";
 import { authService } from "@/services/auth/authService";
@@ -16,6 +16,7 @@ const ForgotPassword: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
   const navigate = useNavigate();
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -79,13 +80,17 @@ const ForgotPassword: React.FC = () => {
   };
 
   const handleResendOtp = async () => {
+    // Clear previous messages
+    setError("");
+    setSuccess("");
+
     try {
       setLoading(true);
-      await authService.resendOtp();
+      await authService.resendOtp({ email });
       setSuccess("Mã OTP mới đã được gửi!");
     } catch (err: any) {
       console.error(err);
-      setError("Không thể gửi lại OTP. Vui lòng thử lại sau.");
+      setError("Vui lòng resend sau 5p nữa");
     } finally {
       setLoading(false);
     }
@@ -342,25 +347,18 @@ const ForgotPassword: React.FC = () => {
               </div>
             )}
 
-            {/* Error message */}
-            {error && (
+            {/* Single message display */}
+            {(error || success) && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-red-500 text-sm font-medium bg-red-50 py-2 px-3 rounded-lg text-center mt-4"
+                className={`text-sm font-medium py-2 px-3 rounded-lg text-center mt-4 ${
+                  error
+                    ? "text-red-500 bg-red-50"
+                    : "text-green-600 bg-green-50"
+                }`}
               >
-                {error}
-              </motion.div>
-            )}
-
-            {/* Success message */}
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-green-600 text-sm font-medium bg-green-50 py-2 px-3 rounded-lg text-center mt-4"
-              >
-                {success}
+                {error || success}
               </motion.div>
             )}
           </div>

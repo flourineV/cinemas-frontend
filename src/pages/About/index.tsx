@@ -1,9 +1,89 @@
-import { Package, Gift, Film, MapPin, Phone, Mail } from "lucide-react";
+import { Package, Gift, Film, MapPin, Ticket } from "lucide-react";
 import Layout from "../../components/layout/Layout";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { theaterService } from "@/services/showtime/theaterService";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
+
+// Theater Gallery Component - Same as SearchPage
+const TheaterGallery = () => {
+  const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    theaterService
+      .getAllTheaters()
+      .then((data) => setTheaters(data))
+      .catch((err) => console.error("Failed to load theaters:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-32">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <section className="relative w-full max-w-5xl mx-auto mt-20">
+      <div className="relative flex items-center justify-center mb-10">
+        <MapPin className="w-8 h-8 text-yellow-500 mr-3" />
+        <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
+          RẠP CHIẾU ({theaters.length})
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {theaters.map((theater) => (
+          <div
+            key={theater.id}
+            className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 overflow-hidden flex flex-col h-full"
+          >
+            {/* Theater Image */}
+            {theater.imageUrl && (
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src={theater.imageUrl}
+                  alt={theater.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              </div>
+            )}
+
+            {/* Theater Info */}
+            <div className="p-6 flex flex-col flex-1">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {theater.name}
+              </h3>
+              <div className="flex items-start gap-2 text-gray-600 text-sm mb-3">
+                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <p className="line-clamp-2">{theater.address}</p>
+              </div>
+              {theater.provinceName && (
+                <p className="text-xs text-gray-500 mb-4">
+                  {theater.provinceName}
+                </p>
+              )}
+
+              {/* Book Button - Always at bottom */}
+              <button
+                onClick={() => navigate(`/theater/${theater.id}`)}
+                className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2.5 rounded-lg transition-colors mt-auto"
+              >
+                <Ticket className="w-4 h-4" />
+                Đặt vé
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 // Theater List Component
 const TheaterList = () => {
@@ -63,6 +143,7 @@ const About = () => {
     benefits: false,
     cta: false,
   });
+  const navigate = useNavigate();
 
   // Trigger animations on mount - giống Home
   useEffect(() => {
@@ -245,41 +326,10 @@ const About = () => {
           </div>
         </section>
 
-        {/* Theater Gallery */}
-        <section className="max-w-7xl mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { name: "CineHub Đà Nẵng", image: "/CineHubDaNang.png" },
-              { name: "CineHub Nguyễn Trãi", image: "/CineHubNguyenTrai.png" },
-              {
-                name: "CineHub Nguyễn Văn Cừ",
-                image: "/CineHubNguyenVanCu.png",
-              },
-              { name: "CineHub Quốc Học Huế", image: "/CineHubQuocHocHue.png" },
-              { name: "CineHub Siêu Nhân", image: "/CineHubSieuNhan.png" },
-            ].map((theater, index) => (
-              <div
-                key={index}
-                className="group relative overflow-hidden rounded-xl shadow-2xl hover:shadow-[0_0_40px_rgba(168,85,247,0.6)] transition-all duration-500"
-              >
-                <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-purple-900 to-blue-900">
-                  <img
-                    src={theater.image}
-                    alt={theater.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                  <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/20 transition-colors duration-500"></div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <h3 className="text-white text-xl font-extrabold uppercase tracking-wide drop-shadow-lg">
-                    {theater.name}
-                  </h3>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Theater Gallery - Same as SearchPage */}
+        <div className="pb-20">
+          <TheaterGallery />
+        </div>
       </div>
     </Layout>
   );

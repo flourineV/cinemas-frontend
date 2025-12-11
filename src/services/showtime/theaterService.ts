@@ -5,6 +5,7 @@ import type {
   TheaterRequest,
   TheaterResponse,
   MovieShowtimesResponse,
+  MoviesWithTheatersResponse,
 } from "@/types/showtime/theater.type";
 
 export const theaterService = {
@@ -57,6 +58,22 @@ export const theaterService = {
   ): Promise<MovieShowtimesResponse[]> => {
     const res = await showtimeClient.get<MovieShowtimesResponse[]>(
       `/theaters/${theaterId}/movies`
+    );
+    return res.data;
+  },
+
+  getMoviesWithTheaters: async (
+    date: string,
+    movieId?: string,
+    theaterId?: string
+  ): Promise<MoviesWithTheatersResponse[]> => {
+    const params: any = { date };
+    if (movieId) params.movieId = movieId;
+    if (theaterId) params.theaterId = theaterId;
+
+    const res = await showtimeClient.get<MoviesWithTheatersResponse[]>(
+      "/movies-with-theaters",
+      { params }
     );
     return res.data;
   },

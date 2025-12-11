@@ -80,7 +80,7 @@ const Header = () => {
             <div className="flex items-center bg-white rounded-full px-4 py-2 min-w-[300px]">
               <input
                 type="text"
-                placeholder="Tìm phim, rạp..."
+                placeholder="Tìm phim hoặc rạp chiếu..."
                 className="flex-1 bg-white text-black text-sm outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

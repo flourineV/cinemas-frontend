@@ -27,3 +27,17 @@ export interface MovieShowtimesResponse {
   movieId: string;
   showtimes: ShowtimeInfo[];
 }
+
+export interface MoviesWithTheatersResponse {
+  movieId: string;
+  theaters: Array<{
+    theaterId: string;
+    theaterName: string;
+    theaterAddress: string;
+    showtimes: Array<{
+      showtimeId: string;
+      startTime: string;
+      endTime: string;
+    }>;
+  }>;
+}
