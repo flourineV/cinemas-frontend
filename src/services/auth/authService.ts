@@ -22,7 +22,7 @@ export const authService = {
 
   sendOtp: (data: { email: string }) => authClient.post("/send-otp", data),
 
-  resendOtp: () => authClient.post("/resend-otp"),
+  resendOtp: (data: { email: string }) => authClient.post("/resend-otp", data),
 
   resetPassword: (data: ResetPasswordRequest) =>
     authClient.post("/reset-password", data),

@@ -79,9 +79,13 @@ const ForgotPassword: React.FC = () => {
   };
 
   const handleResendOtp = async () => {
+    if (!email) {
+      setError("Email không hợp lệ.");
+      return;
+    }
     try {
       setLoading(true);
-      await authService.resendOtp();
+      await authService.resendOtp({ email });
       setSuccess("Mã OTP mới đã được gửi!");
     } catch (err: any) {
       console.error(err);
