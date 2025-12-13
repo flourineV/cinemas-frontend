@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Crown } from "lucide-react";
+import { Crown, Eye, Edit2, Trash2 } from "lucide-react";
 import Swal from "sweetalert2";
 
 import { managerService } from "@/services/userprofile";
@@ -8,6 +8,8 @@ import { theaterService } from "@/services/showtime/theaterService";
 import type { ManagerProfileResponse } from "@/types/userprofile";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 import { Badge } from "@/components/ui/Badge";
+import { CustomDropdown } from "@/components/ui/CustomDropdown";
+import { useScrollToTop } from "@/hooks/useScrollToTop";
 
 export default function ManagerTable(): React.JSX.Element {
   const [managerList, setManagerList] = useState<ManagerProfileResponse[]>([]);
@@ -15,6 +17,9 @@ export default function ManagerTable(): React.JSX.Element {
   const [selectedCinema, setSelectedCinema] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingTheaters, setLoadingTheaters] = useState<boolean>(true);
+
+  // Scroll to top when component mounts
+  useScrollToTop();
 
   // Load theaters on component mount
   useEffect(() => {
@@ -82,25 +87,16 @@ export default function ManagerTable(): React.JSX.Element {
 
         {/* Cinema selector */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Chọn rạp:</label>
-          {loadingTheaters ? (
-            <div className="w-48 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm">
-              Đang tải...
-            </div>
-          ) : (
-            <select
-              value={selectedCinema}
-              onChange={(e) => setSelectedCinema(e.target.value)}
-              className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white text-gray-900 text-sm"
-            >
-              <option value="">-- Chọn rạp --</option>
-              {theaters.map((theater) => (
-                <option key={theater.id} value={theater.name}>
-                  {theater.name}
-                </option>
-              ))}
-            </select>
-          )}
+          <CustomDropdown
+            options={theaters.map((theater) => ({
+              value: theater.name,
+              label: theater.name,
+            }))}
+            value={selectedCinema}
+            onChange={setSelectedCinema}
+            placeholder={loadingTheaters ? "Đang tải..." : "Chọn rạp"}
+            disabled={loadingTheaters}
+          />
         </div>
       </div>
 
@@ -118,20 +114,23 @@ export default function ManagerTable(): React.JSX.Element {
         >
           <thead className="sticky top-0 z-10 border-b border-gray-400 bg-gray-50">
             <tr>
-              <th className="w-[200px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[170px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Quản lý
               </th>
               <th className="w-[150px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
-              <th className="w-[130px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[110px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Số điện thoại
               </th>
-              <th className="w-[150px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[180px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Rạp quản lý
               </th>
-              <th className="w-[120px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ngày nhận chức
+              </th>
+              <th className="w-[150px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Thao tác
               </th>
             </tr>
           </thead>
@@ -140,7 +139,7 @@ export default function ManagerTable(): React.JSX.Element {
             {!selectedCinema ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="text-center py-10 text-gray-500 italic text-sm"
                 >
                   Vui lòng chọn rạp để xem danh sách quản lý
@@ -149,7 +148,7 @@ export default function ManagerTable(): React.JSX.Element {
             ) : managerList.length === 0 && !loading ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="text-center py-10 text-gray-500 italic text-sm"
                 >
                   Không có quản lý nào tại rạp này
@@ -193,6 +192,81 @@ export default function ManagerTable(): React.JSX.Element {
                   <td className="px-6 py-4 text-sm text-gray-900 text-center">
                     {new Date(manager.hireDate).toLocaleDateString("vi-VN")}
                   </td>
+
+                  <td className="px-6 py-3 text-center text-base font-medium">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => {
+                          Swal.fire({
+                            icon: "info",
+                            title: "Xem thông tin quản lý",
+                            html: `
+                              <div class="text-left">
+                                <p><strong>Tên:</strong> ${manager.userProfile?.fullName || "Chưa cập nhật"}</p>
+                                <p><strong>Email:</strong> ${manager.userProfile?.email || "N/A"}</p>
+                                <p><strong>SĐT:</strong> ${manager.userProfile?.phoneNumber || "N/A"}</p>
+                                <p><strong>Rạp quản lý:</strong> ${manager.managedCinemaName}</p>
+                                <p><strong>Ngày nhận chức:</strong> ${new Date(manager.hireDate).toLocaleDateString("vi-VN")}</p>
+                              </div>
+                            `,
+                          });
+                        }}
+                        className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="Xem thông tin"
+                      >
+                        <Eye size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          Swal.fire({
+                            icon: "info",
+                            title: "Chỉnh sửa thông tin",
+                            text: "Tính năng đang phát triển",
+                          });
+                        }}
+                        className="p-2 rounded-lg text-yellow-600 hover:bg-yellow-50 transition-colors"
+                        title="Chỉnh sửa"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          const confirm = await Swal.fire({
+                            title: "Xóa quản lý?",
+                            text: "Hành động này không thể hoàn tác",
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonText: "Xóa",
+                            cancelButtonText: "Hủy",
+                          });
+                          if (confirm.isConfirmed) {
+                            try {
+                              await managerService.deleteManager(manager.id);
+                              Swal.fire({
+                                icon: "success",
+                                title: "Đã xóa quản lý",
+                                timer: 1500,
+                                showConfirmButton: false,
+                              });
+                              loadManagersByCinema(selectedCinema);
+                            } catch (error) {
+                              Swal.fire({
+                                icon: "error",
+                                title: "Lỗi xóa quản lý",
+                                text: "Vui lòng thử lại sau",
+                              });
+                            }
+                          }
+                        }}
+                        className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                        title="Xóa quản lý"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             )}
@@ -206,7 +280,6 @@ export default function ManagerTable(): React.JSX.Element {
           <span className="text-sm text-gray-700">
             Tổng số quản lý: {managerList.length}
           </span>
-          <span className="text-sm text-gray-500">Rạp: {selectedCinema}</span>
         </div>
       )}
     </div>

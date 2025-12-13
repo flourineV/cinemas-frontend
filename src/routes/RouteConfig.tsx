@@ -19,6 +19,7 @@ import CheckoutPage from "@/pages/Checkout/CheckoutPage";
 import PaymentResult from "@/pages/Payment/PaymentResult";
 import TheaterDetail from "@/pages/Theater/TheaterDetail";
 import SearchPage from "@/pages/Search/SearchPage";
+import SeatSelectionPage from "@/pages/Booking/SeatSelectionPage";
 
 import { UserRole } from "@/constants/UserRole";
 
@@ -34,6 +35,7 @@ export const publicRoutes = [
   { path: "/movies/upcoming", element: <UpcomingPage /> },
   { path: "/movies/:id", element: <MovieDetailPage /> },
   { path: "/theater/:theaterId", element: <TheaterDetail /> },
+  { path: "/booking/seats/:showtimeId", element: <SeatSelectionPage /> },
   { path: "/auth", element: <AuthPage /> },
   { path: "/reset-password", element: <ResetPassword /> },
   { path: "/redirect-reset", element: <RedirectReset /> },

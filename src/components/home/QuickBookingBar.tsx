@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { movieService } from "@/services/movie/movieService";
+import { theaterService } from "@/services/showtime/theaterService";
+import type { MovieSummary } from "@/types/movie/movie.type";
+import type { TheaterResponse } from "@/types/showtime/theater.type";
 
 /* ---------------- CustomSelect (dropdown xổ xuống) ---------------- */
 type Option = { value: string; label: string };
@@ -178,46 +183,149 @@ function CustomSelect({
 /* ---------------- QuickBookingBar ---------------- */
 
 const QuickBookingBar: React.FC = () => {
-  const [selectedCinema, setSelectedCinema] = useState("");
+  const navigate = useNavigate();
+
+  // State for selections
   const [selectedMovie, setSelectedMovie] = useState("");
+  const [selectedTheater, setSelectedTheater] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
+  const [selectedShowtime, setSelectedShowtime] = useState("");
 
-  const cinemas: Option[] = [
-    { value: "galaxy", label: "Rạp Galaxy" },
-    { value: "cgv", label: "Rạp CGV" },
-    { value: "lotte", label: "Lotte Cinema" },
-  ];
-  const moviesForCinema: Record<string, Option[]> = {
-    galaxy: [
-      { value: "endgame", label: "Avengers: Endgame" },
-      { value: "frozen", label: "Frozen II" },
-      { value: "oppenheimer", label: "Oppenheimer" },
-    ],
-    cgv: [
-      { value: "oppenheimer", label: "Oppenheimer" },
-      { value: "tenet", label: "Tenet" },
-      { value: "matrix", label: "The Matrix" },
-    ],
-    lotte: [
-      { value: "inception", label: "Inception" },
-      { value: "dune", label: "Dune" },
-    ],
+  // State for API data
+  const [movies, setMovies] = useState<MovieSummary[]>([]);
+  const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
+  const [availableDates, setAvailableDates] = useState<Option[]>([]);
+  const [showtimes, setShowtimes] = useState<Option[]>([]);
+
+  // Loading states
+  const [loadingMovies, setLoadingMovies] = useState(false);
+  const [loadingTheaters, setLoadingTheaters] = useState(false);
+  const [loadingShowtimes, setLoadingShowtimes] = useState(false);
+
+  // Convert API data to options
+  const movieOptions: Option[] = movies.map((movie) => ({
+    value: movie.id,
+    label: movie.title,
+  }));
+
+  const theaterOptions: Option[] = theaters.map((theater) => ({
+    value: theater.id,
+    label: theater.name,
+  }));
+
+  // Generate next 7 days for date selection
+  const generateDateOptions = (): Option[] => {
+    const dates: Option[] = [];
+    const today = new Date();
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
+      const displayStr = date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+
+      dates.push({
+        value: dateStr,
+        label: displayStr,
+      });
+    }
+
+    return dates;
   };
-  const dates: Option[] = [
-    { value: "2025-09-20", label: "20/09/2025" },
-    { value: "2025-09-21", label: "21/09/2025" },
-    { value: "2025-09-22", label: "22/09/2025" },
-  ];
-  const times: Option[] = [
-    { value: "10:00", label: "10:00" },
-    { value: "13:00", label: "13:00" },
-    { value: "19:30", label: "19:30" },
-  ];
 
-  const movieOptions = selectedCinema
-    ? (moviesForCinema[selectedCinema] ?? [])
-    : [];
+  // Load movies on component mount
+  useEffect(() => {
+    const loadMovies = async () => {
+      try {
+        setLoadingMovies(true);
+        const response = await movieService.getNowPlaying(0, 50);
+        setMovies(response.content);
+      } catch (error) {
+        console.error("Error loading movies:", error);
+      } finally {
+        setLoadingMovies(false);
+      }
+    };
+
+    loadMovies();
+    setAvailableDates(generateDateOptions());
+  }, []);
+
+  // Load theaters when movie is selected
+  useEffect(() => {
+    if (!selectedMovie) {
+      setTheaters([]);
+      return;
+    }
+
+    const loadTheaters = async () => {
+      try {
+        setLoadingTheaters(true);
+        const allTheaters = await theaterService.getAllTheaters();
+        setTheaters(allTheaters);
+      } catch (error) {
+        console.error("Error loading theaters:", error);
+      } finally {
+        setLoadingTheaters(false);
+      }
+    };
+
+    loadTheaters();
+  }, [selectedMovie]);
+
+  // Load showtimes when movie, theater and date are selected
+  useEffect(() => {
+    if (!selectedMovie || !selectedTheater || !selectedDate) {
+      setShowtimes([]);
+      return;
+    }
+
+    const loadShowtimes = async () => {
+      try {
+        setLoadingShowtimes(true);
+        const moviesWithTheaters = await theaterService.getMoviesWithTheaters(
+          selectedDate,
+          selectedMovie,
+          selectedTheater
+        );
+
+        const showtimeOptions: Option[] = [];
+
+        moviesWithTheaters.forEach((movieData) => {
+          movieData.theaters.forEach((theater) => {
+            if (theater.theaterId === selectedTheater) {
+              theater.showtimes.forEach((showtime) => {
+                const startTime = new Date(showtime.startTime);
+                const timeStr = startTime.toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                });
+
+                showtimeOptions.push({
+                  value: showtime.showtimeId,
+                  label: timeStr,
+                });
+              });
+            }
+          });
+        });
+
+        setShowtimes(showtimeOptions);
+      } catch (error) {
+        console.error("Error loading showtimes:", error);
+      } finally {
+        setLoadingShowtimes(false);
+      }
+    };
+
+    loadShowtimes();
+  }, [selectedMovie, selectedTheater, selectedDate]);
 
   return (
     <div
@@ -234,59 +342,61 @@ const QuickBookingBar: React.FC = () => {
 
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <CustomSelect
-            options={cinemas}
-            value={selectedCinema}
-            onChange={(v) => {
-              setSelectedCinema(v);
-              setSelectedMovie("");
-              setSelectedDate("");
-              setSelectedTime("");
-            }}
-            placeholder="Rạp"
-          />
-
-          <CustomSelect
             options={movieOptions}
             value={selectedMovie}
             onChange={(v) => {
               setSelectedMovie(v);
+              setSelectedTheater("");
               setSelectedDate("");
-              setSelectedTime("");
+              setSelectedShowtime("");
             }}
-            placeholder="Phim"
-            disabled={!selectedCinema}
+            placeholder={loadingMovies ? "Đang tải phim..." : "Chọn phim"}
+            disabled={loadingMovies}
           />
 
           <CustomSelect
-            options={dates}
+            options={theaterOptions}
+            value={selectedTheater}
+            onChange={(v) => {
+              setSelectedTheater(v);
+              setSelectedDate("");
+              setSelectedShowtime("");
+            }}
+            placeholder={loadingTheaters ? "Đang tải rạp..." : "Chọn rạp"}
+            disabled={!selectedMovie || loadingTheaters}
+          />
+
+          <CustomSelect
+            options={availableDates}
             value={selectedDate}
             onChange={(v) => {
               setSelectedDate(v);
-              setSelectedTime("");
+              setSelectedShowtime("");
             }}
-            placeholder="Ngày"
-            disabled={!selectedMovie}
+            placeholder="Chọn ngày"
+            disabled={!selectedTheater}
           />
 
           <CustomSelect
-            options={times}
-            value={selectedTime}
-            onChange={setSelectedTime}
-            placeholder="Suất"
-            disabled={!selectedDate}
+            options={showtimes}
+            value={selectedShowtime}
+            onChange={setSelectedShowtime}
+            placeholder={loadingShowtimes ? "Đang tải suất..." : "Chọn suất"}
+            disabled={!selectedDate || loadingShowtimes}
           />
         </div>
 
         <button
-          disabled={!selectedTime}
+          disabled={!selectedShowtime}
           className="relative overflow-hidden px-10 py-3 rounded-lg font-extrabold text-black 
                      text-lg shadow-[0_0_20px_rgba(251,146,60,0.6)] 
                      transition-all duration-500 ease-out disabled:opacity-50 disabled:cursor-default
                      hover:scale-105 hover:shadow-[0_0_30px_rgba(251,146,60,0.8)]"
           onClick={() => {
-            alert(
-              `Đặt: ${selectedCinema} | ${selectedMovie} | ${selectedDate} | ${selectedTime}`
-            );
+            if (selectedShowtime) {
+              // Navigate to seat selection page with showtime ID
+              navigate(`/booking/seats/${selectedShowtime}`);
+            }
           }}
         >
           <span className="relative z-10 drop-shadow-sm">ĐẶT NGAY</span>

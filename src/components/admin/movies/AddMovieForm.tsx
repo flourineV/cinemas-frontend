@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Plus, Calendar, Film, Minus } from "lucide-react";
+import { Plus, Calendar, Film, Minus, ArrowUpFromLine } from "lucide-react";
 import Swal from "sweetalert2";
 import { movieManagementService } from "@/services/movie/movieManagementService";
 
@@ -198,21 +198,31 @@ export default function AddMovieForm({
   return (
     <div className="bg-white border border-gray-400 rounded-lg p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Plus className="w-5 h-5 text-yellow-600" />
-          <h3 className="text-lg font-semibold text-gray-800">
-            Thêm phim từ TMDB
-          </h3>
-        </div>
+      <div className="flex items-center justify-end mb-4 gap-5">
         <button
           type="button"
           onClick={addMovieRow}
-          className="flex items-center gap-1 px-3 py-1 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+          className="flex items-center justify-center w-10 h-10 bg-yellow-500 text-black rounded-full hover:bg-yellow-600 transition-colors"
           disabled={isSubmitting}
         >
-          <Plus size={14} />
-          Thêm phim
+          <Plus size={18} />
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              Đang thêm...
+            </>
+          ) : (
+            <>
+              <ArrowUpFromLine size={16} />
+              Thêm tất cả phim
+            </>
+          )}
         </button>
       </div>
 
@@ -224,9 +234,9 @@ export default function AddMovieForm({
               key={row.id}
               className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3 items-end"
             >
-              {/* TMDB ID - Chiếm 4/12 cột */}
-              <div className="md:col-span-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* TMDB ID - Tăng lên 5/12 cột để dài hơn */}
+              <div className="md:col-span-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   TMDB ID <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -237,12 +247,11 @@ export default function AddMovieForm({
                     pattern="[0-9]*"
                     value={row.tmdbId}
                     onChange={(e) => {
-                      // Chỉ cho phép số
                       const value = e.target.value.replace(/[^0-9]/g, "");
                       updateMovieRow(row.id, "tmdbId", value);
                     }}
                     className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
-            bg-white border border-gray-300
+            bg-white border border-gray-400
             text-gray-700 placeholder-gray-400
             focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
             transition"
@@ -252,9 +261,9 @@ export default function AddMovieForm({
                 </div>
               </div>
 
-              {/* Start Date - Chiếm 3/12 cột */}
+              {/* Start Date - Giữ nguyên 3/12 cột */}
               <div className="md:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ngày bắt đầu <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -266,18 +275,18 @@ export default function AddMovieForm({
                       updateMovieRow(row.id, "startDate", e.target.value)
                     }
                     className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
-                      bg-white border border-gray-300
-                      text-gray-700
-                      focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
-                      transition"
+              bg-white border border-gray-400
+              text-gray-700
+              focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
+              transition"
                     disabled={isSubmitting}
                   />
                 </div>
               </div>
 
-              {/* End Date - Chiếm 3/12 cột */}
+              {/* End Date - Giữ nguyên 3/12 cột */}
               <div className="md:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ngày kết thúc <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -289,50 +298,30 @@ export default function AddMovieForm({
                       updateMovieRow(row.id, "endDate", e.target.value)
                     }
                     className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
-                      bg-white border border-gray-300
-                      text-gray-700
-                      focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
-                      transition"
+              bg-white border border-gray-400
+              text-gray-700
+              focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
+              transition"
                     disabled={isSubmitting}
                   />
                 </div>
               </div>
 
-              {/* Remove Button - Chiếm 2/12 cột, chỉ hiển thị dấu "-" */}
-              <div className="md:col-span-1 flex items-end">
+              {/* Remove Button - 1/12 cột, căn giữa nút tròn */}
+              <div className="md:col-span-1 flex items-end justify-center pb-[2px]">
                 <button
                   type="button"
                   onClick={() => removeMovieRow(row.id)}
                   disabled={movieRows.length <= 1 || isSubmitting}
-                  className="w-full px-3 py-2 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1 border border-red-200"
+                  // Sửa style tại đây: w-10 h-10, rounded-full, xóa w-full và padding chữ nhật
+                  className="w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 rounded-full hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-red-200"
                   title="Xóa dòng này"
                 >
-                  <Minus size={18} />
+                  <Minus size={20} />
                 </button>
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end pt-2">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Đang thêm...
-              </>
-            ) : (
-              <>
-                <Plus size={16} />
-                Thêm tất cả phim
-              </>
-            )}
-          </button>
         </div>
       </form>
     </div>

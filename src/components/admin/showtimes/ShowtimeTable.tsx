@@ -237,8 +237,55 @@ export default function ShowtimeTable({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+      <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-md">
+        {/* Filters skeleton */}
+        <div className="flex flex-col md:flex-row gap-3 mb-3">
+          <div className="h-10 bg-gray-200 rounded-lg flex-1 animate-pulse"></div>
+          <div className="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-3 mb-4">
+          <div className="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+        </div>
+
+        {/* Table skeleton */}
+        <div className="overflow-x-auto rounded-lg border border-gray-400">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                {Array.from({ length: 7 }).map((_, idx) => (
+                  <th key={idx} className="px-6 py-3">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-400 bg-white">
+              {Array.from({ length: 5 }).map((_, rowIdx) => (
+                <tr key={rowIdx}>
+                  {Array.from({ length: 7 }).map((_, colIdx) => (
+                    <td key={colIdx} className="px-6 py-4">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination skeleton */}
+        <div className="flex justify-between items-center pt-4">
+          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+          <div className="flex items-center space-x-2">
+            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
       </div>
     );
   }

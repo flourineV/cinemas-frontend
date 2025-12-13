@@ -60,11 +60,11 @@ const AdminDashboard: React.FC = () => {
       <div className="flex">
         {/* SIDEBAR - Fixed */}
         <div className="w-64 bg-white border-r border-gray-400 shadow-lg fixed h-full top-0 z-10 pt-16">
-          <div className="p-6">
+          <div className="p-3">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
               Bảng Điều Khiển
             </h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-lg font-light text-gray-600 mb-6">
               Chào mừng {user?.username ?? "Quản trị viên"}
             </p>
 
@@ -80,7 +80,7 @@ const AdminDashboard: React.FC = () => {
                       // Scroll to top instantly when switching tabs
                       window.scrollTo({ top: 0, behavior: "auto" });
                     }}
-                    className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    className={`w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-yellow-500 text-white shadow-md"
                         : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
@@ -142,9 +142,6 @@ const AdminDashboard: React.FC = () => {
 
               {activeTab === "movies" && (
                 <section>
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Quản lý phim
-                  </h2>
                   <MovieManagementTable />
                 </section>
               )}
@@ -164,22 +161,6 @@ const AdminDashboard: React.FC = () => {
                     Quản lý giao dịch & thanh toán
                   </h2>
                   <BookingManagementTable />
-                </section>
-              )}
-
-              {activeTab === "logs" && (
-                <section>
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Nhật ký hoạt động
-                  </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <h3 className="text-lg font-medium mb-2 text-gray-800">
-                      Nhật ký hoạt động
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Audit logs, recent activities, security events.
-                    </p>
-                  </div>
                 </section>
               )}
             </div>

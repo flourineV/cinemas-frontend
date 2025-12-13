@@ -1,174 +1,184 @@
-import { useState } from "react";
-import Layout from "../../../components/layout/Layout";
+// src/pages/Dashboard/Staff/StaffDashboard.tsx
+"use client";
+import React, { useState } from "react";
+import Header from "../../../components/layout/Header";
+import { useAuthStore } from "@/stores/authStore";
+import { useScrollToTop } from "@/hooks/useScrollToTop";
 
-const TABS = [
-  { id: "overview", label: "Tổng quan" },
-  { id: "tickets", label: "Quản lý vé" },
-  { id: "support", label: "Hỗ trợ khách hàng" },
-  { id: "schedule", label: "Lịch chiếu" },
-  { id: "reports", label: "Báo cáo bán hàng" },
-  { id: "inventory", label: "Kho hàng" },
-  { id: "shifts", label: "Ca làm việc" },
+import OverviewCards from "@/components/admin/accounts/OverviewUserCards";
+import UserRegistrationChart from "@/components/admin/accounts/UserRegistrationChart";
+import RankDistributionChart from "@/components/admin/accounts/RankDistributionChart";
+import UserManagementTable from "@/components/admin/accounts/UserManagementTable";
+import MovieManagementTable from "@/components/admin/movies/MovieManagementTable";
+import ShowtimeManagement from "@/components/admin/showtimes/ShowtimeManagement";
+import BookingManagementTable from "@/components/admin/bookings/BookingManagementTable";
+import FacilitiesManagement from "@/components/admin/facilities/FacilitiesManagement";
+
+type Tab = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+const TABS: Tab[] = [
+  {
+    id: "accounts",
+    label: "Quản lý tài khoản",
+  },
+  { id: "movies", label: "Quản lý phim" },
+  {
+    id: "showtimes",
+    label: "Quản lý lịch chiếu",
+  },
+  {
+    id: "bookings",
+    label: "Quản lý đặt vé",
+  },
+  {
+    id: "payments",
+    label: "Quản lý thanh toán",
+  },
+  {
+    id: "notifications",
+    label: "Quản lý thông báo",
+  },
+  { id: "reviews", label: "Quản lý đánh giá" },
+  { id: "facilities", label: "Quản lý cơ sở vật chất" },
+  { id: "promotions", label: "Quản lý mã giảm giá" },
 ];
 
-const StaffDashboard = () => {
-  const [activeTab, setActiveTab] = useState<string>("overview");
+const StaffDashboard: React.FC = () => {
+  const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<string>("accounts");
+
+  // Scroll to top when route changes
+  useScrollToTop();
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-white">
-        <div className="flex">
-          {/* SIDEBAR */}
-          <div className="w-64 min-h-screen bg-white border-r border-gray-200 shadow-sm">
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                Staff Panel
-              </h1>
-              <p className="text-sm text-gray-600 mb-6">Dashboard Nhân Viên</p>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="flex">
+        {/* SIDEBAR - Fixed */}
+        <div className="w-64 bg-white border-r border-gray-400 shadow-lg fixed h-full top-0 z-10 pt-16">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              Bảng Điều Khiển Nhân Viên
+            </h1>
+            <p className="text-sm text-gray-600 mb-6">
+              Chào mừng {user?.username ?? "Nhân viên"}
+            </p>
 
-              {/* SIDEBAR NAVIGATION */}
-              <nav className="space-y-2">
-                {TABS.map((tab) => {
-                  const isActive = tab.id === activeTab;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        isActive
-                          ? "bg-green-500 text-white shadow-sm"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
+            {/* SIDEBAR NAVIGATION */}
+            <nav className="space-y-2">
+              {TABS.map((tab) => {
+                const isActive = tab.id === activeTab;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      // Scroll to top instantly when switching tabs
+                      window.scrollTo({ top: 0, behavior: "auto" });
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-yellow-500 text-white shadow-md"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
+        </div>
 
-          {/* MAIN CONTENT */}
-          <div className="flex-1 p-8">
+        {/* MAIN CONTENT - Scrollable */}
+        <div className="flex-1 ml-64 pt-16">
+          <div className="p-8">
             <div className="max-w-6xl mx-auto">
-              {activeTab === "overview" && (
+              {activeTab === "accounts" && (
                 <div className="space-y-8">
                   <section>
-                    <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                      Thống kê nhanh
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                      <div className="bg-blue-600 rounded-lg p-6 text-center">
-                        <h3 className="text-2xl font-bold text-white">156</h3>
-                        <p className="text-blue-100">Vé bán hôm nay</p>
-                      </div>
-                      <div className="bg-green-600 rounded-lg p-6 text-center">
-                        <h3 className="text-2xl font-bold text-white">2.5M</h3>
-                        <p className="text-green-100">Doanh thu ca</p>
-                      </div>
-                      <div className="bg-purple-600 rounded-lg p-6 text-center">
-                        <h3 className="text-2xl font-bold text-white">12</h3>
-                        <p className="text-purple-100">Suất chiếu</p>
-                      </div>
-                      <div className="bg-orange-600 rounded-lg p-6 text-center">
-                        <h3 className="text-2xl font-bold text-white">3</h3>
-                        <p className="text-orange-100">Yêu cầu hỗ trợ</p>
+                    <OverviewCards />
+                  </section>
+
+                  <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                    <div className="flex flex-col">
+                      <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+                        Số tài khoản đăng ký rạp (theo tháng)
+                      </h2>
+                      <div className="flex-1">
+                        <UserRegistrationChart />
                       </div>
                     </div>
+                    <div className="flex flex-col">
+                      <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+                        Phân bố hạng thành viên
+                      </h2>
+                      <div className="flex-1">
+                        <RankDistributionChart />
+                      </div>
+                    </div>
+                  </section>
+                  <section>
+                    <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+                      Bảng quản lý tài khoản
+                    </h2>
+                    <UserManagementTable />
                   </section>
                 </div>
               )}
 
-              {activeTab === "tickets" && (
+              {activeTab === "facilities" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Quản lý vé
+                    Quản lý cơ sở vật chất
                   </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <p className="text-gray-600 mb-4">
-                      Xử lý đặt vé và hoàn tiền
-                    </p>
-                    <button className="bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-300">
-                      Quản lý vé
-                    </button>
-                  </div>
+                  <FacilitiesManagement />
                 </section>
               )}
 
-              {activeTab === "support" && (
+              {activeTab === "movies" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Hỗ trợ khách hàng
+                    Quản lý phim
                   </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <p className="text-gray-600 mb-4">
-                      Xử lý yêu cầu từ khách hàng
-                    </p>
-                    <button className="bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-300">
-                      Xem yêu cầu
-                    </button>
-                  </div>
+                  <MovieManagementTable />
                 </section>
               )}
 
-              {activeTab === "schedule" && (
+              {activeTab === "showtimes" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Lịch chiếu
+                    Quản lý lịch chiếu
                   </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <p className="text-gray-600 mb-4">
-                      Quản lý lịch chiếu phim
-                    </p>
-                    <button className="bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-300">
-                      Xem lịch
-                    </button>
-                  </div>
+                  <ShowtimeManagement />
                 </section>
               )}
 
-              {activeTab === "reports" && (
+              {activeTab === "bookings" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Báo cáo bán hàng
+                    Quản lý giao dịch & thanh toán
                   </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <p className="text-gray-600 mb-4">
-                      Thống kê doanh thu theo ca
-                    </p>
-                    <button className="bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-300">
-                      Xem báo cáo
-                    </button>
-                  </div>
+                  <BookingManagementTable />
                 </section>
               )}
 
-              {activeTab === "inventory" && (
+              {activeTab === "logs" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Kho hàng
+                    Nhật ký hoạt động
                   </h2>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <p className="text-gray-600 mb-4">
-                      Quản lý đồ ăn, nước uống
+                    <h3 className="text-lg font-medium mb-2 text-gray-800">
+                      Nhật ký hoạt động
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Audit logs, recent activities, security events.
                     </p>
-                    <button className="bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-300">
-                      Quản lý kho
-                    </button>
-                  </div>
-                </section>
-              )}
-
-              {activeTab === "shifts" && (
-                <section>
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Ca làm việc
-                  </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <p className="text-gray-600 mb-4">Xem lịch và điểm danh</p>
-                    <button className="bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-300">
-                      Xem ca làm
-                    </button>
                   </div>
                 </section>
               )}
@@ -176,7 +186,7 @@ const StaffDashboard = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

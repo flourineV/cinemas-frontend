@@ -128,8 +128,28 @@ const RankDistributionChart: React.FC = () => {
   if (loading) {
     return (
       <div className="bg-white border border-gray-400 rounded-lg p-6 h-full">
-        <div className="flex justify-center items-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+        {/* Header skeleton */}
+        <div className="mb-4 text-center sm:text-left">
+          <div className="h-6 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center gap-6 py-4 pt-5">
+          {/* Pie chart skeleton */}
+          <div className="w-32 h-32 rounded-full bg-gray-200 animate-pulse shrink-0"></div>
+
+          {/* Legend skeleton */}
+          <div className="space-y-2 w-full max-w-[220px]">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded-full bg-gray-200 animate-pulse shrink-0"></div>
+                <div className="flex items-center justify-between gap-4 w-full">
+                  <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

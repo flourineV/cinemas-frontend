@@ -80,8 +80,58 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+      <div className="space-y-6">
+        {/* Overall Stats Skeleton */}
+        <div>
+          <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm animate-pulse"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                    <div className="h-8 bg-gray-200 rounded w-12"></div>
+                  </div>
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Theater Stats Skeleton */}
+        <div>
+          <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
+          <div className="bg-white border border-gray-400 rounded-lg shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <th key={idx} className="px-6 py-3">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {Array.from({ length: 3 }).map((_, rowIdx) => (
+                    <tr key={rowIdx}>
+                      {Array.from({ length: 4 }).map((_, colIdx) => (
+                        <td key={colIdx} className="px-6 py-4">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

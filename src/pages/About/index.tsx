@@ -6,6 +6,7 @@ import { theaterService } from "@/services/showtime/theaterService";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 
 // Theater Gallery Component - Same as SearchPage
+// Theater Gallery Component
 const TheaterGallery = () => {
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,7 @@ const TheaterGallery = () => {
           >
             {/* Theater Image */}
             {theater.imageUrl && (
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-48 overflow-hidden flex-shrink-0">
                 <img
                   src={theater.imageUrl}
                   alt={theater.name}
@@ -54,29 +55,35 @@ const TheaterGallery = () => {
               </div>
             )}
 
-            {/* Theater Info */}
+            {/* Theater Info Container */}
             <div className="p-6 flex flex-col flex-1">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                {theater.name}
-              </h3>
-              <div className="flex items-start gap-2 text-gray-600 text-sm mb-3">
-                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <p className="line-clamp-2">{theater.address}</p>
+              {/* PHẦN TRÊN: Tên và Địa chỉ */}
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  {theater.name}
+                </h3>
+                <div className="flex items-start gap-2 text-gray-600 text-sm">
+                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <p className="line-clamp-2">{theater.address}</p>
+                </div>
               </div>
-              {theater.provinceName && (
-                <p className="text-xs text-gray-500 mb-4">
-                  {theater.provinceName}
-                </p>
-              )}
 
-              {/* Book Button - Always at bottom */}
-              <button
-                onClick={() => navigate(`/theater/${theater.id}`)}
-                className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2.5 rounded-lg transition-colors mt-auto"
-              >
-                <Ticket className="w-4 h-4" />
-                Đặt vé
-              </button>
+              {/* PHẦN DƯỚI: Tỉnh thành và Nút (Được đẩy xuống đáy nhờ mt-auto) */}
+              <div className="mt-auto w-full">
+                {theater.provinceName && (
+                  <p className="text-lg text-yellow-500 font-light mb-4">
+                    {theater.provinceName}
+                  </p>
+                )}
+
+                <button
+                  onClick={() => navigate(`/theater/${theater.id}`)}
+                  className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2.5 rounded-lg transition-colors"
+                >
+                  <Ticket className="w-4 h-4" />
+                  Đặt vé
+                </button>
+              </div>
             </div>
           </div>
         ))}

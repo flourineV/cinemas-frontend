@@ -98,6 +98,23 @@ export default function UserRegistrationChart() {
     });
   }
 
+  if (loading) {
+    return (
+      <div className="bg-white border border-gray-400 rounded-lg p-6">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-end mb-6 gap-2">
+          <div className="h-9 w-28 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="h-9 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+        </div>
+
+        {/* Chart skeleton */}
+        <div className="h-[300px] bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">
+          <div className="text-gray-400 text-sm">Đang tải biểu đồ...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white border border-gray-400 rounded-lg p-6">
       <div className="flex items-center justify-end mb-6 gap-2">
@@ -142,8 +159,6 @@ export default function UserRegistrationChart() {
           </LineChart>
         </ResponsiveContainer>
       </div>
-
-      {loading && <div className="text-sm text-gray-500 mt-2">Đang tải...</div>}
     </div>
   );
 }

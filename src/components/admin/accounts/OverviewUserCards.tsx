@@ -53,11 +53,22 @@ export default function OverviewCards() {
     }
   }
 
-  // Skeleton loading với spinner xanh dương
+  // Skeleton loading
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        {Array.from({ length: 5 }).map((_, idx) => (
+          <div
+            key={idx}
+            className="bg-white border border-gray-400 rounded-lg p-6 animate-pulse"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+              <div className="h-5 w-5 bg-gray-200 rounded"></div>
+            </div>
+            <div className="h-8 bg-gray-200 rounded w-16"></div>
+          </div>
+        ))}
       </div>
     );
   }
