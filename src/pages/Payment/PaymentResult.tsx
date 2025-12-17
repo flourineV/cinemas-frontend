@@ -32,9 +32,21 @@ const PaymentResult = () => {
           setStatus("success");
           setMessage("Thanh toán thành công!");
 
-          // Redirect về trang booking history sau 3 giây
+          // Phân biệt loại payment để redirect đúng tab
+          // Check nếu có type parameter hoặc appTransId có pattern FnB
+          const paymentType = searchParams.get("type");
+          const isFnbPayment =
+            paymentType === "fnb" ||
+            appTransId.toLowerCase().includes("fnb") ||
+            appTransId.toLowerCase().includes("popcorn");
+
+          // Redirect về trang phù hợp sau 3 giây
           setTimeout(() => {
-            navigate("/profile?tab=bookings");
+            if (isFnbPayment) {
+              navigate("/profile?tab=fnb");
+            } else {
+              navigate("/profile?tab=bookings");
+            }
           }, 3000);
         } else {
           setStatus("failed");
@@ -72,7 +84,17 @@ const PaymentResult = () => {
                 Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi
               </p>
               <p className="text-sm text-gray-500">
-                Đang chuyển hướng đến trang lịch sử đặt vé...
+                {(() => {
+                  const paymentType = searchParams.get("type");
+                  const appTransId = searchParams.get("apptransid") || "";
+                  const isFnbPayment =
+                    paymentType === "fnb" ||
+                    appTransId.toLowerCase().includes("fnb") ||
+                    appTransId.toLowerCase().includes("popcorn");
+                  return isFnbPayment
+                    ? "Đang chuyển hướng đến lịch sử bắp nước..."
+                    : "Đang chuyển hướng đến trang lịch sử đặt vé...";
+                })()}
               </p>
             </div>
           )}
@@ -92,7 +114,19 @@ const PaymentResult = () => {
                   Về trang chủ
                 </button>
                 <button
-                  onClick={() => navigate("/profile?tab=bookings")}
+                  onClick={() => {
+                    const paymentType = searchParams.get("type");
+                    const appTransId = searchParams.get("apptransid") || "";
+                    const isFnbPayment =
+                      paymentType === "fnb" ||
+                      appTransId.toLowerCase().includes("fnb") ||
+                      appTransId.toLowerCase().includes("popcorn");
+                    navigate(
+                      isFnbPayment
+                        ? "/profile?tab=fnb"
+                        : "/profile?tab=bookings"
+                    );
+                  }}
                   className="bg-yellow-400 text-black font-semibold px-6 py-2 rounded-md hover:bg-yellow-500 transition"
                 >
                   Xem đơn hàng

@@ -3,6 +3,7 @@ import type {
   PromotionRequest,
   PromotionResponse,
   PromotionValidationResponse,
+  UserPromotionsResponse,
 } from "@/types/promotion/promotion.type";
 
 export const promotionService = {
@@ -15,6 +16,16 @@ export const promotionService = {
   // Lấy các khuyến mãi đang active
   getActivePromotions: async (): Promise<PromotionResponse[]> => {
     const res = await promotionClient.get<PromotionResponse[]>("/active");
+    return res.data;
+  },
+
+  // Lấy các khuyến mãi cho user cụ thể (phân chia applicable và not applicable)
+  getActivePromotionsForUser: async (
+    userId: string
+  ): Promise<UserPromotionsResponse> => {
+    const res = await promotionClient.get<UserPromotionsResponse>(
+      `/active-for-user?userId=${userId}`
+    );
     return res.data;
   },
 
@@ -48,5 +59,25 @@ export const promotionService = {
   // Xóa promotion
   deletePromotion: async (id: string): Promise<void> => {
     await promotionClient.delete(`/${id}`);
+  },
+
+  // Lấy tất cả promotion cho admin với filter
+  getAllPromotionsForAdmin: async (
+    code?: string,
+    discountType?: string,
+    promotionType?: string,
+    isActive?: boolean
+  ): Promise<PromotionResponse[]> => {
+    const params = new URLSearchParams();
+    if (code) params.append("code", code);
+    if (discountType) params.append("discountType", discountType);
+    if (promotionType) params.append("promotionType", promotionType);
+    if (isActive !== undefined) params.append("isActive", isActive.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `/admin/all?${queryString}` : "/admin/all";
+
+    const res = await promotionClient.get<PromotionResponse[]>(url);
+    return res.data;
   },
 };

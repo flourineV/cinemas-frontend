@@ -1,13 +1,7 @@
-import { useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { useOutsideClick } from "@/hooks/useOutsideClick";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown, Check } from "lucide-react";
 
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-type Variant = "dark" | "light" | "gold" | "outline" | "glass";
+export type SelectOption = { value: string; label: string };
 
 interface CustomSelectProps {
   options: SelectOption[];
@@ -16,126 +10,250 @@ interface CustomSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  buttonClassName?: string;
-  dropdownClassName?: string;
-  dropdownPosition?: "bottom" | "top";
-  variant?: Variant;
+  variant?: "default" | "glass" | "solid";
 }
 
-export function CustomSelect({
+const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = "Chọn...",
+  placeholder,
   disabled = false,
   className = "",
-  buttonClassName = "",
-  dropdownClassName = "",
-  dropdownPosition = "bottom",
-  variant = "dark",
-}: CustomSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement | null>(null);
+  variant = "default",
+}) => {
+  const [open, setOpen] = useState(false);
+  const [anim, setAnim] = useState(false);
+  const [highlight, setHighlight] = useState<number>(-1);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
 
-  useOutsideClick(selectRef, () => setIsOpen(false), isOpen);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-  const displayText = selectedOption?.label ?? placeholder;
-
-  const positionClasses =
-    dropdownPosition === "top" ? "bottom-full mb-2" : "mt-2";
-
-  // === BUTTON STYLES ===
-  const buttonStyles =
-    variant === "light"
-      ? "bg-white border-gray-300 text-gray-800 hover:bg-gray-50"
-      : variant === "gold"
-        ? "bg-black border-yellow-400 text-yellow-300"
-        : variant === "outline"
-          ? "bg-transparent border-2 border-zinc-600 text-zinc-700 hover:bg-zinc-100"
-          : variant === "glass"
-            ? "backdrop-blur-md bg-white/20 border-white/30 text-white shadow-lg hover:bg-white/30"
-            : "bg-transparent border-zinc-800 text-zinc-800"; // dark mặc định
-
-  // === DROPDOWN STYLES ===
-  const dropdownStyles =
-    variant === "light"
-      ? "bg-white border-gray-300"
-      : variant === "gold"
-        ? "bg-black border-yellow-400 text-yellow-200"
-        : variant === "outline"
-          ? "bg-white border-zinc-600"
-          : variant === "glass"
-            ? "backdrop-blur-xl bg-white/10 border-white/40 text-white"
-            : "bg-white border-zinc-800";
-
-  // === OPTION STYLES ===
-  const optionStyles = (isSelected: boolean) => {
-    if (variant === "gold") {
-      return isSelected
-        ? "bg-yellow-500 text-black font-semibold"
-        : "text-yellow-200 hover:bg-yellow-400 hover:text-black";
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target as Node)) handleClose();
     }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
 
-    if (variant === "outline") {
-      return isSelected
-        ? "bg-zinc-200 text-black font-semibold"
-        : "text-zinc-700 hover:bg-zinc-100";
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  function handleOpen() {
+    if (disabled) return;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
     }
+    setOpen(true);
+    requestAnimationFrame(() => setAnim(true));
+  }
 
-    if (variant === "glass") {
-      return isSelected
-        ? "bg-white/30 text-black font-semibold"
-        : "text-white hover:bg-white/20";
+  function handleClose() {
+    setAnim(false);
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      closeTimerRef.current = null;
+      setHighlight(-1);
+    }, 180);
+  }
+
+  function toggle() {
+    if (disabled) return;
+    if (!open) handleOpen();
+    else handleClose();
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) handleOpen();
+      setHighlight((h) => Math.min(h + 1, options.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!open) handleOpen();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (!open) {
+        handleOpen();
+        const idx = options.findIndex((o) => o.value === value);
+        setHighlight(idx >= 0 ? idx : 0);
+      } else {
+        if (highlight >= 0 && highlight < options.length) {
+          onChange(options[highlight].value);
+        }
+        handleClose();
+      }
+    } else if (e.key === "Escape") handleClose();
+  }
+
+  useEffect(() => {
+    if (!listRef.current || highlight < 0) return;
+    const el = listRef.current.children[highlight] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [highlight]);
+
+  const currentLabel =
+    options.find((o) => o.value === value)?.label ?? placeholder ?? "";
+
+  // Variant styles
+  const getButtonStyles = () => {
+    const baseStyles = `
+      w-full text-left px-4 py-3 pr-12 rounded-lg h-12 leading-tight
+      font-semibold outline-none transition-all select-none
+      focus:ring-2 focus:ring-offset-2
+    `;
+
+    switch (variant) {
+      case "glass":
+        return `${baseStyles}
+          bg-white/10 text-white border border-gray-600
+          focus:border-white focus:ring-white/30
+          backdrop-blur-sm hover:bg-white/20
+          shadow-[0_30px_60px_rgba(0,0,0,0.7)]
+        `;
+      case "solid":
+        return `${baseStyles}
+          bg-white text-gray-900 border border-gray-300
+          focus:border-yellow-500 focus:ring-yellow-500/30
+          hover:border-gray-400 shadow-sm
+        `;
+      default:
+        return `${baseStyles}
+          bg-white text-gray-900 border border-gray-300
+          focus:border-blue-500 focus:ring-blue-500/30
+          hover:border-gray-400 shadow-sm
+        `;
     }
+  };
 
-    // Giữ nguyên logic dark/light
-    return variant === "light"
-      ? isSelected
-        ? "text-yellow-600 bg-gray-100 font-semibold"
-        : "text-gray-700 hover:bg-yellow-500 hover:text-white"
-      : isSelected
-        ? "text-yellow-300 bg-black/50 font-semibold"
-        : "text-yellow-100/80 hover:bg-yellow-300 hover:text-black";
+  const getDropdownStyles = () => {
+    const baseStyles = `
+      absolute z-50 left-0 top-full mt-2 min-w-full max-h-56 overflow-auto
+      border shadow-lg rounded-lg
+      transform origin-top transition-all duration-180 ease-out
+    `;
+
+    switch (variant) {
+      case "glass":
+        return `${baseStyles}
+          bg-black/95 backdrop-blur-xl border-gray-700
+          shadow-[0_8px_24px_rgba(0,0,0,0.5)]
+        `;
+      default:
+        return `${baseStyles}
+          bg-white border-gray-200
+          shadow-[0_8px_24px_rgba(0,0,0,0.15)]
+        `;
+    }
+  };
+
+  const getOptionStyles = (isSelected: boolean, isHighlighted: boolean) => {
+    const baseStyles =
+      "px-4 py-3 cursor-pointer flex items-center justify-between transition-colors";
+
+    switch (variant) {
+      case "glass":
+        return `${baseStyles} text-white
+          ${isHighlighted ? "bg-white/20" : ""} 
+          ${isSelected ? "font-semibold" : ""}
+        `;
+      default:
+        return `${baseStyles} text-gray-900
+          ${isHighlighted ? "bg-gray-100" : ""} 
+          ${isSelected ? "font-semibold bg-blue-50" : ""}
+        `;
+    }
+  };
+
+  const getChevronColor = () => {
+    switch (variant) {
+      case "glass":
+        return "text-white";
+      default:
+        return "text-gray-500";
+    }
+  };
+
+  const getCheckColor = () => {
+    switch (variant) {
+      case "glass":
+        return "text-white";
+      default:
+        return "text-blue-500";
+    }
   };
 
   return (
-    <div className={`relative ${className}`} ref={selectRef}>
+    <div
+      ref={rootRef}
+      className={`relative w-full select-none ${disabled ? "opacity-50" : ""} ${className}`}
+    >
       <button
-        onClick={() => !disabled && setIsOpen((s) => !s)}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onKeyDown={onKeyDown}
+        onClick={toggle}
         disabled={disabled}
-        className={`flex items-center justify-between w-full px-5 py-3 text-base font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${buttonStyles} ${buttonClassName}`}
+        className={getButtonStyles()}
       >
-        <span>{displayText}</span>
+        <span className="truncate block">{currentLabel}</span>
         <ChevronDown
-          className={`w-5 h-5 transition-transform ${
-            isOpen ? "rotate-180" : ""
+          size={18}
+          className={`absolute right-4 top-1/2 -translate-y-1/2 ${getChevronColor()} pointer-events-none transition-transform duration-200 ${
+            open && anim ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      {isOpen && !disabled && (
-        <div
-          className={`absolute right-0 w-full rounded-md shadow-lg border z-20 animate-fadeIn max-h-60 overflow-y-auto ${positionClasses} ${dropdownStyles} ${dropdownClassName}`}
+      {open && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          aria-activedescendant={
+            highlight >= 0
+              ? `opt-${highlight}-${options[highlight].value}`
+              : undefined
+          }
+          tabIndex={-1}
+          className={`${getDropdownStyles()} ${
+            anim ? "scale-100 opacity-100" : "scale-95 opacity-0"
+          }`}
         >
-          <div className="py-1">
-            {options.map((option) => (
-              <button
-                key={option.value}
+          {options.map((opt, idx) => {
+            const isSelected = opt.value === value;
+            const isHighlighted = idx === highlight;
+            return (
+              <li
+                id={`opt-${idx}-${opt.value}`}
+                key={opt.value}
+                role="option"
+                aria-selected={isSelected}
+                onMouseEnter={() => setHighlight(idx)}
+                onMouseLeave={() => setHighlight(-1)}
                 onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
+                  onChange(opt.value);
+                  handleClose();
                 }}
-                className={`block w-full text-left px-5 py-3 text-base transition-colors ${optionStyles(
-                  value === option.value
-                )}`}
+                className={getOptionStyles(isSelected, isHighlighted)}
               >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+                <span className="truncate">{opt.label}</span>
+                {isSelected && <Check size={16} className={getCheckColor()} />}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
-}
+};
+
+export default CustomSelect;

@@ -1,115 +1,133 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
-import { fnbService } from "@/services/fnb/fnbService";
+import { paymentService } from "@/services/payment/payment.service";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
-import {
-  User,
-  Mail,
-  Phone,
-  CreditCard,
-  ArrowLeft,
-  ArrowRight,
-} from "lucide-react";
-import AnimatedButton from "@/components/ui/AnimatedButton";
-import { apiClient } from "@/services/apiClient";
+import { Check, CreditCard } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
+import Swal from "sweetalert2";
+
+// Import FnB components
+import FnbOrderSummary from "@/components/fnb/FnbOrderSummary";
+import { useAccurateTimer } from "@/hooks/useAccurateTimer";
 
 interface CartItem {
   id: string;
   name: string;
-  price: number;
+  unitPrice: number;
   quantity: number;
 }
 
-interface CustomerInfo {
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-}
+const FNB_STEPS = [
+  { id: 1, label: "CHỌN BẮP NƯỚC" },
+  { id: 2, label: "THANH TOÁN" },
+];
 
 const FnbCheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { theater, cart, totalAmount } = location.state as {
-    theater: TheaterResponse;
-    cart: CartItem[];
-    totalAmount: number;
-  };
+  const { user } = useAuthStore();
+  const { theater, cart, totalAmount, order, ttl, ttlTimestamp } =
+    location.state as {
+      theater: TheaterResponse;
+      cart: CartItem[];
+      totalAmount: number;
+      order: any;
+      ttl: number;
+      ttlTimestamp: number;
+    };
 
-  const [currentStep, setCurrentStep] = useState(1);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-  });
+  const [activeStep] = useState(2); // Nhảy thẳng step 2
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Partial<CustomerInfo>>({});
 
-  const handleInputChange = (field: keyof CustomerInfo, value: string) => {
-    setCustomerInfo((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
+  // Calculate accurate TTL
+  const adjustedTTL = ttl
+    ? Math.max(0, ttl - Math.floor((Date.now() - ttlTimestamp) / 1000))
+    : null;
+  const timeLeft = useAccurateTimer({
+    initialTime: adjustedTTL,
+    enabled: true,
+    onExpired: () => {
+      Swal.fire({
+        title: "Hết thời gian",
+        text: "Đơn hàng đã hết hạn. Vui lòng đặt lại.",
+        icon: "warning",
+        confirmButtonColor: "#eab308",
+      }).then(() => {
+        navigate("/popcorn-drink");
+      });
+    },
+  });
+
+  // Check authentication on mount
+  useEffect(() => {
+    if (!user) {
+      Swal.fire({
+        title: "Yêu cầu đăng nhập",
+        text: "Bạn cần đăng nhập để đặt bắp nước",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Đăng nhập",
+        cancelButtonText: "Quay lại",
+        confirmButtonColor: "#eab308",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/auth");
+        } else {
+          navigate("/popcorn-drink");
+        }
+      });
     }
-  };
+  }, [user, navigate]);
 
-  const validateStep1 = () => {
-    const newErrors: Partial<CustomerInfo> = {};
-
-    if (!customerInfo.fullName.trim()) {
-      newErrors.fullName = "Vui lòng nhập họ tên";
+  const handlePayment = async () => {
+    if (!user || !order) {
+      Swal.fire({
+        title: "Lỗi",
+        text: "Không tìm thấy thông tin đơn hàng",
+        icon: "error",
+        confirmButtonColor: "#eab308",
+      });
+      return;
     }
 
-    if (!customerInfo.email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
-    } else if (!/\S+@\S+\.\S+/.test(customerInfo.email)) {
-      newErrors.email = "Email không hợp lệ";
-    }
+    console.log("🔍 [FnbCheckout] Order data:", order);
+    console.log("🔍 [FnbCheckout] Order ID:", order.id);
 
-    if (!customerInfo.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Vui lòng nhập số điện thoại";
-    } else if (!/^[0-9]{10,11}$/.test(customerInfo.phoneNumber)) {
-      newErrors.phoneNumber = "Số điện thoại không hợp lệ";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleNextStep = () => {
-    if (validateStep1()) {
-      setCurrentStep(2);
-    }
-  };
-
-  const handleCreateOrder = async () => {
     setLoading(true);
     try {
-      // Create FnB order
-      const orderData = {
-        theaterId: theater.id,
-        items: cart.map((item) => ({
-          fnbItemId: item.id,
-          quantity: item.quantity,
-        })),
-        customerInfo,
-      };
+      // Chỉ tạo ZaloPay payment URL (order đã được tạo ở PopcornDrinkPage)
+      // Ensure order.id is string (not UUID object)
+      const fnbOrderId =
+        typeof order.id === "string" ? order.id : order.id.toString();
+      console.log("🔍 [FnbCheckout] Sending fnbOrderId:", fnbOrderId);
 
-      const order = await fnbService.createOrder(orderData);
+      const paymentResponse =
+        await paymentService.createZaloPayUrlForFnb(fnbOrderId);
 
-      // Create ZaloPay payment URL for FnB
-      const paymentResponse = await apiClient.post(
-        `/payments/create-zalopay-url-fnb?fnbOrderId=${order.id}`
-      );
-
-      if (paymentResponse.data.order_url) {
+      if (paymentResponse.order_url) {
         // Redirect to ZaloPay
-        window.location.href = paymentResponse.data.order_url;
+        window.location.href = paymentResponse.order_url;
       } else {
         throw new Error("Không thể tạo link thanh toán");
       }
-    } catch (error) {
-      console.error("Error creating order:", error);
-      alert("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.");
+    } catch (error: any) {
+      console.error("❌ [FnbCheckout] Payment error:", error);
+      console.error("❌ [FnbCheckout] Error response:", error.response?.data);
+      console.error("❌ [FnbCheckout] Error status:", error.response?.status);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Có lỗi xảy ra khi tạo thanh toán";
+
+      Swal.fire({
+        title: "Lỗi",
+        text: `${errorMessage}. Vui lòng thử lại.`,
+        icon: "error",
+        confirmButtonColor: "#eab308",
+      });
     } finally {
       setLoading(false);
     }
@@ -121,12 +139,12 @@ const FnbCheckoutPage = () => {
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
           <div className="text-center">
             <p className="text-gray-500 mb-4">Không có thông tin đơn hàng</p>
-            <AnimatedButton
-              variant="orange-to-f3ea28"
+            <button
               onClick={() => navigate("/popcorn-drink")}
+              className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
             >
               Quay lại đặt bắp nước
-            </AnimatedButton>
+            </button>
           </div>
         </div>
       </Layout>
@@ -135,242 +153,152 @@ const FnbCheckoutPage = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-100 pt-8 pb-16">
-        <div className="max-w-4xl mx-auto px-4">
+      <div className="min-h-screen bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold text-yellow-500 mb-4">
-              THANH TOÁN BẮP NƯỚC
+              ĐẶT BẮP NƯỚC
             </h1>
+            <p className="text-gray-600 text-lg">
+              Hoàn tất đơn hàng và thanh toán
+            </p>
+          </div>
 
-            {/* Steps */}
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div
-                className={`flex items-center gap-2 ${currentStep >= 1 ? "text-yellow-500" : "text-gray-400"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? "bg-yellow-500 text-white" : "bg-gray-300"}`}
-                >
-                  1
+          {/* Steps Progress */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center space-x-8">
+              {FNB_STEPS.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                      step.id <= activeStep
+                        ? "bg-yellow-500 border-yellow-500 text-white"
+                        : "bg-white border-gray-300 text-gray-400"
+                    }`}
+                  >
+                    {step.id < activeStep ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <span className="text-sm font-bold">{step.id}</span>
+                    )}
+                  </div>
+                  <span
+                    className={`ml-3 text-sm font-medium ${
+                      step.id <= activeStep
+                        ? "text-yellow-600"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  {index < FNB_STEPS.length - 1 && (
+                    <div
+                      className={`w-16 h-0.5 ml-8 ${
+                        step.id < activeStep ? "bg-yellow-500" : "bg-gray-300"
+                      }`}
+                    />
+                  )}
                 </div>
-                <span className="font-semibold">Thông tin</span>
-              </div>
-              <div className="w-8 h-px bg-gray-300"></div>
-              <div
-                className={`flex items-center gap-2 ${currentStep >= 2 ? "text-yellow-500" : "text-gray-400"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? "bg-yellow-500 text-white" : "bg-gray-300"}`}
-                >
-                  2
-                </div>
-                <span className="font-semibold">Thanh toán</span>
-              </div>
+              ))}
             </div>
           </div>
 
+          {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
+            {/* Left Side - Steps */}
             <div className="lg:col-span-2">
-              {currentStep === 1 && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                    Thông tin khách hàng
-                  </h2>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Họ và tên
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                          type="text"
-                          value={customerInfo.fullName}
-                          onChange={(e) =>
-                            handleInputChange("fullName", e.target.value)
-                          }
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="Nhập họ và tên"
-                        />
-                      </div>
-                      {errors.fullName && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.fullName}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Email
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                          type="email"
-                          value={customerInfo.email}
-                          onChange={(e) =>
-                            handleInputChange("email", e.target.value)
-                          }
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="example@email.com"
-                        />
-                      </div>
-                      {errors.email && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.email}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Số điện thoại
-                      </label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                          type="tel"
-                          value={customerInfo.phoneNumber}
-                          onChange={(e) =>
-                            handleInputChange("phoneNumber", e.target.value)
-                          }
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="0912345678"
-                        />
-                      </div>
-                      {errors.phoneNumber && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.phoneNumber}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between mt-8">
-                    <button
-                      onClick={() => navigate("/popcorn-drink")}
-                      className="flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+              <div className="bg-white rounded-xl shadow-lg p-8">
+                <AnimatePresence mode="wait">
+                  {activeStep === 2 && (
+                    <motion.div
+                      key="payment"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
                     >
-                      <ArrowLeft className="w-5 h-5" />
-                      Quay lại
-                    </button>
+                      <div className="space-y-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                          💳 Thanh toán
+                        </h2>
 
-                    <AnimatedButton
-                      variant="orange-to-f3ea28"
-                      onClick={handleNextStep}
-                      className="flex items-center gap-2 px-8 py-3"
-                    >
-                      Tiếp tục
-                      <ArrowRight className="w-5 h-5" />
-                    </AnimatedButton>
-                  </div>
-                </div>
-              )}
+                        {user && (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                            <h3 className="font-semibold text-gray-900 mb-2">
+                              Thông tin khách hàng:
+                            </h3>
+                            <p className="text-gray-700">👤 {user.username}</p>
+                            <p className="text-gray-700">📧 {user.email}</p>
+                          </div>
+                        )}
 
-              {currentStep === 2 && (
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                    Phương thức thanh toán
-                  </h2>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <img
+                              src="/zalopay-logo.png"
+                              alt="ZaloPay"
+                              className="w-12 h-12 object-contain"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iOCIgZmlsbD0iIzAwNTFBNSIvPgo8cGF0aCBkPSJNMTIgMTZIMzZWMzJIMTJWMTZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K";
+                              }}
+                            />
+                            <div>
+                              <p className="font-bold text-gray-900 text-lg">
+                                Thanh toán qua ZaloPay
+                              </p>
+                              <p className="text-gray-600">
+                                Bạn sẽ được chuyển đến ZaloPay để hoàn tất thanh
+                                toán
+                              </p>
+                            </div>
+                            <CreditCard className="w-8 h-8 text-blue-600 ml-auto" />
+                          </div>
+                        </div>
 
-                  <div className="border border-gray-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src="/zalopay-logo.png"
-                        alt="ZaloPay"
-                        className="w-12 h-12 object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iOCIgZmlsbD0iIzAwNTFBNSIvPgo8cGF0aCBkPSJNMTIgMTZIMzZWMzJIMTJWMTZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K";
-                        }}
-                      />
-                      <div>
-                        <p className="font-semibold text-gray-900">ZaloPay</p>
-                        <p className="text-sm text-gray-600">
-                          Thanh toán qua ví điện tử ZaloPay
-                        </p>
+                        <div className="flex justify-between mt-8">
+                          <button
+                            onClick={() => navigate("/popcorn-drink")}
+                            className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors font-semibold"
+                          >
+                            ← Quay lại chọn món
+                          </button>
+
+                          <button
+                            onClick={handlePayment}
+                            disabled={loading}
+                            className="px-10 py-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {loading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                                Đang xử lý...
+                              </>
+                            ) : (
+                              <>
+                                💳 Thanh toán ngay
+                                <CreditCard className="w-5 h-5" />
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
-                      <CreditCard className="w-6 h-6 text-blue-600 ml-auto" />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between mt-8">
-                    <button
-                      onClick={() => setCurrentStep(1)}
-                      className="flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                      Quay lại
-                    </button>
-
-                    <AnimatedButton
-                      variant="orange-to-f3ea28"
-                      onClick={handleCreateOrder}
-                      disabled={loading}
-                      className="flex items-center gap-2 px-8 py-3"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                          Đang xử lý...
-                        </>
-                      ) : (
-                        <>
-                          Thanh toán
-                          <CreditCard className="w-5 h-5" />
-                        </>
-                      )}
-                    </AnimatedButton>
-                  </div>
-                </div>
-              )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Right Side - Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Đơn hàng của bạn
-                </h3>
-
-                <div className="mb-4 pb-4 border-b border-gray-200">
-                  <p className="font-semibold text-gray-900">{theater.name}</p>
-                  <p className="text-sm text-gray-600">{theater.address}</p>
-                </div>
-
-                <div className="space-y-3 mb-4">
-                  {cart.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between items-center"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-600">
-                          {item.price.toLocaleString()}đ x {item.quantity}
-                        </p>
-                      </div>
-                      <p className="font-semibold text-gray-900">
-                        {(item.price * item.quantity).toLocaleString()}đ
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-xl font-bold text-gray-900">
-                      Tổng cộng:
-                    </p>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {totalAmount.toLocaleString()}đ
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <FnbOrderSummary
+                theater={theater}
+                cart={cart}
+                totalAmount={totalAmount}
+                ttl={timeLeft}
+                orderCode={order?.orderCode}
+              />
             </div>
           </div>
         </div>

@@ -13,6 +13,7 @@ import {
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import AnimatedButton from "@/components/ui/AnimatedButton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Hooks
 import { useCarousel } from "@/hooks/useCarousel";
@@ -33,6 +34,7 @@ import {
 } from "@/utils/format";
 
 const SearchPage = () => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get("keyword") || "";
   const navigate = useNavigate();
@@ -129,7 +131,7 @@ const SearchPage = () => {
           className="w-1/2"
           onClick={() => navigate(`/movies/${movie.id}`)}
         >
-          ĐẶT VÉ
+          {t("search.bookTicket")}
         </AnimatedButton>
       </div>
     </div>
@@ -194,7 +196,7 @@ const SearchPage = () => {
     return (
       <Layout>
         <div className="w-full min-h-screen pb-16 bg-gray-100 flex items-center justify-center">
-          <p className="text-gray-500">Nhập từ khóa để tìm kiếm</p>
+          <p className="text-gray-500">{t("search.enterKeyword")}</p>
         </div>
       </Layout>
     );
@@ -206,7 +208,7 @@ const SearchPage = () => {
         {/* Header */}
         <div className="max-w-5xl mx-auto mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Kết quả tìm kiếm cho "{keyword}"
+            {t("search.resultsFor")} "{keyword}"
           </h1>
           {!loading && results && (
             <p className="text-gray-600">
@@ -245,7 +247,7 @@ const SearchPage = () => {
                 <div className="relative flex items-center justify-center mb-10">
                   <MapPin className="w-8 h-8 text-yellow-500 mr-3" />
                   <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
-                    RẠP CHIẾU ({results.theaters.length})
+                    {t("search.theaters")} ({results.theaters.length})
                   </h2>
                 </div>
 
@@ -288,7 +290,7 @@ const SearchPage = () => {
                           className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2.5 rounded-lg transition-colors mt-auto"
                         >
                           <Ticket className="w-4 h-4" />
-                          Đặt vé
+                          {t("search.bookTicket")}
                         </button>
                       </div>
                     </div>
@@ -300,9 +302,7 @@ const SearchPage = () => {
             {/* No Results */}
             {results.movies.length === 0 && results.theaters.length === 0 && (
               <div className="text-center py-20">
-                <p className="text-gray-500 text-xl">
-                  Không tìm thấy kết quả nào
-                </p>
+                <p className="text-gray-500 text-xl">{t("search.noResults")}</p>
               </div>
             )}
           </>

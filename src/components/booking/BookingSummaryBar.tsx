@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import Swal from "sweetalert2"; // Import SweetAlert2
+import Swal from "sweetalert2";
+import { useAccurateTimer } from "@/hooks/useAccurateTimer";
 
 interface BookingSummaryBarProps {
   movieTitle: string;
@@ -23,47 +24,20 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
 }) => {
   const [isSticky, setIsSticky] = useState(true);
   const [topPosition, setTopPosition] = useState(0);
-  const [timeLeft, setTimeLeft] = useState<number | null>(ttl ?? null);
   const barRef = React.useRef<HTMLDivElement>(null);
 
   // Mặc định 5 phút (300 giây) để hiển thị khi chưa chạy
   const DEFAULT_TTL_DISPLAY = 300;
 
-  // Update timeLeft when ttl changes from parent (WebSocket broadcast)
-  useEffect(() => {
-    if (ttl !== null && ttl !== undefined) {
-      console.log("📊 [BookingSummaryBar] TTL updated from parent:", ttl);
-      setTimeLeft(ttl);
-    }
-  }, [ttl]);
-
-  // Countdown timer logic - chỉ chạy 1 lần khi component mount
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 0) {
-          return prev;
-        }
-
-        const newValue = prev - 1;
-
-        // Notify parent when TTL expired
-        if (newValue === 0 && onTTLExpired) {
-          console.log("⏰ [BookingSummaryBar] TTL expired!");
-          onTTLExpired();
-        }
-
-        return newValue;
-      });
-    }, 1000);
-
-    return () => {
-      console.log("🧹 [BookingSummaryBar] Cleanup timer");
-      clearInterval(timer);
-    };
-  }, [isVisible, onTTLExpired]); // Không có timeLeft trong dependencies!
+  // Use accurate timer that handles tab switching
+  const timeLeft = useAccurateTimer({
+    initialTime: ttl ?? null,
+    onExpired: () => {
+      console.log("⏰ [BookingSummaryBar] TTL expired!");
+      onTTLExpired?.();
+    },
+    enabled: isVisible,
+  });
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -102,11 +76,11 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
 
   // --- Xử lý sự kiện click Đặt vé ---
   const handleBooking = () => {
-    // Điều kiện: Nếu chưa có thời gian đếm ngược (chưa lock ghế) hoặc tổng tiền = 0
-    if (timeLeft === null || totalPrice === 0) {
+    // Điều kiện: Nếu chưa có thời gian đếm ngược (chưa lock ghế)
+    if (timeLeft === null) {
       Swal.fire({
         title: "Chưa chọn ghế!",
-        text: "Vui lòng chọn ghế và vé trước khi tiến hành thanh toán.",
+        text: "Vui lòng chọn ghế trước khi tiến hành thanh toán.",
         icon: "warning",
         confirmButtonText: "Đã hiểu",
         confirmButtonColor: "#ca8a04", // Màu vàng khớp theme (yellow-600)

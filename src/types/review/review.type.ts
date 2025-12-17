@@ -3,8 +3,10 @@
 export interface ReviewRequest {
   movieId: string;
   userId: string;
-  rating: number;
+  fullName: string;
+  avatarUrl: string;
   comment: string;
+  // Rating đã tách riêng - không cần trong ReviewRequest
 }
 
 export interface ReviewResponse {
@@ -33,4 +35,9 @@ export interface RatingResponse {
   rating: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AverageRatingResponse {
+  averageRating: number;
+  ratingCount: number;
 }

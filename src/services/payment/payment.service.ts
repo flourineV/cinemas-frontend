@@ -16,6 +16,15 @@ export const paymentService = {
     return res.data;
   },
 
+  createZaloPayUrlForFnb: async (
+    fnbOrderId: string
+  ): Promise<ZaloPayCreateOrderResponse> => {
+    const res = await paymentClient.post<ZaloPayCreateOrderResponse>(
+      `/create-zalopay-url-fnb?fnbOrderId=${fnbOrderId}`
+    );
+    return res.data;
+  },
+
   handleZaloPayCallback: async (
     callbackData: ZaloPayCallbackDTO
   ): Promise<{ return_code: number; return_message: string }> => {

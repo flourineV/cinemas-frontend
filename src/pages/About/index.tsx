@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { theaterService } from "@/services/showtime/theaterService";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Theater Gallery Component - Same as SearchPage
 // Theater Gallery Component
@@ -81,7 +82,7 @@ const TheaterGallery = () => {
                   className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2.5 rounded-lg transition-colors"
                 >
                   <Ticket className="w-4 h-4" />
-                  Đặt vé
+                  {t("about.theaters.bookTicket")}
                 </button>
               </div>
             </div>
@@ -108,7 +109,7 @@ const TheaterList = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-400 text-lg">Đang tải danh sách rạp...</p>
+        <p className="text-gray-400 text-lg">{t("about.theaters.loading")}</p>
       </div>
     );
   }
@@ -144,6 +145,7 @@ const TheaterList = () => {
 };
 
 const About = () => {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState({
     hero: false,
     description: false,
@@ -169,21 +171,18 @@ const About = () => {
   const missions = [
     {
       icon: Package,
-      title: "Mang phim đến mọi người",
-      description:
-        "Cung cấp trải nghiệm điện ảnh chất lượng cao, giúp mọi khán giả tiếp cận phim dễ dàng và thuận tiện.",
+      title: t("about.mission1.title"),
+      description: t("about.mission1.description"),
     },
     {
       icon: Gift,
-      title: "Khuyến khích sáng tạo",
-      description:
-        "Hỗ trợ các nhà làm phim trẻ, thúc đẩy ngành công nghiệp điện ảnh Việt Nam phát triển bền vững.",
+      title: t("about.mission2.title"),
+      description: t("about.mission2.description"),
     },
     {
       icon: Film,
-      title: "Trải nghiệm đẳng cấp",
-      description:
-        "Đem đến những trải nghiệm rạp hiện đại, âm thanh hình ảnh sống động, nâng tầm văn hóa giải trí cho khán giả.",
+      title: t("about.mission3.title"),
+      description: t("about.mission3.description"),
     },
   ];
 
@@ -216,7 +215,7 @@ const About = () => {
                   "0 0 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.7), 4px 4px 8px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
               }}
             >
-              CINEHUB
+              {t("about.hero.title")}
             </h1>
             <p
               className="text-2xl md:text-3xl text-white font-light"
@@ -225,7 +224,7 @@ const About = () => {
                   "0 0 10px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
               }}
             >
-              Trải nghiệm điện ảnh đỉnh cao
+              {t("about.hero.subtitle")}
             </p>
           </div>
         </section>
@@ -235,31 +234,15 @@ const About = () => {
           className={`max-w-6xl mx-auto px-4 py-16 transition-all duration-1000 ${isVisible.description ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
           <h2 className="text-5xl font-extrabold mb-20 text-yellow-500 text-center">
-            Về CineHub
+            {t("about.title")}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-stretch">
             {/* Text Content */}
             <div className="space-y-4 text-gray-700 text-lg leading-relaxed text-justify flex flex-col justify-center">
-              <p>
-                CineHub là hệ thống rạp chiếu phim hàng đầu Việt Nam, mang đến
-                cho khán giả những trải nghiệm điện ảnh đẳng cấp quốc tế. Với
-                công nghệ hiện đại nhất, âm thanh sống động và hình ảnh sắc nét,
-                chúng tôi cam kết đem lại những giây phút giải trí tuyệt vời
-                nhất.
-              </p>
-              <p>
-                Hệ thống rạp chiếu phim CineHub được trang bị hệ thống âm thanh
-                Dolby Atmos, màn hình LED cao cấp, ghế ngồi êm ái và không gian
-                sang trọng. Chúng tôi không ngừng nâng cấp cơ sở vật chất và
-                dịch vụ để phục vụ khách hàng ngày càng tốt hơn.
-              </p>
-              <p>
-                Với mạng lưới rạp chiếu phim trên toàn quốc, CineHub tự hào là
-                điểm đến yêu thích của hàng triệu khán giả yêu điện ảnh. Hãy đến
-                với CineHub để cùng nhau đắm chìm trong thế giới phim ảnh đầy
-                màu sắc!
-              </p>
+              <p>{t("about.description1")}</p>
+              <p>{t("about.description2")}</p>
+              <p>{t("about.description3")}</p>
             </div>
 
             {/* Image */}
@@ -278,7 +261,7 @@ const About = () => {
           className={`max-w-6xl mx-auto px-4 py-16 transition-all duration-1000 ${isVisible.benefits ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
           <h2 className="text-5xl font-extrabold mb-12 text-yellow-500 text-center">
-            Sứ mệnh
+            {t("about.mission.title")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {missions.map((benefit, index) => (
@@ -307,12 +290,10 @@ const About = () => {
           className={`max-w-7xl mx-auto px-4 py-16 transition-all duration-1000 ${isVisible.cta ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
           <h2 className="text-5xl font-extrabold mb-5 text-yellow-500 text-center">
-            HỆ THỐNG CÁC CỤM RẠP
+            {t("about.theaters.title")}
           </h2>
           <p className="text-gray-700 text-lg mb-12 text-center max-w-3xl mx-auto">
-            Cinestar là hệ thống gồm 5 cụm rạp chiếu phim hiện đại, trải dài cả
-            nước, mang đến trải nghiệm điện ảnh chất lượng cao cho khán giả trên
-            toàn quốc.
+            {t("about.theaters.description")}
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">

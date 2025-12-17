@@ -12,11 +12,25 @@ import {
   formatGenres,
   formatSpokenLanguages,
 } from "@/utils/format";
+import { useLanguage } from "@/contexts/LanguageContext";
+import Lottie from "lottie-react";
 
 const UpcomingPage = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catInBoxAnimation, setCatInBoxAnimation] = useState<any>(null);
+
+  // Load cat in box animation
+  useEffect(() => {
+    fetch("/Cat_in_Box.json")
+      .then((res) => res.json())
+      .then((data) => setCatInBoxAnimation(data))
+      .catch((err) =>
+        console.error("Failed to load cat in box animation:", err)
+      );
+  }, []);
 
   useEffect(() => {
     movieService.getUpcoming(0, 50).then((res) => {
@@ -27,11 +41,27 @@ const UpcomingPage = () => {
 
   return (
     <Layout>
-      <div className="w-full min-h-screen pb-16 bg-gray-100">
+      <div className="w-full min-h-screen pb-16 bg-gray-100 mt-3">
         <section className="w-full max-w-5xl mx-auto pt-8 px-4">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-500 text-center mb-8">
-            PHIM SẮP CHIẾU
-          </h1>
+          <div className="relative flex justify-center mb-8">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-yellow-500 whitespace-nowrap">
+              {t("home.upcoming")}
+            </h1>
+            {catInBoxAnimation && (
+              <div
+                className="absolute top-1/2 -translate-y-1/2"
+                style={{
+                  left: `calc(50% + ${t("home.upcoming").length * 0.9}em + 24px)`,
+                }}
+              >
+                <Lottie
+                  animationData={catInBoxAnimation}
+                  loop={true}
+                  style={{ width: 60, height: 60 }}
+                />
+              </div>
+            )}
+          </div>
 
           {loading ? (
             <div className="flex justify-center items-center py-32">
@@ -39,9 +69,7 @@ const UpcomingPage = () => {
             </div>
           ) : upcoming.length === 0 ? (
             <div className="text-center py-32">
-              <p className="text-black text-lg">
-                Hiện tại chưa có phim nào sắp chiếu
-              </p>
+              <p className="text-black text-lg">{t("home.noMoviesUpcoming")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-16 py-6">
@@ -116,7 +144,7 @@ const UpcomingPage = () => {
                       className="w-1/2"
                       onClick={() => navigate(`/movies/${movie.id}`)}
                     >
-                      ĐẶT VÉ
+                      {t("home.learnMore")}
                     </AnimatedButton>
                   </div>
                 </div>

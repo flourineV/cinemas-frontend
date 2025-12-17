@@ -30,7 +30,7 @@ export const GuestSessionProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Listen for storage changes (e.g., login/logout in another tab)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "accessToken" || e.key === "user") {
+      if (e.key === "accessToken" || e.key === "auth-storage") {
         const newLoggedIn = guestSessionUtils.isUserLoggedIn();
         setIsLoggedIn(newLoggedIn);
 

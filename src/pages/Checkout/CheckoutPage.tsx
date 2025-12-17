@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Swal from "sweetalert2";
 import Layout from "@/components/layout/Layout";
+import { useAccurateTimer } from "@/hooks/useAccurateTimer";
 
 import SelectComboStep from "@/components/checkout/SelectComboStep";
 import CustomerInfoStep from "@/components/checkout/CustomerInfoStep";
@@ -37,7 +38,7 @@ export default function CheckoutPage() {
   const [appliedPromo, setAppliedPromo] = useState<PromotionResponse | null>(
     null
   );
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [initialTTL, setInitialTTL] = useState<number | null>(null);
   const [useRankDiscount, setUseRankDiscount] = useState(false);
   const [rankDiscountValue, setRankDiscountValue] = useState(0);
 
@@ -66,6 +67,26 @@ export default function CheckoutPage() {
           email: stateData.booking.guestEmail || "",
         }));
       }
+    } else if (stateData.selectedSeats) {
+      // === CASE B: Guest (Chưa có booking) - Data from SeatSelectionPage ===
+      const pendingData = {
+        selectedSeats: stateData.selectedSeats,
+        selectedTickets: stateData.selectedTickets,
+        showtimeDetail: stateData.showtimeDetail,
+        showtimeId: stateData.showtimeId,
+      };
+
+      setPendingData(pendingData);
+      setActiveStep(1); // Ở lại Step 1
+
+      // Mock booking cho Summary hiển thị
+      console.log("📦 Guest data from SeatSelection:", stateData);
+      setBooking({
+        totalPrice: 0, // Will be calculated
+        movieTitle: "Phim đang chọn", // Placeholder
+        showtime: stateData.showtimeDetail,
+        seats: stateData.selectedSeats || [],
+      });
     } else if (stateData.pendingData) {
       // === CASE B: Guest (Chưa có booking) ===
       setPendingData(stateData.pendingData);
@@ -79,9 +100,10 @@ export default function CheckoutPage() {
         totalPrice: stateData.pendingData.totalPrice,
         movieTitle: stateData.pendingData.movieTitle,
         showtime: stateData.pendingData.showtime,
-        seats: stateData.pendingData.seats.map((s: string) => ({
-          seatNumber: s,
-        })),
+        seats:
+          stateData.pendingData.selectedSeats ||
+          stateData.pendingData.seats ||
+          [],
       });
     }
   }, []);
@@ -92,10 +114,10 @@ export default function CheckoutPage() {
       const passed = Math.floor((now - timestamp) / 1000);
       const remaining = ttl - passed;
       if (remaining <= 0) {
-        // Không auto redirect, chỉ set timeLeft = 0 để trigger SweetAlert
-        setTimeLeft(0);
+        // Không auto redirect, chỉ set initialTTL = 0 để trigger SweetAlert
+        setInitialTTL(0);
       } else {
-        setTimeLeft(remaining);
+        setInitialTTL(remaining);
       }
     }
   };
@@ -106,29 +128,6 @@ export default function CheckoutPage() {
     setPendingData(null);
     setActiveStep(2);
   };
-
-  // --- Logic Timer ---
-  useEffect(() => {
-    if (timeLeft === null) return;
-    if (timeLeft <= 0) {
-      handleExpired();
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev && prev > 0) {
-          const newValue = prev - 1;
-          // Khi countdown về 0, hiển thị SweetAlert
-          if (newValue === 0) {
-            handleExpired();
-          }
-          return newValue;
-        }
-        return prev;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft]);
 
   const handleExpired = () => {
     // Lấy movieId từ nhiều nguồn khác nhau
@@ -154,6 +153,13 @@ export default function CheckoutPage() {
       }
     });
   };
+
+  // Use accurate timer that handles tab switching
+  const timeLeft = useAccurateTimer({
+    initialTime: initialTTL,
+    onExpired: handleExpired,
+    enabled: true,
+  });
 
   // --- Scroll ---
   useEffect(() => {

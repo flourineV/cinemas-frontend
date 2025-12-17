@@ -7,7 +7,7 @@ export type BookingStatus =
   | "EXPIRED";
 
 export interface SeatSelectionDetail {
-  seatId: string;
+  seatId: string; // UUID as string
   seatType: string;
   ticketType: string;
 }
@@ -24,26 +24,26 @@ export interface CreateBookingRequest {
 
 // Inner class từ FinalizeBookingRequest
 export interface CalculatedFnbItemDto {
-  fnbItemId: string; // UUID
+  fnbItemId: string; // UUID as string
   quantity: number;
-  unitPrice: number; // BigDecimal
-  totalFnbItemPrice: number; // BigDecimal
+  unitPrice: number; // BigDecimal as number
+  totalFnbItemPrice: number; // BigDecimal as number
 }
 
 // Map từ: FinalizeBookingRequest.java
 export interface FinalizeBookingRequest {
   fnbItems: CalculatedFnbItemDto[];
   promotionCode?: string;
-  refundVoucherCode?: string;
+  refundVoucherCode?: string; // Support refund voucher
   useLoyaltyDiscount: boolean;
 }
 
 // Map từ: BookingSeatResponse (Giả định structure)
 export interface BookingSeatResponse {
-  seatId: string;
+  seatId: string; // UUID as string
   seatType: string;
   ticketType: string;
-  price: number;
+  price: number; // BigDecimal as number
 }
 
 // Map từ: BookingResponse.java

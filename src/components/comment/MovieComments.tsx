@@ -2,6 +2,17 @@ import React, { useEffect, useState } from "react";
 import { reviewService } from "@/services/review/review.service";
 import type { ReviewRequest, ReviewResponse } from "@/types/review/review.type";
 import { Star } from "lucide-react";
+import Swal from "sweetalert2";
+import { useAuthStore } from "@/stores/authStore";
+import { userProfileService } from "@/services/userprofile/userProfileService";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale("vi");
 
 interface MovieCommentsProps {
   movieId: string;
@@ -16,10 +27,12 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
   hasBooked,
   onCommentSubmit,
 }) => {
+  const { user } = useAuthStore();
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
   const [comment, setComment] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   const loadReviews = async () => {
     setLoadingReviews(true);
@@ -45,26 +58,85 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
     loadReviews();
   }, [movieId]);
 
+  // Load user profile for avatar
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!userId) return;
+      try {
+        const profile = await userProfileService.getProfileByUserId(userId);
+        setUserProfile(profile);
+      } catch (error) {
+        console.error("Error loading user profile:", error);
+      }
+    };
+    loadUserProfile();
+  }, [userId]);
+
   const handleSubmit = async () => {
-    if (!userId) return alert("Bạn cần đăng nhập để bình luận!");
-    if (!hasBooked)
-      return alert("Bạn cần đặt vé xem phim này để có thể bình luận!");
-    if (comment.trim().length < 3) return alert("Bình luận quá ngắn!");
+    console.log(
+      "💬 [MovieComments] Submit attempt - hasBooked:",
+      hasBooked,
+      "userId:",
+      userId
+    );
+
+    if (!userId) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Cần đăng nhập",
+        text: "Bạn cần đăng nhập để bình luận!",
+        scrollbarPadding: false,
+      });
+    }
+    if (!hasBooked) {
+      console.log("❌ [MovieComments] Blocking comment - hasBooked is false");
+      return Swal.fire({
+        icon: "warning",
+        title: "Cần đặt vé",
+        text: "Bạn cần đặt vé xem phim này để có thể bình luận!",
+        scrollbarPadding: false,
+      });
+    }
+
+    console.log("✅ [MovieComments] Allowing comment - hasBooked is true");
+    if (comment.trim().length < 3) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Bình luận quá ngắn",
+        text: "Vui lòng nhập ít nhất 3 ký tự!",
+        scrollbarPadding: false,
+      });
+    }
 
     const payload: ReviewRequest = {
       movieId,
-      userId,
-      rating: 5, // Default rating, actual rating is handled separately
+      userId: userId!,
+      fullName: userProfile?.fullName || user?.username || "Anonymous",
+      avatarUrl: userProfile?.avatarUrl || "",
       comment,
+      // Rating đã tách riêng - chỉ gửi comment
     };
+
+    console.log("💬 [MovieComments] Sending payload:", payload);
 
     setLoading(true);
     try {
-      const newReview = await reviewService.createReview(payload);
-      setReviews([newReview, ...reviews]);
+      await reviewService.createReview(payload);
       setComment("");
-      loadReviews();
+      // Reload reviews from server to get correct timestamp
+      await loadReviews();
       onCommentSubmit?.();
+    } catch (error) {
+      console.error("❌ [MovieComments] Error creating review:", error);
+      console.error(
+        "❌ [MovieComments] Error details:",
+        (error as any).response?.data
+      );
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể gửi bình luận. Vui lòng thử lại sau.",
+      });
     } finally {
       setLoading(false);
     }
@@ -73,7 +145,7 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
   return (
     <div className="w-full h-full flex flex-col">
       {/* REVIEW LIST - Ở trên với scroll */}
-      <div className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent max-h-96">
         {loadingReviews ? (
           <div className="flex justify-center items-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-yellow-500"></div>
@@ -96,11 +168,13 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
                   />
                   <div>
                     <p className="text-white font-semibold">{rev.fullName}</p>
-                    <div className="flex items-center text-yellow-500 text-sm">
-                      {Array.from({ length: rev.rating }).map((_, i) => (
-                        <Star key={i} size={14} className="fill-yellow-500" />
-                      ))}
-                    </div>
+                    {rev.rating && rev.rating > 0 && (
+                      <div className="flex items-center text-yellow-500 text-sm">
+                        {Array.from({ length: rev.rating }).map((_, i) => (
+                          <Star key={i} size={14} className="fill-yellow-500" />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -109,7 +183,9 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
                 </p>
 
                 <div className="text-white/50 text-sm mt-2">
-                  {new Date(rev.createdAt).toLocaleString("vi-VN")}
+                  {dayjs(rev.createdAt)
+                    .tz("Asia/Ho_Chi_Minh")
+                    .format("DD/MM/YYYY HH:mm")}
                 </div>
               </div>
             ))}

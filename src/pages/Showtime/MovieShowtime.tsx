@@ -10,7 +10,7 @@ import { showtimeService } from "@/services/showtime/showtimeService";
 import { provinceService } from "@/services/showtime/provinceService";
 import { bookingService } from "@/services/booking/booking.service";
 import { seatLockService } from "@/services/showtime/seatLockService";
-import { CustomSelect } from "@/components/ui/CustomSelect";
+import CustomSelect from "@/components/ui/CustomSelect";
 import SelectSeat from "@/components/booking/SelectSeat";
 import SelectTicket from "@/components/booking/SelectTicket";
 import BookingSummaryBar from "@/components/booking/BookingSummaryBar";
@@ -108,10 +108,14 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
     const fetchProvinces = async () => {
       try {
         const res = await provinceService.getAllProvinces();
+        console.log("🌍 [MovieShowtime] Provinces loaded:", res);
         setProvinces(res);
-        if (res.length > 0) setSelectedProvinceId(res[0].id);
+        if (res.length > 0) {
+          console.log("🌍 [MovieShowtime] Selected first province:", res[0]);
+          setSelectedProvinceId(res[0].id);
+        }
       } catch (error) {
-        console.error("Error fetching provinces:", error);
+        console.error("❌ [MovieShowtime] Error fetching provinces:", error);
       }
     };
     fetchProvinces();
@@ -120,6 +124,12 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   useEffect(() => {
     const fetchTheaterShowtimes = async () => {
       if (!selectedProvinceId) return;
+
+      console.log("🎬 [MovieShowtime] Fetching showtimes for:", {
+        movieId,
+        selectedProvinceId,
+      });
+
       try {
         setLoading(true);
         const data =
@@ -127,9 +137,61 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
             movieId,
             selectedProvinceId
           );
-        setTheaterShowtimes(data);
-      } catch (error) {
-        console.error("Error fetching theater showtimes:", error);
+
+        console.log("✅ [MovieShowtime] Raw API response:", data);
+
+        // Transform data: Response from getTheaterShowtimesByMovieAndProvince
+        let theaters: TheaterShowtimesResponse[] = [];
+
+        if (Array.isArray(data)) {
+          // Direct array of theaters
+          theaters = data.map((theater: any) => ({
+            theaterId: theater.theaterId,
+            theaterName: theater.theaterName,
+            theaterAddress: theater.theaterAddress,
+            showtimes: theater.showtimes.map((showtime: any) => ({
+              showtimeId: showtime.showtimeId,
+              roomId: showtime.roomId,
+              roomName: showtime.roomName,
+              startTime: Array.isArray(showtime.startTime)
+                ? new Date(
+                    showtime.startTime[0], // year
+                    showtime.startTime[1] - 1, // month (0-indexed)
+                    showtime.startTime[2], // day
+                    showtime.startTime[3], // hour
+                    showtime.startTime[4] // minute
+                  ).toISOString()
+                : showtime.startTime,
+              endTime: Array.isArray(showtime.endTime)
+                ? new Date(
+                    showtime.endTime[0], // year
+                    showtime.endTime[1] - 1, // month (0-indexed)
+                    showtime.endTime[2], // day
+                    showtime.endTime[3], // hour
+                    showtime.endTime[4] // minute
+                  ).toISOString()
+                : showtime.endTime,
+            })),
+          }));
+        }
+
+        console.log("✅ [MovieShowtime] Transformed theaters:", theaters);
+        console.log("✅ [MovieShowtime] Number of theaters:", theaters.length);
+
+        setTheaterShowtimes(theaters);
+      } catch (error: any) {
+        console.error(
+          "❌ [MovieShowtime] Error fetching theater showtimes:",
+          error
+        );
+        console.error(
+          "❌ [MovieShowtime] Error response:",
+          error.response?.data
+        );
+        console.error(
+          "❌ [MovieShowtime] Error status:",
+          error.response?.status
+        );
       } finally {
         setLoading(false);
       }
@@ -152,14 +214,31 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
     }
   }, []);
 
+  // Helper function to map theater to province based on address
+  const getProvinceFromTheaterAddress = (address: string): string => {
+    // Map theater address to province
+    if (address.includes("TP. HCM") || address.includes("Quận")) return "HCM"; // Assuming HCM province ID
+    if (address.includes("Hà Nội")) return "HN"; // Assuming Hanoi province ID
+    if (address.includes("Đà Nẵng")) return "DN"; // Assuming Da Nang province ID
+    if (address.includes("Huế")) return "HUE"; // Assuming Hue province ID
+    if (address.includes("Đồng Tháp")) return "DT"; // Assuming Dong Thap province ID
+
+    // Default fallback - có thể cần cập nhật mapping này
+    return "";
+  };
+
   const getTheaterShowtimesByDate = () => {
     if (!selectedDate) return [];
-    return theaterShowtimes.map((theater) => ({
-      ...theater,
-      showtimes: theater.showtimes.filter(
-        (st) => dayjs(st.startTime).format("YYYY-MM-DD") === selectedDate
-      ),
-    }));
+
+    // Filter theaters theo date (province đã được filter ở API level)
+    return theaterShowtimes
+      .map((theater) => ({
+        ...theater,
+        showtimes: theater.showtimes.filter(
+          (st) => dayjs(st.startTime).format("YYYY-MM-DD") === selectedDate
+        ),
+      }))
+      .filter((theater) => theater.showtimes.length > 0); // Chỉ giữ theaters có showtimes
   };
   const theaterShowtimesForDate = getTheaterShowtimesByDate();
 
@@ -322,6 +401,37 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
       return () => clearTimeout(timeoutId);
     }
   }, [selectedTickets]);
+
+  // === CLEANUP: Unlock ghế khi component unmount ===
+  useEffect(() => {
+    return () => {
+      // Unlock ghế khi user navigate ra ngoài trang này
+      if (selectedSeats.length > 0 && selectedShowtime) {
+        const identity = {
+          userId: localStorage.getItem("userId"),
+          guestSessionId: localStorage.getItem("guestSessionId"),
+        };
+
+        console.log(
+          "[MovieShowtime UNMOUNT] Unlocking seats:",
+          selectedSeats.map((s) => s.seatId)
+        );
+
+        selectedSeats.forEach((seat) => {
+          seatLockService
+            .unlockSingleSeat(
+              selectedShowtime.id,
+              seat.seatId,
+              identity.userId,
+              identity.guestSessionId
+            )
+            .catch((error) => {
+              console.error(`Failed to unlock seat ${seat.seatId}:`, error);
+            });
+        });
+      }
+    };
+  }, []); // Empty dependency để chỉ chạy khi unmount
 
   // === LOGIC XỬ LÝ SUBMIT (ĐẶT VÉ) ===
   const prepareBookingRequest = (): CreateBookingRequest => {
@@ -633,6 +743,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
                 <SelectSeat
                   showtimeId={selectedShowtime.id}
                   onSeatSelect={setSelectedSeats}
+                  shouldUnlockOnUnmount={false}
                   selectedTickets={selectedTickets}
                   onSeatLock={setSeatLockTTL}
                 />

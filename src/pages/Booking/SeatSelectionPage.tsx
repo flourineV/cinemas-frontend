@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import SelectSeat from "@/components/booking/SelectSeat";
 import SelectTicket from "@/components/booking/SelectTicket";
 import BookingSummaryBar from "@/components/booking/BookingSummaryBar";
 import { showtimeService } from "@/services/showtime/showtimeService";
-import type { ShowtimeResponse } from "@/types/showtime/showtime.type";
+import { pricingService } from "@/services/pricing/pricingService";
+import type { ShowtimeDetailResponse } from "@/types/showtime/showtime.type";
 import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
+import type { SeatPriceResponse } from "@/types/pricing/seatprice.type";
+import Swal from "sweetalert2";
 
 const SeatSelectionPage: React.FC = () => {
   const { showtimeId } = useParams<{ showtimeId: string }>();
   const navigate = useNavigate();
 
-  const [showtimeDetail, setShowtimeDetail] = useState<ShowtimeResponse | null>(
-    null
-  );
+  const [showtimeDetail, setShowtimeDetail] =
+    useState<ShowtimeDetailResponse | null>(null);
   const [selectedTickets, setSelectedTickets] = useState<
     Record<string, number>
   >({});
@@ -23,33 +25,106 @@ const SeatSelectionPage: React.FC = () => {
   );
   const [seatLockTTL, setSeatLockTTL] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [seatPrices, setSeatPrices] = useState<SeatPriceResponse[]>([]);
 
-  // Load showtime details
+  // Load showtime details and seat prices
   useEffect(() => {
     if (!showtimeId) {
       navigate("/");
       return;
     }
 
-    const loadShowtimeDetail = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const detail = await showtimeService.getShowtimeById(showtimeId);
+        const [detailResult, prices] = await Promise.all([
+          showtimeService.adminSearch({ showtimeId }, 0, 1),
+          pricingService.getAllSeatPrices(),
+        ]);
+
+        if (detailResult.data.length === 0) {
+          throw new Error("Showtime not found");
+        }
+
+        const detail = detailResult.data[0];
         setShowtimeDetail(detail);
+        setSeatPrices(prices);
       } catch (error) {
-        console.error("Error loading showtime detail:", error);
+        console.error("Error loading data:", error);
         navigate("/");
       } finally {
         setLoading(false);
       }
     };
 
-    loadShowtimeDetail();
+    loadData();
   }, [showtimeId, navigate]);
 
   const handleTicketSelect = (tickets: Record<string, number>) => {
+    // Kiểm tra nếu đang giảm vé mà đã có ghế được lock
+    const hasLockedSeats = selectedSeats.length > 0 && seatLockTTL !== null;
+
+    if (hasLockedSeats) {
+      // Kiểm tra từng loại vé xem có bị giảm không
+      let hasDecrease = false;
+      let decreaseDetails: string[] = [];
+
+      Object.entries(selectedTickets).forEach(([key, currentCount]) => {
+        const newCount = tickets[key] || 0;
+        if (newCount < currentCount) {
+          hasDecrease = true;
+          const [seatType, ticketType] = key.split("-");
+          const ticketLabel = seatType === "NORMAL" ? "ghế đơn" : "ghế đôi";
+          const typeLabel =
+            ticketType === "ADULT"
+              ? "Người lớn"
+              : ticketType === "CHILD"
+                ? "Trẻ em"
+                : "HSSV-U22";
+          decreaseDetails.push(
+            `${typeLabel} (${ticketLabel}): ${currentCount} → ${newCount}`
+          );
+        }
+      });
+
+      // Nếu có giảm vé
+      if (hasDecrease) {
+        Swal.fire({
+          title: "Không thể giảm vé",
+          html: `
+            <div class="text-left">
+              <p class="mb-3">Bạn đang cố gắng giảm số lượng vé khi đã chọn ghế:</p>
+              <ul class="list-disc list-inside space-y-1 text-sm">
+                ${decreaseDetails.map((detail) => `<li>${detail}</li>`).join("")}
+              </ul>
+              <p class="mt-3 text-red-600 font-medium">
+                Vui lòng bỏ chọn ghế trước khi giảm số lượng vé!
+              </p>
+            </div>
+          `,
+          icon: "warning",
+          confirmButtonText: "Đã hiểu",
+          confirmButtonColor: "#eab308",
+          scrollbarPadding: false,
+        });
+        return; // Không cho phép giảm vé
+      }
+    }
+
     setSelectedTickets(tickets);
-    setSelectedSeats([]);
+    // Chỉ reset ghế khi thay đổi loại vé, không reset khi tăng số lượng
+    if (selectedSeats.length > 0) {
+      const currentTicketTypes = Object.keys(selectedTickets);
+      const newTicketTypes = Object.keys(tickets);
+      const typesChanged =
+        currentTicketTypes.some((type) => !newTicketTypes.includes(type)) ||
+        newTicketTypes.some((type) => !currentTicketTypes.includes(type));
+
+      if (typesChanged) {
+        setSelectedSeats([]);
+        setSeatLockTTL(null);
+      }
+    }
   };
 
   const handleSeatSelect = (seats: ShowtimeSeatResponse[]) => {
@@ -59,6 +134,28 @@ const SeatSelectionPage: React.FC = () => {
   const handleSeatLock = (ttl: number | null) => {
     setSeatLockTTL(ttl);
   };
+
+  // Tính tổng tiền ảo dựa trên vé đã chọn (không cần chọn ghế)
+  const totalPrice = useMemo(() => {
+    let total = 0;
+
+    // Tính tiền dựa trên số lượng vé đã chọn
+    Object.entries(selectedTickets).forEach(([key, count]) => {
+      if (count > 0) {
+        const [seatType, ticketType] = key.split("-");
+
+        const priceInfo = seatPrices.find(
+          (p) => p.seatType === seatType && p.ticketType === ticketType
+        );
+
+        if (priceInfo) {
+          total += Number(priceInfo.basePrice) * count;
+        }
+      }
+    });
+
+    return total;
+  }, [selectedTickets, seatPrices]);
 
   const handleProceedToCheckout = () => {
     if (selectedSeats.length === 0) return;
@@ -153,17 +250,16 @@ const SeatSelectionPage: React.FC = () => {
           </div>
         </div>
 
-        {selectedSeats.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50">
-            <BookingSummaryBar
-              movieTitle="Phim đang chọn"
-              cinemaName={showtimeDetail.theaterName}
-              totalPrice={0}
-              isVisible={true}
-              ttl={seatLockTTL}
-              onSubmit={handleProceedToCheckout}
-            />
-          </div>
+        {/* Hiển thị BookingSummaryBar khi có vé được chọn (không cần chọn ghế) */}
+        {Object.values(selectedTickets).some((count) => count > 0) && (
+          <BookingSummaryBar
+            movieTitle={showtimeDetail.movieTitle}
+            cinemaName={showtimeDetail.theaterName}
+            totalPrice={totalPrice}
+            isVisible={true}
+            ttl={seatLockTTL}
+            onSubmit={handleProceedToCheckout}
+          />
         )}
       </div>
     </div>

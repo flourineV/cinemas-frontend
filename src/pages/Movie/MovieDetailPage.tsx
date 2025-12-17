@@ -27,6 +27,9 @@ import MovieShowtime from "../Showtime/MovieShowtime";
 import { userProfileService } from "@/services/userprofile/userProfileService";
 import { useAuthStore } from "@/stores/authStore";
 import { reviewService } from "@/services/review/review.service";
+import { bookingService } from "@/services/booking/booking.service";
+import { useLanguage } from "@/contexts/LanguageContext";
+
 import Swal from "sweetalert2";
 dayjs.locale("vi");
 
@@ -36,6 +39,7 @@ export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { language } = useLanguage();
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,12 +53,25 @@ export default function MovieDetailPage() {
   const [hasBooked, setHasBooked] = useState<boolean>(false);
   const [checkingBooking, setCheckingBooking] = useState<boolean>(true);
 
+  // Debug useEffect to track hasBooked changes
+  useEffect(() => {
+    console.log("🔄 [MovieDetail] hasBooked state changed to:", hasBooked);
+  }, [hasBooked]);
+
+  // Log render
+  console.log(
+    "🎬 [MovieDetail] Rendering with hasBooked:",
+    hasBooked,
+    "checkingBooking:",
+    checkingBooking
+  );
+
   useEffect(() => {
     if (!id) return;
     const fetchMovie = async () => {
       setLoading(true);
       try {
-        const res = await movieService.getMovieDetail(id);
+        const res = await movieService.getMovieDetail(id, language);
         setMovie(res);
       } catch (err) {
         console.error(err);
@@ -64,57 +81,105 @@ export default function MovieDetailPage() {
       }
     };
     fetchMovie();
-  }, [id]);
+  }, [id, language]);
 
-  // Check if movie is in favorites - Sử dụng API isFavorite
+  // Check if movie is favorited by user
   useEffect(() => {
-    const checkFavorite = async () => {
-      if (!user?.id || !movie?.tmdbId) return;
+    const checkFavoriteStatus = async () => {
+      if (!user?.id || !movie?.id) return;
+
       try {
-        const isFav = await userProfileService.isFavorite(
-          user.id,
-          movie.tmdbId
-        );
+        const isFav = await userProfileService.isFavorite(user.id, movie.id);
         setIsFavorite(isFav);
-      } catch (err) {
-        console.error("Error checking favorite:", err);
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+        setIsFavorite(false);
       }
     };
-    checkFavorite();
-  }, [user?.id, movie?.tmdbId]);
+
+    checkFavoriteStatus();
+  }, [user?.id, movie?.id]);
 
   // Load rating info and check booking status
   useEffect(() => {
+    console.log(
+      "🔄 [MovieDetail] useEffect triggered - movie?.id:",
+      movie?.id,
+      "user?.id:",
+      user?.id
+    );
+
     const loadRatingAndBooking = async () => {
-      if (!movie?.id) return;
+      if (!movie?.id) {
+        console.log("❌ [MovieDetail] No movie ID, returning early");
+        return;
+      }
       try {
-        // Load average rating and reviews
-        const avg = await reviewService.getAverageRating(movie.id);
-        const reviews = await reviewService.getReviewsByMovie(movie.id);
-        setAvgRating(avg || 0);
-        setReviewCount(reviews.length);
+        // Load average rating
+        const avgResponse = await reviewService.getAverageRating(movie.id);
+        setAvgRating(avgResponse.averageRating || 0);
+        setReviewCount(avgResponse.ratingCount || 0);
 
         // Check if user has booked this movie
         if (user?.id) {
           setCheckingBooking(true);
-          const booked = await reviewService.checkUserBookedMovie(
-            user.id,
-            movie.id
-          );
-          setHasBooked(booked);
+          console.log("🔍 [MovieDetail] Checking booking for:", {
+            userId: user.id,
+            movieId: movie.id,
+          });
 
-          // Load user's existing rating if they have booked
-          if (booked) {
-            const myRating = await reviewService.getMyRating(movie.id);
-            if (myRating) {
-              setUserRating(myRating.rating);
+          try {
+            const booked = await bookingService.checkUserBookedMovie(
+              user.id,
+              movie.id
+            );
+
+            console.log("✅ [MovieDetail] Booking check result:", booked);
+            console.log("✅ [MovieDetail] Type of result:", typeof booked);
+            setHasBooked(booked);
+            console.log("🔄 [MovieDetail] Setting hasBooked to:", booked);
+
+            // Load user's existing rating if they have booked
+            if (booked) {
+              console.log("📊 [MovieDetail] Loading user rating...");
+              try {
+                const myRating = await reviewService.getMyRating(movie.id);
+                console.log("📊 [MovieDetail] User rating result:", myRating);
+                if (myRating) {
+                  setUserRating(myRating.rating);
+                }
+              } catch (ratingError) {
+                console.error(
+                  "❌ [MovieDetail] Error loading user rating:",
+                  ratingError
+                );
+                // Don't set hasBooked to false just because rating failed
+              }
             }
+          } catch (bookingError) {
+            console.error(
+              "❌ [MovieDetail] Error checking booking:",
+              bookingError
+            );
+            console.log(
+              "🔄 [MovieDetail] Setting hasBooked to FALSE due to booking error"
+            );
+            setHasBooked(false);
           }
         } else {
+          console.log(
+            "❌ [MovieDetail] No user logged in, setting hasBooked = false"
+          );
+          console.log(
+            "🔄 [MovieDetail] Setting hasBooked to FALSE due to no user"
+          );
           setHasBooked(false);
         }
       } catch (err) {
-        console.error("Error loading rating/booking:", err);
+        console.error("❌ [MovieDetail] Error loading rating/booking:", err);
+        console.log(
+          "🔄 [MovieDetail] Setting hasBooked to FALSE due to outer catch"
+        );
         setHasBooked(false);
       } finally {
         setCheckingBooking(false);
@@ -124,32 +189,75 @@ export default function MovieDetailPage() {
   }, [movie?.id, user?.id]);
 
   const handleToggleFavorite = async () => {
-    if (!user?.id || !movie?.tmdbId) {
-      alert("Vui lòng đăng nhập để thêm phim yêu thích!");
+    if (!user?.id || !movie?.id) {
+      Swal.fire({
+        icon: "warning",
+        title: "Chưa đăng nhập",
+        text: "Vui lòng đăng nhập để thêm phim yêu thích!",
+        confirmButtonText: "Đăng nhập",
+        showCancelButton: true,
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "#f59e0b",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/auth");
+        }
+      });
       return;
     }
 
     setFavoriteLoading(true);
     try {
       if (isFavorite) {
-        await userProfileService.removeFavorite(user.id, movie.tmdbId);
+        await userProfileService.removeFavorite(user.id, movie.id);
         setIsFavorite(false);
+        Swal.fire({
+          icon: "success",
+          title: "Đã xóa khỏi yêu thích",
+          text: "Phim đã được xóa khỏi danh sách yêu thích!",
+          timer: 2000,
+          showConfirmButton: false,
+          toast: true,
+          position: "top-end",
+        });
       } else {
         await userProfileService.addFavorite({
-          userId: user.id,
-          tmdbId: movie.tmdbId,
+          userId: user.id, // Use actual userId from auth
+          movieId: movie.id,
         });
         setIsFavorite(true);
+        Swal.fire({
+          icon: "success",
+          title: "Đã thêm vào yêu thích",
+          text: "Phim đã được thêm vào danh sách yêu thích!",
+          timer: 2000,
+          showConfirmButton: false,
+          toast: true,
+          position: "top-end",
+        });
       }
     } catch (err) {
       console.error("Error toggling favorite:", err);
-      alert("Không thể cập nhật phim yêu thích!");
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể cập nhật phim yêu thích!",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#f59e0b",
+      });
     } finally {
       setFavoriteLoading(false);
     }
   };
 
   const handleRatingClick = async (rating: number) => {
+    console.log(
+      "⭐ [MovieDetail] Rating click - hasBooked:",
+      hasBooked,
+      "checkingBooking:",
+      checkingBooking
+    );
+
     if (!user) {
       Swal.fire({
         title: "Yêu cầu đăng nhập",
@@ -168,6 +276,7 @@ export default function MovieDetailPage() {
     }
 
     if (!hasBooked) {
+      console.log("❌ [MovieDetail] Blocking rating - hasBooked is false");
       Swal.fire({
         title: "Chưa đặt vé phim này",
         text: "Bạn cần đặt vé xem phim này để có thể đánh giá",
@@ -188,13 +297,16 @@ export default function MovieDetailPage() {
       return;
     }
 
+    console.log("✅ [MovieDetail] Allowing rating - hasBooked is true");
+
     try {
       await reviewService.upsertRating(movie!.id, { rating });
       setUserRating(rating);
 
       // Reload average rating
-      const newAvg = await reviewService.getAverageRating(movie!.id);
-      setAvgRating(newAvg || 0);
+      const newAvgResponse = await reviewService.getAverageRating(movie!.id);
+      setAvgRating(newAvgResponse.averageRating || 0);
+      setReviewCount(newAvgResponse.ratingCount || 0);
 
       Swal.fire({
         title: "Đánh giá thành công!",
@@ -535,7 +647,7 @@ export default function MovieDetailPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+                        className="h-full flex flex-col"
                       >
                         <MovieComments
                           movieId={movie.id}

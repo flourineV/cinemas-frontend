@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import { promotionService } from "@/services/promotion/promotionService";
 import { paymentService } from "@/services/payment/payment.service";
 import { bookingService } from "@/services/booking/booking.service";
-import type { PromotionResponse } from "@/types/promotion/promotion.type";
+import type {
+  PromotionResponse,
+  UserPromotionsResponse,
+} from "@/types/promotion/promotion.type";
 import type {
   FinalizeBookingRequest,
   CalculatedFnbItemDto,
@@ -27,11 +29,9 @@ interface Props {
   onPrev: () => void;
 }
 
-const MySwal = withReactContent(Swal);
+// Removed MySwal as it's not used anymore
 
 const PaymentStep: React.FC<Props> = ({
-  paymentMethod,
-  setPaymentMethod,
   appliedPromo,
   onApplyPromo,
   bookingId,
@@ -42,7 +42,8 @@ const PaymentStep: React.FC<Props> = ({
   onRankDiscountValueChange,
   onPrev,
 }) => {
-  const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
+  const [userPromotions, setUserPromotions] =
+    useState<UserPromotionsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [userRank, setUserRank] = useState<string | null>(null);
@@ -57,9 +58,14 @@ const PaymentStep: React.FC<Props> = ({
 
   useEffect(() => {
     const fetchPromotions = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const data = await promotionService.getAllPromotions();
-        setPromotions(data);
+        const data = await promotionService.getActivePromotionsForUser(userId);
+        setUserPromotions(data);
       } catch (err) {
         console.error("Lấy danh sách promotion thất bại:", err);
       } finally {
@@ -67,7 +73,7 @@ const PaymentStep: React.FC<Props> = ({
       }
     };
     fetchPromotions();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const fetchRankDiscount = async () => {
@@ -92,60 +98,7 @@ const PaymentStep: React.FC<Props> = ({
     fetchRankDiscount();
   }, [userId, onRankDiscountValueChange]);
 
-  const handleSelectPromo = async () => {
-    let selectedPromo: PromotionResponse | null = appliedPromo;
-
-    await MySwal.fire({
-      title: "Áp dụng mã giảm giá",
-      showCloseButton: true,
-      showConfirmButton: true,
-      confirmButtonText: "Tiếp tục",
-      confirmButtonColor: "#eab308",
-      html: (
-        <div className="space-y-2">
-          <input
-            id="promo-input"
-            placeholder="Nhập mã giảm giá"
-            defaultValue={appliedPromo?.code || ""}
-            className="w-full p-2 rounded border border-gray-300 bg-zinc-800 text-white"
-          />
-          <div className="max-h-40 overflow-y-auto border border-gray-700 rounded p-2">
-            {loading ? (
-              <div className="text-gray-400">Đang tải...</div>
-            ) : (
-              promotions.map((p) => (
-                <div
-                  key={p.code}
-                  className="p-2 cursor-pointer hover:bg-yellow-400 hover:text-black rounded"
-                  onClick={() => {
-                    selectedPromo = p;
-                    const input = document.getElementById(
-                      "promo-input"
-                    ) as HTMLInputElement;
-                    if (input) input.value = p.code;
-                  }}
-                >
-                  <div className="font-semibold">{p.code}</div>
-                  <div className="text-sm text-gray-300">{p.description}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      ),
-      preConfirm: () => {
-        const input = document.getElementById(
-          "promo-input"
-        ) as HTMLInputElement;
-        const code = input?.value || "";
-        return promotions.find((p) => p.code === code) || null;
-      },
-    }).then((result) => {
-      if (result.isConfirmed) {
-        onApplyPromo(result.value); // trả về toàn bộ object hoặc null
-      }
-    });
-  };
+  // Không cần handleSelectPromo nữa vì chọn trực tiếp từ danh sách
 
   const handlePayment = async () => {
     if (!bookingId) {
@@ -176,7 +129,7 @@ const PaymentStep: React.FC<Props> = ({
       const finalizeRequest: FinalizeBookingRequest = {
         fnbItems: fnbItems,
         promotionCode: appliedPromo?.code,
-        useLoyaltyDiscount: false,
+        useLoyaltyDiscount: useRankDiscount,
       };
 
       console.log("Finalizing booking with data:", finalizeRequest);
@@ -187,7 +140,10 @@ const PaymentStep: React.FC<Props> = ({
 
       if (response.return_code === 1 && response.order_url) {
         // Chuyển hướng đến trang thanh toán ZaloPay
+        // Không set isProcessing = false vì sẽ chuyển trang ngay
         window.location.href = response.order_url;
+        // Spinner sẽ tiếp tục xoay cho đến khi trang mới load
+        return; // Exit early, không chạy finally
       } else {
         throw new Error(
           response.return_message || "Không thể tạo liên kết thanh toán"
@@ -203,9 +159,10 @@ const PaymentStep: React.FC<Props> = ({
           "Không thể tạo liên kết thanh toán. Vui lòng thử lại!",
         confirmButtonColor: "#d97706",
       });
-    } finally {
+      // Chỉ set isProcessing = false khi có lỗi
       setIsProcessing(false);
     }
+    // Bỏ finally block để spinner tiếp tục xoay khi thành công
   };
 
   return (
@@ -264,53 +221,102 @@ const PaymentStep: React.FC<Props> = ({
         <h3 className="text-2xl font-bold text-zinc-800 mb-4">Mã giảm giá</h3>
         {loading ? (
           <div className="text-zinc-600 text-center py-8">Đang tải...</div>
-        ) : promotions.length === 0 ? (
+        ) : !userPromotions ||
+          (userPromotions.applicable.length === 0 &&
+            userPromotions.notApplicable.length === 0) ? (
           <div className="text-zinc-600 text-center py-8 bg-zinc-100 rounded-xl border border-zinc-300">
             Không có mã giảm giá nào
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {promotions.map((promo) => {
-              const isSelected = appliedPromo?.code === promo.code;
-              return (
-                <div
-                  key={promo.code}
-                  onClick={() => onApplyPromo(isSelected ? null : promo)}
-                  className={`relative cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 ${
-                    isSelected
-                      ? "bg-yellow-500 border-yellow-600 shadow-lg"
-                      : "bg-white border-zinc-300 hover:border-yellow-400 hover:shadow-md"
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="absolute -top-2 -right-2 bg-zinc-900 text-yellow-500 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm border-2 border-yellow-500">
-                      ✓
-                    </div>
-                  )}
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+          <div className="space-y-6">
+            {/* Promotions có thể sử dụng - hiển thị đầu tiên */}
+            {userPromotions.applicable.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold text-zinc-700 mb-3">
+                  Có thể sử dụng
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userPromotions.applicable.map((item) => {
+                    const promo = item.promotion;
+                    const isSelected = appliedPromo?.code === promo.code;
+                    return (
                       <div
-                        className={`font-bold text-lg mb-1 ${isSelected ? "text-black" : "text-zinc-800"}`}
+                        key={promo.code}
+                        onClick={() => onApplyPromo(isSelected ? null : promo)}
+                        className={`relative cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 ${
+                          isSelected
+                            ? "bg-yellow-500 border-yellow-600 shadow-lg"
+                            : "bg-white border-zinc-300 hover:border-yellow-400 hover:shadow-md"
+                        }`}
                       >
-                        {promo.code}
+                        {isSelected && (
+                          <div className="absolute -top-2 -right-2 bg-zinc-900 text-yellow-500 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm border-2 border-yellow-500">
+                            ✓
+                          </div>
+                        )}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div
+                              className={`font-bold text-lg mb-1 ${isSelected ? "text-black" : "text-zinc-800"}`}
+                            >
+                              {promo.code}
+                            </div>
+                            <div
+                              className={`text-sm mb-2 ${isSelected ? "text-zinc-900" : "text-zinc-600"}`}
+                            >
+                              {promo.description}
+                            </div>
+                            <div
+                              className={`text-xs font-semibold ${isSelected ? "text-zinc-800" : "text-yellow-600"}`}
+                            >
+                              {promo.discountType === "PERCENTAGE"
+                                ? `Giảm ${promo.discountValue}%`
+                                : `Giảm ${Number(promo.discountValue).toLocaleString()}đ`}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div
-                        className={`text-sm mb-2 ${isSelected ? "text-zinc-900" : "text-zinc-600"}`}
-                      >
-                        {promo.description}
-                      </div>
-                      <div
-                        className={`text-xs font-semibold ${isSelected ? "text-zinc-800" : "text-yellow-600"}`}
-                      >
-                        {promo.discountType === "PERCENTAGE"
-                          ? `Giảm ${promo.discountValue}%`
-                          : `Giảm ${Number(promo.discountValue).toLocaleString()}đ`}
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            )}
+
+            {/* Promotions không thể sử dụng - hiển thị sau và disable */}
+            {userPromotions.notApplicable.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold text-zinc-500 mb-3">
+                  Không thể sử dụng
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userPromotions.notApplicable.map((item) => {
+                    const promo = item.promotion;
+                    return (
+                      <div
+                        key={promo.code}
+                        className="relative rounded-xl p-5 border-2 bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="font-bold text-lg mb-1 text-gray-500">
+                              {promo.code}
+                            </div>
+                            <div className="text-sm mb-2 text-gray-400">
+                              {promo.description}
+                            </div>
+                            <div className="text-xs font-semibold text-gray-400">
+                              {promo.discountType === "PERCENTAGE"
+                                ? `Giảm ${promo.discountValue}%`
+                                : `Giảm ${Number(promo.discountValue).toLocaleString()}đ`}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -326,10 +332,15 @@ const PaymentStep: React.FC<Props> = ({
         </button>
         <button
           onClick={handlePayment}
-          className="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-yellow-500 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           disabled={isProcessing}
         >
-          {isProcessing ? "Đang xử lý..." : "Xác nhận & Thanh toán"}
+          {isProcessing && (
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent"></div>
+          )}
+          {isProcessing
+            ? "Đang tạo liên kết thanh toán..."
+            : "Xác nhận & Thanh toán"}
         </button>
       </div>
     </motion.div>

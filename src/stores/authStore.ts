@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         // Trigger guest session creation by dispatching storage event
         window.dispatchEvent(
           new StorageEvent("storage", {
-            key: "user",
+            key: "auth-storage",
             oldValue: "something",
             newValue: null,
             url: window.location.href,

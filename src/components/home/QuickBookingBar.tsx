@@ -5,6 +5,7 @@ import { movieService } from "@/services/movie/movieService";
 import { theaterService } from "@/services/showtime/theaterService";
 import type { MovieSummary } from "@/types/movie/movie.type";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 /* ---------------- CustomSelect (dropdown xổ xuống) ---------------- */
 type Option = { value: string; label: string };
@@ -184,6 +185,7 @@ function CustomSelect({
 
 const QuickBookingBar: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // State for selections
   const [selectedMovie, setSelectedMovie] = useState("");
@@ -337,7 +339,7 @@ const QuickBookingBar: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row items-center gap-5 w-full relative z-10">
         <h2 className="text-2xl font-extrabold text-white whitespace-nowrap">
-          ĐẶT VÉ NHANH
+          {t("home.booking.title")}
         </h2>
 
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -350,7 +352,9 @@ const QuickBookingBar: React.FC = () => {
               setSelectedDate("");
               setSelectedShowtime("");
             }}
-            placeholder={loadingMovies ? "Đang tải phim..." : "Chọn phim"}
+            placeholder={
+              loadingMovies ? t("common.loading") : t("home.booking.movie")
+            }
             disabled={loadingMovies}
           />
 
@@ -362,7 +366,9 @@ const QuickBookingBar: React.FC = () => {
               setSelectedDate("");
               setSelectedShowtime("");
             }}
-            placeholder={loadingTheaters ? "Đang tải rạp..." : "Chọn rạp"}
+            placeholder={
+              loadingTheaters ? t("common.loading") : t("home.booking.theater")
+            }
             disabled={!selectedMovie || loadingTheaters}
           />
 
@@ -373,7 +379,7 @@ const QuickBookingBar: React.FC = () => {
               setSelectedDate(v);
               setSelectedShowtime("");
             }}
-            placeholder="Chọn ngày"
+            placeholder={t("home.booking.date")}
             disabled={!selectedTheater}
           />
 
@@ -381,7 +387,11 @@ const QuickBookingBar: React.FC = () => {
             options={showtimes}
             value={selectedShowtime}
             onChange={setSelectedShowtime}
-            placeholder={loadingShowtimes ? "Đang tải suất..." : "Chọn suất"}
+            placeholder={
+              loadingShowtimes
+                ? t("common.loading")
+                : t("home.booking.showtime")
+            }
             disabled={!selectedDate || loadingShowtimes}
           />
         </div>
@@ -399,7 +409,9 @@ const QuickBookingBar: React.FC = () => {
             }
           }}
         >
-          <span className="relative z-10 drop-shadow-sm">ĐẶT NGAY</span>
+          <span className="relative z-10 drop-shadow-sm">
+            {t("home.booking.bookNow")}
+          </span>
           <div
             className="absolute inset-0 bg-gradient-to-r from-orange-500 via-yellow-400 to-orange-500 
                        bg-[length:200%_100%] animate-gradientMove rounded-lg"

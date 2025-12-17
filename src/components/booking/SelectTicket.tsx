@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { pricingService } from "@/services/pricing/pricingService";
 import type { SeatPriceResponse } from "@/types/pricing/seatprice.type";
 import { Ticket } from "lucide-react";
+import Swal from "sweetalert2";
 
 interface SelectTicketProps {
   seatType: string;
@@ -26,6 +27,7 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
     Record<string, number>
   >({});
   const [loading, setLoading] = useState(false);
+  const [hasShownStudentWarning, setHasShownStudentWarning] = useState(false);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -46,13 +48,44 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
     fetchTickets();
   }, []);
 
-  const handleChange = (
+  const handleChange = async (
     seatType: string,
     ticketType: string,
     delta: number
   ) => {
     const key = `${seatType}-${ticketType}`;
-    const newCount = Math.max((selectedTickets[key] || 0) + delta, 0);
+    const currentCount = selectedTickets[key] || 0;
+    const newCount = Math.max(currentCount + delta, 0);
+
+    // Check if this is the first time selecting STUDENT ticket
+    if (
+      ticketType === "STUDENT" &&
+      delta > 0 &&
+      currentCount === 0 &&
+      !hasShownStudentWarning
+    ) {
+      await Swal.fire({
+        icon: "info",
+        title: "Lưu ý vé HSSV-U22",
+        html: `
+          <div class="text-left">
+            <p class="mb-3">Khi sử dụng vé HSSV-U22, bạn cần mang theo:</p>
+            <ul class="list-disc list-inside space-y-1 text-sm">
+              <li><strong>Thẻ sinh viên</strong> hoặc <strong>Thẻ học sinh</strong> còn hạn</li>
+              <li><strong>Căn cước công dân</strong> để xác minh tuổi (dưới 22 tuổi)</li>
+            </ul>
+            <p class="mt-3 text-sm text-gray-600">
+              Nhân viên rạp sẽ kiểm tra giấy tờ trước khi vào phòng chiếu.
+            </p>
+          </div>
+        `,
+        confirmButtonText: "Đã hiểu",
+        confirmButtonColor: "#eab308",
+        scrollbarPadding: false,
+      });
+      setHasShownStudentWarning(true);
+    }
+
     const updated = { ...selectedTickets, [key]: newCount };
     setSelectedTickets(updated);
     onTicketChange(updated);
@@ -139,8 +172,8 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
                 <button
                   type="button"
                   aria-label="Giảm"
-                  onClick={() =>
-                    handleChange(ticket.seatType, ticket.ticketType, -1)
+                  onClick={async () =>
+                    await handleChange(ticket.seatType, ticket.ticketType, -1)
                   }
                   disabled={count <= 0}
                   className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl transition-all
@@ -160,8 +193,8 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
                 <button
                   type="button"
                   aria-label="Tăng"
-                  onClick={() =>
-                    handleChange(ticket.seatType, ticket.ticketType, 1)
+                  onClick={async () =>
+                    await handleChange(ticket.seatType, ticket.ticketType, 1)
                   }
                   className="w-10 h-10 flex items-center justify-center rounded-lg bg-yellow-500 text-black font-bold text-xl transition-all hover:bg-yellow-400 active:scale-95 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
                 >

@@ -69,9 +69,9 @@ const CustomInput: React.FC<CustomInputProps> = ({
           {...props}
           type={isPassword ? (showPassword ? "text" : "password") : props.type}
           className={`w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl 
-            text-zinc-800 placeholder-gray-400
-            focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 
-            transition-all duration-300 hover:border-zinc-300 ${className}`}
+            text-zinc-800 placeholder-gray-400 caret-black
+            focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20
+            transition-all duration-200 hover:border-zinc-300 ${className}`}
         />
 
         {/* Nút mắt xem pass */}

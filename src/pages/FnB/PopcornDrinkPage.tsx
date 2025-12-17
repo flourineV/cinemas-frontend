@@ -1,61 +1,50 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { fnbService, type FnbItem } from "@/services/fnb/fnbService";
+import { fnbService } from "@/services/fnb/fnbService";
+import type { FnbItemResponse } from "@/types/fnb/fnb.type";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 import { ChevronDown, Plus, Minus, ShoppingCart } from "lucide-react";
-import AnimatedButton from "@/components/ui/AnimatedButton";
+import FnbSummaryBar from "@/components/fnb/FnbSummaryBar";
+import { useAuthStore } from "@/stores/authStore";
+import Swal from "sweetalert2";
 
-interface CartItem extends FnbItem {
+interface CartItem extends FnbItemResponse {
   quantity: number;
 }
 
 const PopcornDrinkPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
   const [selectedTheater, setSelectedTheater] =
     useState<TheaterResponse | null>(null);
-  const [fnbItems, setFnbItems] = useState<FnbItem[]>([]);
+  const [fnbItems, setFnbItems] = useState<FnbItemResponse[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingItems, setLoadingItems] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [creatingOrder, setCreatingOrder] = useState(false);
 
-  // Load theaters on mount
+  // Load theaters and FnB items on mount (tất cả rạp đều có cùng thực đơn)
   useEffect(() => {
-    const loadTheaters = async () => {
+    const loadData = async () => {
       try {
-        const theaterList = await fnbService.getTheaters();
+        const [theaterList, items] = await Promise.all([
+          fnbService.getTheaters(),
+          fnbService.getAllFnbItems(), // Load tất cả FnB items ngay từ đầu
+        ]);
         setTheaters(theaterList);
+        setFnbItems(items);
       } catch (error) {
-        console.error("Error loading theaters:", error);
+        console.error("Error loading data:", error);
       } finally {
         setLoading(false);
       }
     };
-    loadTheaters();
+    loadData();
   }, []);
 
-  // Load FnB items when theater is selected
-  useEffect(() => {
-    if (selectedTheater) {
-      const loadFnbItems = async () => {
-        setLoadingItems(true);
-        try {
-          const items = await fnbService.getFnbItems(selectedTheater.id);
-          setFnbItems(items);
-        } catch (error) {
-          console.error("Error loading FnB items:", error);
-          setFnbItems([]);
-        } finally {
-          setLoadingItems(false);
-        }
-      };
-      loadFnbItems();
-    }
-  }, [selectedTheater]);
-
-  const addToCart = (item: FnbItem) => {
+  const addToCart = (item: FnbItemResponse) => {
     setCart((prev) => {
       const existingItem = prev.find((cartItem) => cartItem.id === item.id);
       if (existingItem) {
@@ -91,20 +80,117 @@ const PopcornDrinkPage = () => {
   };
 
   const getTotalAmount = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cart.reduce(
+      (total, item) => total + item.unitPrice * item.quantity,
+      0
+    );
   };
 
-  const handleCheckout = () => {
-    if (!selectedTheater || cart.length === 0) return;
+  const handleCheckout = async () => {
+    // Check authentication first
+    if (!user) {
+      return Swal.fire({
+        title: "Yêu cầu đăng nhập",
+        text: "Bạn cần đăng nhập để đặt bắp nước",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Đăng nhập",
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "#eab308",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/auth");
+        }
+      });
+    }
 
-    // Navigate to FnB checkout with cart data
-    navigate("/fnb-checkout", {
-      state: {
-        theater: selectedTheater,
-        cart: cart,
-        totalAmount: getTotalAmount(),
-      },
-    });
+    // Validation
+    if (!selectedTheater) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Chưa chọn rạp",
+        text: "Vui lòng chọn rạp để tiếp tục đặt hàng!",
+        confirmButtonColor: "#eab308",
+      });
+    }
+
+    if (cart.length === 0) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Giỏ hàng trống",
+        text: "Vui lòng chọn ít nhất một món để tiếp tục!",
+        confirmButtonColor: "#eab308",
+      });
+    }
+
+    // Validate total amount > 0
+    const total = getTotalAmount();
+    if (total <= 0) {
+      return Swal.fire({
+        icon: "error",
+        title: "Lỗi giỏ hàng",
+        text: "Tổng tiền phải lớn hơn 0. Vui lòng kiểm tra lại giỏ hàng!",
+        confirmButtonColor: "#eab308",
+      });
+    }
+
+    setCreatingOrder(true);
+
+    try {
+      // Create FnB order
+      const orderData = {
+        userId: user.id,
+        theaterId: selectedTheater.id,
+        paymentMethod: "ZALOPAY",
+        items: cart.map((item) => ({
+          fnbItemId: item.id,
+          quantity: item.quantity,
+        })),
+      };
+
+      const order = await fnbService.createOrder(orderData);
+
+      console.log("🔍 [PopcornDrink] Order created:", order);
+      console.log("🔍 [PopcornDrink] Order ID:", order.id);
+      console.log("🔍 [PopcornDrink] Order expiresAt:", order.expiresAt);
+
+      // Calculate TTL from expiresAt
+      const expiresAt = new Date(order.expiresAt);
+      const ttl = Math.max(
+        0,
+        Math.floor((expiresAt.getTime() - Date.now()) / 1000)
+      );
+
+      // Navigate to FnB checkout with order data and TTL
+      navigate("/fnb-checkout", {
+        state: {
+          theater: selectedTheater,
+          cart: cart,
+          totalAmount: total,
+          order: order,
+          ttl: ttl,
+          ttlTimestamp: Date.now(),
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ [PopcornDrink] Create order error:", error);
+      console.error("❌ [PopcornDrink] Error response:", error.response?.data);
+      console.error("❌ [PopcornDrink] Error status:", error.response?.status);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Có lỗi xảy ra khi tạo đơn hàng";
+
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: `${errorMessage}. Vui lòng thử lại!`,
+        confirmButtonColor: "#eab308",
+      });
+    } finally {
+      setCreatingOrder(false);
+    }
   };
 
   if (loading) {
@@ -119,38 +205,70 @@ const PopcornDrinkPage = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-100 pt-8 pb-16">
+      <div className="min-h-screen bg-gray-100 pt-8 pb-16 relative">
+        {/* Loading Overlay */}
+        {creatingOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 mx-auto mb-4"></div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Đang tạo đơn hàng...
+              </h3>
+              <p className="text-gray-600">Vui lòng đợi trong giây lát</p>
+            </div>
+          </div>
+        )}
         {/* Header */}
-        <div className="max-w-6xl mx-auto px-4 mb-8">
-          <h1 className="text-4xl font-extrabold text-yellow-500 text-center mb-8">
-            ĐẶT BẮP NƯỚC
-          </h1>
+        <div className="max-w-7xl mx-auto px-4 mb-8">
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-extrabold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-4">
+              ĐẶT BẮP NƯỚC
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Thưởng thức bắp rang bơ và nước uống thơm ngon tại rạp
+            </p>
+          </div>
 
           {/* Theater Selection */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              CHỌN RẠP GẦN BẠN
-            </h2>
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-yellow-100 p-3 rounded-full mr-4">
+                <ShoppingCart className="w-8 h-8 text-yellow-600" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900">
+                Chọn rạp để nhận hàng
+              </h2>
+            </div>
 
-            <div className="relative max-w-md mx-auto">
+            <div className="relative max-w-lg mx-auto">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className={`w-full border-2 rounded-xl px-6 py-4 text-left flex items-center justify-between transition-all duration-200 ${
+                  selectedTheater
+                    ? "border-yellow-400 bg-yellow-50 shadow-md"
+                    : "border-gray-200 bg-white hover:border-yellow-300 hover:shadow-md"
+                }`}
               >
                 <span
                   className={
-                    selectedTheater ? "text-gray-900" : "text-gray-500"
+                    selectedTheater
+                      ? "text-gray-900 font-semibold"
+                      : "text-gray-500"
                   }
                 >
-                  {selectedTheater ? selectedTheater.name : "CHỌN RẠP"}
+                  {selectedTheater
+                    ? selectedTheater.name
+                    : "🎬 Chọn rạp gần bạn"}
                 </span>
                 <ChevronDown
-                  className={`w-5 h-5 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+                  className={`w-6 h-6 text-gray-400 transition-transform duration-200 ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-100 rounded-xl shadow-2xl z-20 max-h-80 overflow-y-auto">
                   {theaters.map((theater) => (
                     <button
                       key={theater.id}
@@ -159,13 +277,13 @@ const PopcornDrinkPage = () => {
                         setIsDropdownOpen(false);
                         setCart([]); // Clear cart when changing theater
                       }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                      className="w-full px-6 py-4 text-left hover:bg-yellow-50 transition-colors border-b border-gray-50 last:border-b-0 group"
                     >
-                      <div className="font-semibold text-gray-900">
+                      <div className="font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">
                         {theater.name}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        {theater.address}
+                      <div className="text-sm text-gray-500 mt-1">
+                        📍 {theater.address}
                       </div>
                     </button>
                   ))}
@@ -176,109 +294,106 @@ const PopcornDrinkPage = () => {
         </div>
 
         {/* FnB Items */}
-        {selectedTheater && (
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                THỰC ĐƠN TẠI {selectedTheater.name}
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                🍿 Thực đơn đặc biệt
               </h3>
+              <p className="text-gray-600">
+                Tất cả rạp đều có cùng thực đơn với chất lượng tuyệt vời
+              </p>
+            </div>
 
-              {loadingItems ? (
-                <div className="flex justify-center items-center py-16">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-yellow-500"></div>
+            {fnbItems.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                  <ShoppingCart className="w-12 h-12 text-gray-400" />
                 </div>
-              ) : fnbItems.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">
-                  Rạp này hiện chưa có thực đơn
+                <p className="text-gray-500 text-lg">
+                  Hiện chưa có sản phẩm nào
                 </p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {fnbItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                    >
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {fnbItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group bg-white border-2 border-gray-100 rounded-2xl overflow-hidden hover:border-yellow-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    <div className="relative overflow-hidden">
                       <img
                         src={item.imageUrl}
                         alt={item.name}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <div className="p-4">
-                        <h4 className="font-bold text-lg text-gray-900 mb-2">
-                          {item.name}
-                        </h4>
-                        <p className="text-gray-600 text-sm mb-3">
-                          {item.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xl font-bold text-yellow-600">
-                            {item.price.toLocaleString()}đ
-                          </span>
+                      {false && ( // Tạm thời disable available check
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                          <span className="text-white font-bold">Hết hàng</span>
+                        </div>
+                      )}
+                    </div>
 
-                          {getItemQuantity(item.id) === 0 ? (
+                    <div className="p-5">
+                      <h4 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-yellow-600 transition-colors">
+                        {item.name}
+                      </h4>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        {item.description}
+                      </p>
+
+                      <div className="flex items-center justify-between">
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {item.unitPrice.toLocaleString()}
+                          <span className="text-sm text-gray-500 ml-1">đ</span>
+                        </div>
+
+                        {getItemQuantity(item.id) === 0 ? (
+                          <button
+                            onClick={() => addToCart(item)}
+                            disabled={false}
+                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold px-5 py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Thêm
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1">
+                            <button
+                              onClick={() => removeFromCart(item.id)}
+                              className="bg-white hover:bg-red-50 text-red-500 w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm border border-gray-200"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="font-bold text-xl min-w-[2.5rem] text-center text-gray-900">
+                              {getItemQuantity(item.id)}
+                            </span>
                             <button
                               onClick={() => addToCart(item)}
-                              disabled={!item.available}
-                              className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                              className="bg-yellow-400 hover:bg-yellow-500 text-black w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm"
                             >
                               <Plus className="w-4 h-4" />
-                              Thêm
                             </button>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => removeFromCart(item.id)}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                              <span className="font-semibold text-lg min-w-[2rem] text-center">
-                                {getItemQuantity(item.id)}
-                              </span>
-                              <button
-                                onClick={() => addToCart(item)}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-black w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Cart Summary */}
-        {cart.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
-            <div className="max-w-6xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <ShoppingCart className="w-6 h-6 text-yellow-600" />
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {cart.reduce((total, item) => total + item.quantity, 0)} món
-                  </p>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {getTotalAmount().toLocaleString()}đ
-                  </p>
-                </div>
+                  </div>
+                ))}
               </div>
-
-              <AnimatedButton
-                variant="orange-to-f3ea28"
-                onClick={handleCheckout}
-                className="px-8 py-3"
-              >
-                THANH TOÁN
-              </AnimatedButton>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* FnB Summary Bar */}
+        <FnbSummaryBar
+          theaterName={selectedTheater?.name || "Chưa chọn rạp"}
+          totalPrice={getTotalAmount()}
+          itemCount={cart.reduce((total, item) => total + item.quantity, 0)}
+          isVisible={cart.length > 0}
+          onSubmit={handleCheckout}
+          loading={creatingOrder}
+        />
       </div>
     </Layout>
   );

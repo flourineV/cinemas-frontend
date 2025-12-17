@@ -1,6 +1,6 @@
 export interface FavoriteMovieRequest {
-  userId: string;
-  tmdbId: number;
+  userId: string; // Auth user ID (not userProfileId)
+  movieId: string;
 }
 
 export interface FavoriteMovieResponse {

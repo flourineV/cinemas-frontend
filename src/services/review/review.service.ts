@@ -1,10 +1,11 @@
 // src/services/review/review.service.ts
-import { reviewClient, bookingClient } from "../apiClient";
+import { reviewClient } from "../apiClient";
 import type {
   ReviewRequest,
   ReviewResponse,
   RatingRequest,
   RatingResponse,
+  AverageRatingResponse,
 } from "@/types/review/review.type";
 
 export const reviewService = {
@@ -41,17 +42,6 @@ export const reviewService = {
     }
   },
 
-  // CHECK IF USER BOOKED MOVIE
-  checkUserBookedMovie: async (
-    userId: string,
-    movieId: string
-  ): Promise<boolean> => {
-    const res = await bookingClient.get<boolean>(
-      `/check?userId=${userId}&movieId=${movieId}`
-    );
-    return res.data;
-  },
-
   // UPDATE
   updateReview: async (
     id: string,
@@ -73,8 +63,8 @@ export const reviewService = {
   },
 
   // AVG RATING
-  getAverageRating: async (movieId: string): Promise<number> => {
-    const res = await reviewClient.get<number>(
+  getAverageRating: async (movieId: string): Promise<AverageRatingResponse> => {
+    const res = await reviewClient.get<AverageRatingResponse>(
       `/movie/${movieId}/average-rating`
     );
     return res.data;

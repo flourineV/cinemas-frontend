@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { fnbService } from "@/services/fnb/fnbService";
-import type { FnbItemResponse } from "@/types/fnb/fnb.type";
 import { Plus, Minus } from "lucide-react";
 
 interface SelectedComboItem {
@@ -12,6 +11,14 @@ interface SelectedComboItem {
 
 interface SelectComboProps {
   onComboSelect: (selected: Record<string, SelectedComboItem>) => void;
+}
+
+interface FnbItemResponse {
+  id: string;
+  name: string;
+  description?: string;
+  unitPrice: number;
+  imageUrl: string;
 }
 
 const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {

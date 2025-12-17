@@ -11,22 +11,30 @@ export const movieService = {
 
   getNowPlaying: async (
     page: number = 0,
-    size: number = 10
+    size: number = 10,
+    language: string = "vi"
   ): Promise<{ content: MovieSummary[] }> => {
     const res = await movieClient.get<{ content: MovieSummary[] }>(
       "/now-playing",
-      { params: { page, size } }
+      {
+        params: { page, size },
+        headers: { "Accept-Language": language },
+      }
     );
     return res.data;
   },
 
   getUpcoming: async (
     page: number = 0,
-    size: number = 10
+    size: number = 10,
+    language: string = "vi"
   ): Promise<{ content: MovieSummary[] }> => {
     const res = await movieClient.get<{ content: MovieSummary[] }>(
       "/upcoming",
-      { params: { page, size } }
+      {
+        params: { page, size },
+        headers: { "Accept-Language": language },
+      }
     );
     return res.data;
   },
@@ -42,8 +50,13 @@ export const movieService = {
     return res.data;
   },
 
-  getMovieDetail: async (id: string): Promise<MovieDetail> => {
-    const res = await movieClient.get<MovieDetail>(`/${id}`);
+  getMovieDetail: async (
+    id: string,
+    language: string = "vi"
+  ): Promise<MovieDetail> => {
+    const res = await movieClient.get<MovieDetail>(`/${id}`, {
+      headers: { "Accept-Language": language },
+    });
     return res.data;
   },
 

@@ -131,9 +131,42 @@ const BookingSummary: React.FC<Props> = ({
           <div className="flex justify-between mt-2">
             <span>Ghế</span>
             <span className="font-semibold">
-              {(booking.seats || [])
-                .map((s: any) => s.seatNumber || s)
-                .join(", ") || "N/A"}
+              {(() => {
+                console.log(
+                  "🪑 [BookingSummary] booking.seats:",
+                  booking.seats
+                );
+                console.log("🪑 [BookingSummary] booking object:", booking);
+
+                const seats = booking.seats || booking.selectedSeats || [];
+                console.log("🪑 [BookingSummary] processed seats:", seats);
+
+                return (
+                  seats
+                    .map((s: any) => {
+                      console.log(
+                        "🪑 [BookingSummary] processing seat:",
+                        s,
+                        "type:",
+                        typeof s
+                      );
+
+                      if (typeof s === "string") return s;
+                      if (typeof s === "object" && s !== null) {
+                        // Try multiple possible properties
+                        const seatName =
+                          s.seatNumber || s.seatId || s.name || s.id;
+                        console.log(
+                          "🪑 [BookingSummary] extracted seatName:",
+                          seatName
+                        );
+                        return seatName || "N/A";
+                      }
+                      return "N/A";
+                    })
+                    .join(", ") || "N/A"
+                );
+              })()}
             </span>
           </div>
 

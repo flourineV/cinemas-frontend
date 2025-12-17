@@ -56,9 +56,13 @@ export interface ShowtimesByDate {
   [date: string]: ShowtimeResponse[];
 }
 
+export interface ScheduleByDate {
+  [date: string]: TheaterShowtimesResponse[];
+}
+
 export interface MovieShowtimeResponse {
-  availableDates: string[];
-  showtimesByDate: ShowtimesByDate;
+  availableDates: string[][];
+  scheduleByDate: ScheduleByDate;
 }
 
 export interface ShowtimeInfo {

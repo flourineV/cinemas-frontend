@@ -20,8 +20,7 @@ export interface UserProfileUpdateRequest {
   address?: string;
   avatarUrl?: string;
   gender?: Gender;
-  dateOfBirth?: string;
-  nationalId?: string;
+  // dateOfBirth and nationalId are not supported by BE update API
 }
 
 export interface UserProfileResponse {

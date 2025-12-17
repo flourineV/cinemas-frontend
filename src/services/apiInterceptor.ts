@@ -8,11 +8,18 @@ import type {
 export const applyInterceptors = (client: AxiosInstance): AxiosInstance => {
   client.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+      // Add Authorization header
       const token = localStorage.getItem("accessToken");
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
+
+      // Add Language header
+      const language = localStorage.getItem("cinehub-language") || "vi";
+      config.headers = config.headers || {};
+      config.headers["Accept-Language"] = language;
+
       return config;
     },
     (error: AxiosError) => Promise.reject(error)

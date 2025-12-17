@@ -1,4 +1,6 @@
 import Layout from "../../components/layout/Layout";
+import { useTranslation } from "../../hooks/useTranslation";
+import { useLanguage } from "../../contexts/LanguageContext";
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,6 +27,7 @@ import type { PromotionResponse } from "@/types/promotion/promotion.type";
 import QuickBookingBar from "../../components/home/QuickBookingBar";
 import TrailerModal from "@/components/movie/TrailerModal";
 import ContactForm from "@/components/contact/ContactForm";
+
 // Utils
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import {
@@ -35,6 +38,8 @@ import {
 
 const Home = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
   const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
   const [upcoming, setUpcoming] = useState<MovieSummary[]>([]);
   const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
@@ -84,8 +89,11 @@ const Home = () => {
 
   // Fetch movie data
   useEffect(() => {
+    setLoadingNowPlaying(true);
+    setLoadingUpcoming(true);
+
     movieService
-      .getNowPlaying(0, 12)
+      .getNowPlaying(0, 12, language)
       .then((res) => {
         console.log("Now Playing Response:", res);
         setNowPlaying(res.content || []);
@@ -97,7 +105,7 @@ const Home = () => {
       .finally(() => setLoadingNowPlaying(false));
 
     movieService
-      .getUpcoming(0, 12)
+      .getUpcoming(0, 12, language)
       .then((res) => {
         console.log("Upcoming Response:", res);
         setUpcoming(res.content || []);
@@ -109,19 +117,19 @@ const Home = () => {
       .finally(() => setLoadingUpcoming(false));
 
     promotionService
-      .getAllPromotions()
+      .getActivePromotions()
       .then((res) => {
         console.log("Promotions Response:", res);
         setPromotions(res || []);
       })
       .catch((err) => console.error("Error fetching promotions:", err));
-  }, []);
+  }, [language]); // Re-fetch when language changes
 
   // Carousels
   const nowPlayingCarousel = useCarousel(nowPlaying, itemsPerSlide);
   const upcomingCarousel = useCarousel(upcoming, itemsPerSlide);
 
-  const renderMovieCard = (movie: MovieSummary) => (
+  const renderMovieCard = (movie: MovieSummary, isUpcoming = false) => (
     <div key={movie.id} className="relative flex flex-col transition">
       <div className="group">
         <Link
@@ -186,7 +194,7 @@ const Home = () => {
           className="w-1/2"
           onClick={() => navigate(`/movies/${movie.id}`)}
         >
-          ĐẶT VÉ
+          {isUpcoming ? t("home.learnMore") : t("home.bookTicket")}
         </AnimatedButton>
       </div>
     </div>
@@ -194,7 +202,8 @@ const Home = () => {
 
   const renderCarousel = (
     carousel: ReturnType<typeof useCarousel>,
-    data: MovieSummary[]
+    data: MovieSummary[],
+    isUpcoming = false
   ) => (
     <div className="relative rounded-2xl">
       <div className="overflow-hidden ">
@@ -211,7 +220,7 @@ const Home = () => {
                 key={slideIdx}
                 className="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full flex-shrink-0 py-6"
               >
-                {slideItems.map(renderMovieCard)}
+                {slideItems.map((movie) => renderMovieCard(movie, isUpcoming))}
               </div>
             );
           })}
@@ -270,7 +279,7 @@ const Home = () => {
                   "0 0 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.7), 4px 4px 8px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
               }}
             >
-              CINEHUB
+              {t("home.hero.title")}
             </h1>
             <p
               className="text-xl md:text-2xl text-white font-light mb-8"
@@ -279,31 +288,39 @@ const Home = () => {
                   "0 0 10px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
               }}
             >
-              Trải nghiệm điện ảnh đỉnh cao
+              {t("home.hero.subtitle")}
             </p>
           </div>
         </div>
 
         {/* QuickBookingBar positioned below hero */}
         <section
-          className={`relative w-full max-w-5xl mx-auto z-20 -mt-16 transition-all duration-1000 ${isVisible.quickBooking ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+          className={`relative w-full max-w-5xl mx-auto z-20 -mt-20 transition-all duration-1000 ${isVisible.quickBooking ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
           <QuickBookingBar />
         </section>
 
         <section
-          className={`relative w-full max-w-5xl mx-auto mt-10 transition-all duration-1000 ${isVisible.nowPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+          className={`relative w-full max-w-5xl mx-auto mt-12 transition-all duration-1000 ${isVisible.nowPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
-          <div className="relative flex items-center justify-center mb-10">
-            <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
-              PHIM ĐANG CHIẾU
+          <div className="relative flex justify-center mb-5">
+            <h2
+              id="now-playing-title"
+              className="text-2xl md:text-4xl font-extrabold text-yellow-500 whitespace-nowrap"
+            >
+              {t("home.nowPlaying")}
             </h2>
             {catAnimation && (
-              <div className="absolute left-1/2 translate-x-[calc(50%+180px)] md:translate-x-[calc(50%+120px)]">
+              <div
+                className="absolute top-1/2 -translate-y-1/2"
+                style={{
+                  left: `calc(50% + ${t("home.nowPlaying").length * 0.9}em + 24px)`,
+                }}
+              >
                 <Lottie
                   animationData={catAnimation}
                   loop={true}
-                  style={{ width: 80, height: 80 }}
+                  style={{ width: 90, height: 90 }}
                 />
               </div>
             )}
@@ -314,7 +331,7 @@ const Home = () => {
             </div>
           ) : nowPlaying.length === 0 ? (
             <p className="text-black text-center">
-              Hiện tại chưa có phim nào được chiếu
+              {t("home.noMoviesPlaying")}
             </p>
           ) : (
             renderCarousel(nowPlayingCarousel, nowPlaying)
@@ -325,7 +342,7 @@ const Home = () => {
                 to="/movies/now-playing"
                 className="bg-black/80 border border-gray-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-white hover:text-black transition-all shadow-md"
               >
-                Xem thêm
+                {t("home.seeMore")}
               </Link>
             </div>
           )}
@@ -333,14 +350,22 @@ const Home = () => {
 
         {/* ---------------- PHIM SẮP CHIẾU ---------------- */}
         <section
-          className={`relative w-full max-w-5xl mx-auto mt-20 transition-all duration-1000 ${isVisible.upcoming ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+          className={`relative w-full max-w-5xl mx-auto mt-16 transition-all duration-1000 ${isVisible.upcoming ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
         >
-          <div className="relative flex items-center justify-center mb-10">
-            <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
-              PHIM SẮP CHIẾU
+          <div className="relative flex justify-center mb-6">
+            <h2
+              id="upcoming-title"
+              className="text-2xl md:text-4xl font-extrabold text-yellow-500 whitespace-nowrap"
+            >
+              {t("home.upcoming")}
             </h2>
             {catInBoxAnimation && (
-              <div className="absolute left-1/2 translate-x-[calc(50%+200px)] md:translate-x-[calc(50%+140px)]">
+              <div
+                className="absolute top-1/2 -translate-y-1/2"
+                style={{
+                  left: `calc(50% + ${t("home.upcoming").length * 0.9}em + 24px)`,
+                }}
+              >
                 <Lottie
                   animationData={catInBoxAnimation}
                   loop={true}
@@ -355,10 +380,10 @@ const Home = () => {
             </div>
           ) : upcoming.length === 0 ? (
             <p className="text-black text-center">
-              Hiện tại chưa có phim nào sắp ra mắt
+              {t("home.noMoviesUpcoming")}
             </p>
           ) : (
-            renderCarousel(upcomingCarousel, upcoming)
+            renderCarousel(upcomingCarousel, upcoming, true)
           )}
           {upcoming.length > 0 && (
             <div className="flex justify-center mt-5">
@@ -366,7 +391,7 @@ const Home = () => {
                 to="/movies/upcoming"
                 className="bg-black/80 border border-gray-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-white hover:text-black transition-all shadow-md"
               >
-                Xem thêm
+                {t("home.seeMore")}
               </Link>
             </div>
           )}
@@ -377,7 +402,7 @@ const Home = () => {
           <section className="relative w-full max-w-5xl mx-auto mt-20">
             <div className="relative flex items-center justify-center mb-10">
               <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
-                KHUYẾN MÃI HOT
+                {t("home.promotions")}
               </h2>
             </div>
 
@@ -409,9 +434,11 @@ const Home = () => {
                     <p className="text-lg font-bold text-gray-900 mb-1 text-center mb-3">
                       {promo.code}
                     </p>
-                    {promo.description && (
+                    {(promo.description || promo.descriptionEn) && (
                       <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                        {promo.description}
+                        {language === "en"
+                          ? promo.descriptionEn || promo.description
+                          : promo.description}
                       </p>
                     )}
                     <p className="text-xs text-gray-500 mb-5">
@@ -422,7 +449,7 @@ const Home = () => {
                       className="w-full"
                       onClick={() => navigate("/movies/now-playing")}
                     >
-                      ĐẶT VÉ NGAY
+                      {t("home.bookNow")}
                     </AnimatedButton>
                   </div>
                 </div>
@@ -435,7 +462,7 @@ const Home = () => {
         <section className="relative w-full max-w-5xl mx-auto mt-20 mb-10">
           <div className="relative flex items-center justify-center mb-16">
             <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
-              LIÊN HỆ VỚI CHÚNG TÔI
+              {t("home.contact")}
             </h2>
           </div>
           <ContactForm />

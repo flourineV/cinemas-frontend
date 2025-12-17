@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { theaterService } from "@/services/showtime/theaterService";
 import { movieService } from "@/services/movie/movieService";
-import { CustomSelect } from "@/components/ui/CustomSelect";
+import CustomSelect from "@/components/ui/CustomSelect";
 import type {
   TheaterResponse,
   MoviesWithTheatersResponse,

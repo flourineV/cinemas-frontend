@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useLayoutEffect } from "react";
+import { motion } from "framer-motion";
 import Layout from "../../components/layout/Layout";
 import {
   userProfileService,
@@ -13,13 +13,18 @@ import type {
 } from "@/types/userprofile";
 import { useAuthStore } from "../../stores/authStore";
 import { getPosterUrl } from "@/utils/getPosterUrl";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLanguage } from "../../contexts/LanguageContext";
+
+import { fnbService } from "@/services/fnb/fnbService";
+import type { FnbOrderResponse } from "@/types/fnb/fnb.type";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useScrollToTop } from "@/hooks/useScrollToTop";
+import Swal from "sweetalert2";
+import CustomSelect from "@/components/ui/CustomSelect";
 import {
   User,
   Award,
-  LogOut,
-  Edit2,
   Save,
   X,
   History,
@@ -27,14 +32,118 @@ import {
   Ticket,
   TrendingUp,
   Camera,
-  Upload,
+  Coffee,
+  Phone,
+  MapPin,
+  Users,
 } from "lucide-react";
 
-type TabType = "info" | "bookings" | "favorites" | "loyalty";
+type TabType = "info" | "bookings" | "favorites" | "loyalty" | "fnb";
+
+// Custom Input Component (giống Auth modal)
+interface CustomInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  icon: React.ElementType;
+  label: string;
+  error?: string;
+}
+
+const CustomInput: React.FC<CustomInputProps> = ({
+  icon: Icon,
+  label,
+  error,
+  className,
+  ...props
+}) => {
+  return (
+    <div className="w-full">
+      {/* Label nằm trên input */}
+      <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+        {label}
+      </label>
+
+      <div className="relative group">
+        {/* Icon bên trái */}
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300">
+          <Icon size={20} />
+        </div>
+
+        {/* Input chính */}
+        <input
+          {...props}
+          className={`w-full pl-10 pr-4 py-3 bg-white border border-gray-400 rounded-xl 
+            text-zinc-800 placeholder-gray-400 caret-black
+            focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20
+            hover:border-gray-500 transition-all duration-200 ${
+              error ? "border-red-300 bg-red-50" : ""
+            } ${className}`}
+        />
+      </div>
+
+      {/* Thông báo lỗi */}
+      {error && (
+        <p className="text-red-500 text-xs mt-1 ml-1 font-medium animate-pulse">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Custom Textarea Component
+interface CustomTextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  icon: React.ElementType;
+  label: string;
+  error?: string;
+}
+
+const CustomTextarea: React.FC<CustomTextareaProps> = ({
+  icon: Icon,
+  label,
+  error,
+  className,
+  ...props
+}) => {
+  return (
+    <div className="w-full">
+      {/* Label nằm trên textarea */}
+      <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+        {label}
+      </label>
+
+      <div className="relative group">
+        {/* Icon bên trái */}
+        <div className="absolute left-3 top-3 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300">
+          <Icon size={20} />
+        </div>
+
+        {/* Textarea chính */}
+        <textarea
+          {...props}
+          className={`w-full pl-10 pr-4 py-3 bg-white border border-gray-400 rounded-xl 
+            text-zinc-800 placeholder-gray-400 caret-black resize-none
+            focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20
+            hover:border-gray-500 transition-all duration-200 ${
+              error ? "border-red-300 bg-red-50" : ""
+            } ${className}`}
+        />
+      </div>
+
+      {/* Thông báo lỗi */}
+      {error && (
+        <p className="text-red-500 text-xs mt-1 ml-1 font-medium animate-pulse">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 const Profile = () => {
-  const { user, signout } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +152,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<TabType>("info");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [bookings, setBookings] = useState<any[]>([]);
   const [displayedBookings, setDisplayedBookings] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
@@ -54,9 +163,43 @@ const Profile = () => {
     []
   );
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [fnbOrders, setFnbOrders] = useState<FnbOrderResponse[]>([]);
+  const [fnbLoading, setFnbLoading] = useState(false);
+  const [userStats, setUserStats] = useState({
+    totalBookings: 0,
+    totalFavoriteMovies: 0,
+    totalLoyaltyPoints: 0,
+  });
 
   // Lock body scroll when modal is open
   useBodyScrollLock(isModalOpen);
+
+  // Force scroll to top before any rendering (only on initial load)
+  useLayoutEffect(() => {
+    // Disable browser's automatic scroll restoration
+    if (typeof window !== "undefined" && "scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+
+    // Force scroll to top on initial load only
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []); // Empty dependency array = only run once on mount
+
+  // Scroll to top when page loads (but not on tab changes)
+  useScrollToTop(undefined, "auto");
+
+  // Handle tab query parameter from URL
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (
+      tabParam &&
+      ["info", "bookings", "favorites", "loyalty", "fnb"].includes(tabParam)
+    ) {
+      setActiveTab(tabParam as TabType);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,6 +208,10 @@ const Profile = () => {
         const data = await userProfileService.getProfileByUserId(user.id);
         setProfile(data);
         setEditData(data);
+
+        // Fetch user stats
+        const stats = await userProfileService.getUserStats(user.id);
+        setUserStats(stats);
       } catch (err) {
         console.error("Lỗi khi lấy profile:", err);
       } finally {
@@ -155,6 +302,31 @@ const Profile = () => {
     }
   }, [user?.id, activeTab]);
 
+  // Fetch FnB orders
+  useEffect(() => {
+    const fetchFnbOrders = async () => {
+      if (!user?.id) return;
+      setFnbLoading(true);
+      try {
+        const orders = await fnbService.getOrdersByUser(user.id);
+        console.log("📦 FnB orders:", orders);
+        // Filter only CONFIRMED orders
+        const confirmedOrders = orders.filter(
+          (order) => order.status === "CONFIRMED"
+        );
+        setFnbOrders(confirmedOrders);
+      } catch (error) {
+        console.error("Lỗi khi lấy lịch sử đặt bắp nước:", error);
+      } finally {
+        setFnbLoading(false);
+      }
+    };
+
+    if (activeTab === "fnb") {
+      fetchFnbOrders();
+    }
+  }, [user?.id, activeTab]);
+
   const loadMoreBookings = () => {
     const currentLength = displayedBookings.length;
     const nextBatch = bookings.slice(currentLength, currentLength + 10);
@@ -162,50 +334,114 @@ const Profile = () => {
     setHasMoreBookings(currentLength + 10 < bookings.length);
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleAvatarChange = (file: File) => {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire({
+        icon: "warning",
+        title: "File quá lớn",
+        text: "Kích thước file không được vượt quá 5MB!",
+        confirmButtonColor: "#EAB308",
+      });
+      return;
     }
+
+    // Validate file type (only JPEG and PNG)
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Định dạng không hỗ trợ",
+        text: "Vui lòng chọn file JPEG hoặc PNG!",
+        confirmButtonColor: "#EAB308",
+      });
+      return;
+    }
+
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setAvatarPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
     if (!user?.id) return;
+
+    // Validation
+    if (!editData.fullName?.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Thiếu thông tin",
+        text: "Vui lòng nhập họ và tên!",
+        confirmButtonColor: "#EAB308",
+      });
+      return;
+    }
+
+    if (editData.phoneNumber && !/^[0-9]{10,11}$/.test(editData.phoneNumber)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Số điện thoại không hợp lệ",
+        text: "Vui lòng nhập 10-11 chữ số.",
+        confirmButtonColor: "#EAB308",
+      });
+      return;
+    }
+
+    // Remove nationalId validation since it's read-only
+
     setIsSaving(true);
     try {
       let avatarUrl = editData.avatarUrl;
 
       // Upload avatar if a new file is selected
       if (avatarFile) {
-        const uploadResult = await userProfileService.uploadAvatar(
-          user.id,
-          avatarFile
-        );
-        avatarUrl = uploadResult.avatarUrl;
+        try {
+          avatarUrl = await userProfileService.uploadAvatar(avatarFile);
+        } catch (uploadError) {
+          console.error("Lỗi khi upload avatar:", uploadError);
+          Swal.fire({
+            icon: "error",
+            title: "Lỗi upload ảnh",
+            text: "Không thể upload ảnh đại diện! Vui lòng thử lại.",
+            confirmButtonColor: "#EAB308",
+          });
+          return;
+        }
       }
 
       const updated = await userProfileService.updateProfile(user.id, {
-        fullName: editData.fullName,
+        fullName: editData.fullName?.trim(),
         gender: editData.gender as "MALE" | "FEMALE" | "OTHER" | undefined,
-        phoneNumber: editData.phoneNumber,
-        address: editData.address,
+        phoneNumber: editData.phoneNumber?.trim() || undefined,
+        address: editData.address?.trim() || undefined,
         avatarUrl: avatarUrl,
-        dateOfBirth: editData.dateOfBirth,
-        nationalId: editData.nationalId,
+        // Remove dateOfBirth and nationalId - BE doesn't support them
       });
+
       setProfile(updated);
       setEditData(updated);
       setIsModalOpen(false);
       setAvatarFile(null);
       setAvatarPreview("");
+
+      Swal.fire({
+        icon: "success",
+        title: "Thành công!",
+        text: "Cập nhật thông tin thành công!",
+        confirmButtonColor: "#EAB308",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch (error) {
-      console.error("Lỗi khi cập nhật:", error);
-      alert("Không thể lưu thông tin!");
+      console.error("Lỗi khi cập nhật profile:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi cập nhật",
+        text: "Không thể lưu thông tin! Vui lòng thử lại.",
+        confirmButtonColor: "#EAB308",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -214,8 +450,20 @@ const Profile = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-yellow-600 text-xl">Đang tải...</div>
+        <div className="min-h-screen bg-gray-50 relative">
+          <div
+            className="flex flex-col items-center justify-center"
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 1000,
+            }}
+          >
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 mb-4"></div>
+            <div className="text-gray-600 text-lg">{t("profile.loading")}</div>
+          </div>
         </div>
       </Layout>
     );
@@ -225,7 +473,7 @@ const Profile = () => {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-red-600 text-xl">Không thể tải thông tin!</div>
+          <div className="text-red-600 text-xl">{t("profile.cannotLoad")}</div>
         </div>
       </Layout>
     );
@@ -234,18 +482,19 @@ const Profile = () => {
   const loyaltyPercent = Math.min((profile.loyaltyPoint / 1000) * 100, 100);
 
   const tabs = [
-    { id: "info" as TabType, label: "Thông tin", icon: User },
-    { id: "bookings" as TabType, label: "Lịch sử đặt vé", icon: Ticket },
-    { id: "favorites" as TabType, label: "Phim yêu thích", icon: Heart },
-    { id: "loyalty" as TabType, label: "Điểm thưởng", icon: TrendingUp },
+    { id: "info" as TabType, label: t("profile.info"), icon: User },
+    { id: "bookings" as TabType, label: t("profile.bookings"), icon: Ticket },
+    { id: "fnb" as TabType, label: t("profile.fnb"), icon: Coffee },
+    { id: "favorites" as TabType, label: t("profile.favorites"), icon: Heart },
+    { id: "loyalty" as TabType, label: t("profile.loyalty"), icon: TrendingUp },
   ];
 
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50">
         {/* Header Section */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="bg-white">
+          <div className="max-w-5xl mx-auto py-10">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
               {/* Avatar */}
               <div className="flex-shrink-0">
@@ -258,88 +507,60 @@ const Profile = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User className="w-16 h-16 text-gray-400" />
+                      <User className="w-20 h-20 text-gray-400" />
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Profile Info */}
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex flex-col md:flex-row items-center md:items-center gap-4 mb-4">
-                  <h1 className="text-2xl font-light text-gray-900">
-                    {profile.username}
-                  </h1>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setEditData(profile);
-                        setAvatarFile(null);
-                        setAvatarPreview("");
-                        setIsModalOpen(true);
-                      }}
-                      className="px-4 py-1.5 bg-transparent border border-gray-300 text-gray-900 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
-                    >
-                      Chỉnh sửa trang cá nhân
-                    </button>
-                    <button
-                      onClick={signout}
-                      className="px-4 py-1.5 bg-transparent border border-gray-300 text-gray-900 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
-                    >
-                      Đăng xuất
-                    </button>
-                  </div>
+              <div className="flex-1 text-center md:text-left mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-3xl text-gray-900 font-semibold">
+                    {profile.fullName || t("profile.notUpdated")}
+                  </p>
+
+                  <button
+                    onClick={() => {
+                      setEditData(profile);
+                      setAvatarFile(null);
+                      setAvatarPreview("");
+                      setIsModalOpen(true);
+                    }}
+                    className="px-4 py-1.5 bg-transparent border border-gray-400 text-gray-900 text-md font-semibold rounded-lg hover:bg-gray-50 transition"
+                  >
+                    {t("profile.edit")}
+                  </button>
                 </div>
+                <h1 className="text-2xl font-light text-gray-900 mb-5">
+                  {profile.username}
+                </h1>
 
                 {/* Stats */}
-                <div className="flex justify-center md:justify-start gap-8 mb-4">
+                <div className="flex justify-center md:justify-start gap-10 mb-4">
                   <div className="text-center">
                     <span className="block text-gray-900 font-semibold">
-                      12
+                      {userStats.totalBookings}
                     </span>
-                    <span className="text-gray-600 text-sm">vé đã đặt</span>
+                    <span className="text-gray-600 text-md">
+                      {t("profile.ticketsBooked")}
+                    </span>
                   </div>
                   <div className="text-center">
-                    <span className="block text-gray-900 font-semibold">8</span>
-                    <span className="text-gray-600 text-sm">
-                      phim yêu thích
+                    <span className="block text-gray-900 font-semibold">
+                      {userStats.totalFavoriteMovies}
+                    </span>
+                    <span className="text-gray-600 text-md">
+                      {t("profile.favoriteMovies")}
                     </span>
                   </div>
                   <div className="text-center">
                     <span className="block text-gray-900 font-semibold">
                       {profile.loyaltyPoint}
                     </span>
-                    <span className="text-gray-600 text-sm">điểm</span>
-                  </div>
-                </div>
-
-                {/* Bio */}
-                <div className="space-y-1">
-                  <p className="text-gray-900 font-semibold">
-                    {profile.fullName || "Chưa cập nhật"}
-                  </p>
-                  <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 text-sm">
-                    <Award className="w-4 h-4 text-yellow-500" />
-                    <span>Hạng {profile.rankName || "Bronze"}</span>
-                  </div>
-                  {profile.email && (
-                    <p className="text-gray-600 text-sm">{profile.email}</p>
-                  )}
-                </div>
-
-                {/* Loyalty Progress */}
-                <div className="mt-4 max-w-md">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-600">Tiến độ lên hạng</span>
-                    <span className="text-yellow-600 font-semibold">
-                      {profile.loyaltyPoint}/1000
+                    <span className="text-gray-600 text-md">
+                      {t("profile.loyaltyPoints")}
                     </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-1.5 rounded-full transition-all duration-500"
-                      style={{ width: `${loyaltyPercent}%` }}
-                    />
                   </div>
                 </div>
               </div>
@@ -347,10 +568,48 @@ const Profile = () => {
           </div>
         </div>
 
+        <div className="bg-white -mt-5">
+          <div className="max-w-5xl mx-auto space-y-1">
+            <div className="flex items-center gap-2 text-gray-900 text-lg">
+              <Award className="w-8 h-8 text-yellow-500" />
+              <span className="font-semibold">
+                {t("profile.memberRank")} {profile.rankName || "Bronze"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Loyalty Progress */}
+        <div className="bg-white mb-5">
+          <div className="max-w-5xl mx-auto py-4">
+            <div className="flex items-center gap-6">
+              {/* Label */}
+              <span className="text-gray-600 text-md whitespace-nowrap">
+                {t("profile.rankProgress")}
+              </span>
+
+              {/* Progress bar */}
+              <div className="flex-1 max-w-md">
+                <div className="w-full bg-gray-300 rounded-full h-1.5">
+                  <div
+                    className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${loyaltyPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Points */}
+              <span className="text-yellow-600 text-md font-semibold whitespace-nowrap">
+                {profile.loyaltyPoint}/1000
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="bg-white border-b border-gray-200">
-          <div className="max-w-5xl mx-auto px-4">
-            <div className="flex justify-center gap-16">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-5 gap-4">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -358,14 +617,14 @@ const Profile = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 py-4 border-t transition-colors ${
+                    className={`flex items-center justify-center gap-2 py-4 border-t transition-colors ${
                       isActive
                         ? "border-gray-900 text-gray-900"
                         : "border-transparent text-gray-400 hover:text-gray-600"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="text-xs font-semibold uppercase tracking-wider hidden md:inline">
+                    <span className="text-sm font-semibold whitespace-nowrap">
                       {tab.label}
                     </span>
                   </button>
@@ -376,58 +635,61 @@ const Profile = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto py-8">
           {activeTab === "info" && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
+              className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
             >
               <InfoItem
-                label="Họ và tên"
-                value={profile.fullName || "Chưa cập nhật"}
+                label={t("profile.fullName")}
+                value={profile.fullName || t("profile.notUpdated")}
               />
-              <InfoItem label="Email" value={profile.email} />
+              <InfoItem label={t("profile.email")} value={profile.email} />
               <InfoItem
-                label="Số điện thoại"
-                value={profile.phoneNumber || "Chưa cập nhật"}
+                label={t("profile.phone")}
+                value={profile.phoneNumber || t("profile.notUpdated")}
               />
               <InfoItem
-                label="Giới tính"
+                label={t("profile.gender")}
                 value={
                   profile.gender === "MALE"
-                    ? "Nam"
+                    ? t("profile.male")
                     : profile.gender === "FEMALE"
-                      ? "Nữ"
+                      ? t("profile.female")
                       : profile.gender === "OTHER"
-                        ? "Khác"
-                        : "Chưa cập nhật"
+                        ? t("profile.other")
+                        : t("profile.notUpdated")
                 }
               />
               <InfoItem
-                label="Ngày sinh"
+                label="Date of Birth"
                 value={
                   profile.dateOfBirth
                     ? new Date(profile.dateOfBirth).toLocaleDateString("vi-VN")
-                    : "Chưa cập nhật"
+                    : t("profile.notUpdated")
                 }
               />
               <InfoItem
-                label="CMND/CCCD"
-                value={profile.nationalId || "Chưa cập nhật"}
-              />
-              <div className="md:col-span-2">
-                <InfoItem
-                  label="Địa chỉ"
-                  value={profile.address || "Chưa cập nhật"}
-                />
-              </div>
-              <InfoItem
-                label="Trạng thái"
-                value={profile.status === "ACTIVE" ? "Hoạt động" : "Bị khóa"}
+                label="National ID"
+                value={profile.nationalId || t("profile.notUpdated")}
               />
               <InfoItem
-                label="Ngày tạo"
+                label={t("profile.address")}
+                value={profile.address || t("profile.notUpdated")}
+              />
+
+              <InfoItem
+                label="Status"
+                value={
+                  profile.status === "ACTIVE"
+                    ? t("profile.active")
+                    : t("profile.blocked")
+                }
+              />
+              <InfoItem
+                label="Created Date"
                 value={
                   profile.createdAt
                     ? new Date(profile.createdAt).toLocaleDateString("vi-VN")
@@ -444,16 +706,16 @@ const Profile = () => {
             >
               {bookingsLoading ? (
                 <div className="text-center py-16">
-                  <div className="text-gray-500">Đang tải...</div>
+                  <div className="text-gray-500">{t("profile.loading")}</div>
                 </div>
               ) : displayedBookings.length === 0 ? (
                 <div className="text-center py-16">
                   <Ticket className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Chưa có lịch sử đặt vé
+                    {t("profile.noBookingHistory")}
                   </h3>
                   <p className="text-gray-500">
-                    Các vé bạn đặt sẽ hiển thị ở đây
+                    {t("profile.bookingHistoryDesc")}
                   </p>
                 </div>
               ) : (
@@ -469,7 +731,7 @@ const Profile = () => {
                             {booking.movieTitle || "Phim"}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            Mã đặt vé: {booking.bookingCode}
+                            {t("profile.bookingCode")}: {booking.bookingCode}
                           </p>
                         </div>
                         <span
@@ -487,15 +749,21 @@ const Profile = () => {
 
                       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                         <div className="text-gray-600">
-                          <span className="font-medium">Rạp:</span>{" "}
+                          <span className="font-medium">
+                            {t("profile.theater")}:
+                          </span>{" "}
                           {booking.showtime?.theaterName || "N/A"}
                         </div>
                         <div className="text-gray-600">
-                          <span className="font-medium">Phòng:</span>{" "}
+                          <span className="font-medium">
+                            {t("profile.room")}:
+                          </span>{" "}
                           {booking.showtime?.roomName || "N/A"}
                         </div>
                         <div className="text-gray-600 col-span-2">
-                          <span className="font-medium">Thời gian:</span>{" "}
+                          <span className="font-medium">
+                            {t("profile.showtime")}:
+                          </span>{" "}
                           {booking.showtime?.startTime
                             ? new Date(
                                 booking.showtime.startTime
@@ -506,7 +774,7 @@ const Profile = () => {
 
                       <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
                         <div className="text-sm text-gray-600">
-                          Ghế:{" "}
+                          {t("profile.seats")}:{" "}
                           <span className="font-semibold text-gray-900">
                             {booking.seats
                               ?.map((s: any) => s.seatNumber || s)
@@ -525,7 +793,7 @@ const Profile = () => {
                       onClick={loadMoreBookings}
                       className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition"
                     >
-                      Xem thêm
+                      {t("profile.seeMore")}
                     </button>
                   )}
                 </div>
@@ -540,16 +808,16 @@ const Profile = () => {
             >
               {favoritesLoading ? (
                 <div className="text-center py-16">
-                  <div className="text-gray-500">Đang tải...</div>
+                  <div className="text-gray-500">{t("profile.loading")}</div>
                 </div>
               ) : favoriteMovies.length === 0 ? (
                 <div className="text-center py-16">
                   <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Chưa có phim yêu thích
+                    {t("profile.noFavoriteMovies")}
                   </h3>
                   <p className="text-gray-500">
-                    Các phim bạn yêu thích sẽ hiển thị ở đây
+                    {t("profile.favoriteMoviesDesc")}
                   </p>
                 </div>
               ) : (
@@ -563,15 +831,21 @@ const Profile = () => {
                           if (!user?.id) return;
                           try {
                             await userProfileService.removeFavorite(
-                              user.id,
-                              movie.tmdbId
+                              user.id, // Use actual userId from auth
+                              movie.id
                             );
                             setFavoriteMovies((prev) =>
                               prev.filter((m) => m.id !== movie.id)
                             );
                           } catch (error) {
                             console.error("Error removing favorite:", error);
-                            alert("Không thể xóa phim yêu thích!");
+                            Swal.fire({
+                              icon: "error",
+                              title: "Lỗi",
+                              text: "Không thể xóa phim yêu thích!",
+                              confirmButtonText: "OK",
+                              confirmButtonColor: "#f59e0b",
+                            });
                           }
                         }}
                         className="absolute top-2 right-2 z-10 w-8 h-8 bg-black/60 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
@@ -611,6 +885,114 @@ const Profile = () => {
             </motion.div>
           )}
 
+          {activeTab === "fnb" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {fnbLoading ? (
+                <div className="text-center py-16">
+                  <div className="text-gray-500">{t("profile.loading")}</div>
+                </div>
+              ) : fnbOrders.length === 0 ? (
+                <div className="text-center py-16">
+                  <Coffee className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {t("profile.noFnbHistory")}
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    {t("profile.fnbHistoryDesc")}
+                  </p>
+                  <button
+                    onClick={() => navigate("/popcorn-drink")}
+                    className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition"
+                  >
+                    {t("profile.orderNow")}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {fnbOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-200"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {t("profile.fnbOrder")}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {t("profile.orderCode")}: {order.orderCode}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            order.status === "CONFIRMED"
+                              ? "bg-green-100 text-green-700"
+                              : order.status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {order.status === "CONFIRMED"
+                            ? t("profile.confirmed")
+                            : order.status === "PENDING"
+                              ? t("profile.pending")
+                              : t("profile.cancelled")}
+                        </span>
+                      </div>
+
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                          {t("profile.orderedItems")}:
+                        </h4>
+                        <div className="space-y-2">
+                          {order.items.map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between text-sm bg-gray-50 p-3 rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <span className="font-medium text-gray-900">
+                                  {item.name}
+                                </span>
+                                <span className="text-gray-500 ml-2">
+                                  x{item.quantity}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-gray-900 font-medium">
+                                  {item.subtotal.toLocaleString()} VNĐ
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {item.unitPrice.toLocaleString()} VNĐ/món
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">
+                            {t("profile.orderTime")}:
+                          </span>{" "}
+                          {new Date(order.createdAt).toLocaleString("vi-VN")}
+                        </div>
+                        <div className="text-lg font-bold text-yellow-600">
+                          {t("profile.total")}:{" "}
+                          {order.totalAmount.toLocaleString()} VNĐ
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {activeTab === "loyalty" && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -621,7 +1003,9 @@ const Profile = () => {
               <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl p-8 mb-8 text-white shadow-xl">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <p className="text-sm opacity-90 mb-1">Hạng thành viên</p>
+                    <p className="text-sm opacity-90 mb-1">
+                      {t("profile.membershipRank")}
+                    </p>
                     <h2 className="text-3xl font-bold">
                       {profile.rankName || "Bronze"}
                     </h2>
@@ -629,7 +1013,9 @@ const Profile = () => {
                   <Award className="w-16 h-16 opacity-30" />
                 </div>
                 <div className="mb-4">
-                  <p className="text-sm opacity-90 mb-2">Điểm hiện tại</p>
+                  <p className="text-sm opacity-90 mb-2">
+                    {t("profile.currentPoints")}
+                  </p>
                   <p className="text-4xl font-bold">{profile.loyaltyPoint}</p>
                 </div>
                 <div className="bg-white/20 rounded-full h-2 mb-2">
@@ -639,23 +1025,26 @@ const Profile = () => {
                   />
                 </div>
                 <p className="text-sm opacity-90">
-                  Còn {1000 - profile.loyaltyPoint} điểm để lên hạng tiếp theo
+                  {t("profile.pointsRemaining")} {1000 - profile.loyaltyPoint}{" "}
+                  {t("profile.pointsToNext")}
                 </p>
               </div>
 
               {/* Loyalty History */}
               <div className="bg-white rounded-xl p-6 shadow">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Lịch sử điểm thưởng
+                  {t("profile.loyaltyHistory")}
                 </h3>
                 {loyaltyLoading ? (
                   <div className="text-center py-16">
-                    <div className="text-gray-500">Đang tải...</div>
+                    <div className="text-gray-500">{t("profile.loading")}</div>
                   </div>
                 ) : loyaltyHistory.length === 0 ? (
                   <div className="text-center py-16">
                     <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">Chưa có lịch sử giao dịch</p>
+                    <p className="text-gray-500">
+                      {t("profile.noLoyaltyHistory")}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -678,12 +1067,12 @@ const Profile = () => {
                               }`}
                             >
                               {item.transactionType === "EARNED"
-                                ? "Tích điểm"
+                                ? t("profile.earned")
                                 : item.transactionType === "REDEEMED"
-                                  ? "Đổi điểm"
+                                  ? t("profile.redeemed")
                                   : item.transactionType === "BONUS"
-                                    ? "Thưởng"
-                                    : "Hết hạn"}
+                                    ? t("profile.bonus")
+                                    : t("profile.expired")}
                             </span>
                           </div>
                           <p className="text-sm text-gray-900 font-medium">
@@ -708,7 +1097,9 @@ const Profile = () => {
                               : "-"}
                             {Math.abs(item.points)}
                           </span>
-                          <p className="text-xs text-gray-500">điểm</p>
+                          <p className="text-xs text-gray-500">
+                            {t("profile.points")}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -720,229 +1111,182 @@ const Profile = () => {
         </div>
 
         {/* Edit Modal */}
-        <AnimatePresence>
-          {isModalOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsModalOpen(false)}
-                className="fixed inset-0 bg-black/50 z-50"
-              />
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">{t("profile.edit")}</h3>
+                  <button
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setAvatarFile(null);
+                      setAvatarPreview("");
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
-              {/* Modal */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              >
-                <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                  {/* Modal Header */}
-                  <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      Chỉnh sửa thông tin
-                    </h2>
-                    <button
-                      onClick={() => {
-                        setIsModalOpen(false);
-                        setAvatarFile(null);
-                        setAvatarPreview("");
-                      }}
-                      className="text-gray-400 hover:text-gray-600 transition"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  {/* Modal Body */}
-                  <div className="p-6 space-y-6">
-                    {/* Avatar Upload Section */}
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="relative">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-yellow-400 via-yellow-500 to-yellow-600 p-1">
-                          <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white">
-                            {avatarPreview ? (
-                              <img
-                                src={avatarPreview}
-                                alt="Preview"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : editData.avatarUrl ? (
-                              <img
-                                src={editData.avatarUrl}
-                                alt="Avatar"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <User className="w-12 h-12 text-gray-400" />
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-500 hover:bg-yellow-600 rounded-full flex items-center justify-center text-white transition"
-                        >
-                          <Camera className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden"
-                      />
-                      <p className="text-sm text-gray-500 text-center">
-                        Nhấn vào biểu tượng camera để thay đổi ảnh đại diện
-                      </p>
-                    </div>
-
-                    {/* Form Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Họ và tên *
-                        </label>
-                        <input
-                          type="text"
-                          value={editData.fullName || ""}
-                          onChange={(e) =>
-                            setEditData({
-                              ...editData,
-                              fullName: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="Nhập họ và tên"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Số điện thoại
-                        </label>
-                        <input
-                          type="tel"
-                          value={editData.phoneNumber || ""}
-                          onChange={(e) =>
-                            setEditData({
-                              ...editData,
-                              phoneNumber: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="Nhập số điện thoại"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Giới tính
-                        </label>
-                        <select
-                          value={editData.gender || ""}
-                          onChange={(e) =>
-                            setEditData({
-                              ...editData,
-                              gender: e.target.value as
-                                | "MALE"
-                                | "FEMALE"
-                                | "OTHER",
-                            })
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                        >
-                          <option value="">Chọn giới tính</option>
-                          <option value="MALE">Nam</option>
-                          <option value="FEMALE">Nữ</option>
-                          <option value="OTHER">Khác</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Ngày sinh
-                        </label>
-                        <input
-                          type="date"
-                          value={editData.dateOfBirth || ""}
-                          onChange={(e) =>
-                            setEditData({
-                              ...editData,
-                              dateOfBirth: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          CMND/CCCD
-                        </label>
-                        <input
-                          type="text"
-                          value={editData.nationalId || ""}
-                          onChange={(e) =>
-                            setEditData({
-                              ...editData,
-                              nationalId: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          placeholder="Nhập số CMND/CCCD"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Địa chỉ
-                        </label>
-                        <textarea
-                          value={editData.address || ""}
-                          onChange={(e) =>
-                            setEditData({
-                              ...editData,
-                              address: e.target.value,
-                            })
-                          }
-                          rows={3}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
-                          placeholder="Nhập địa chỉ đầy đủ"
-                        />
+                {/* Avatar Upload */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="relative group">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-yellow-400 via-yellow-500 to-yellow-600 p-1">
+                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white">
+                        {avatarPreview ? (
+                          <img
+                            src={avatarPreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : editData.avatarUrl ? (
+                          <img
+                            src={editData.avatarUrl}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-12 h-12 text-gray-400" />
+                        )}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Modal Footer */}
-                  <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+                    {/* Overlay for better UX */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all flex items-center justify-center">
+                      <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                     <button
                       onClick={() => {
-                        setIsModalOpen(false);
-                        setAvatarFile(null);
-                        setAvatarPreview("");
+                        const modalFileInput = document.createElement("input");
+                        modalFileInput.type = "file";
+                        modalFileInput.accept = "image/jpeg,image/png";
+                        modalFileInput.onchange = (e) => {
+                          const target = e.target as HTMLInputElement;
+                          if (target.files?.[0]) {
+                            handleAvatarChange(target.files[0]);
+                          }
+                        };
+                        modalFileInput.click();
                       }}
-                      className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                      className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-500 hover:bg-yellow-600 rounded-full flex items-center justify-center text-white transition-all hover:scale-110 shadow-lg"
+                      title={t("profile.changeAvatar")}
                     >
-                      Hủy
+                      <Camera className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="px-6 py-2.5 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition disabled:opacity-50 flex items-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
-                    </button>
+                  </div>
+                  <div className="text-center mt-3">
+                    <p className="text-xs text-gray-400 mt-1">
+                      {t("profile.avatarFormat")}
+                    </p>
                   </div>
                 </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <CustomInput
+                    label={`${t("profile.fullName")} *`}
+                    icon={User}
+                    type="text"
+                    value={editData.fullName || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, fullName: e.target.value })
+                    }
+                    placeholder={t("profile.fullName")}
+                    error={
+                      !editData.fullName?.trim()
+                        ? `${t("profile.fullName")} ${t("profile.requiredField")}`
+                        : undefined
+                    }
+                  />
+
+                  <CustomInput
+                    label={t("profile.phone")}
+                    icon={Phone}
+                    type="tel"
+                    value={editData.phoneNumber || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, "");
+                      setEditData({
+                        ...editData,
+                        phoneNumber: value,
+                      });
+                    }}
+                    placeholder={t("profile.phone")}
+                    maxLength={11}
+                    error={
+                      editData.phoneNumber &&
+                      !/^[0-9]{10,11}$/.test(editData.phoneNumber)
+                        ? t("profile.phoneInvalid")
+                        : undefined
+                    }
+                  />
+
+                  <div className="w-full">
+                    <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+                      {t("profile.gender")}
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300 z-10">
+                        <Users size={20} />
+                      </div>
+                      <CustomSelect
+                        options={[
+                          { value: "", label: t("profile.selectGender") },
+                          { value: "MALE", label: t("profile.male") },
+                          { value: "FEMALE", label: t("profile.female") },
+                          { value: "OTHER", label: t("profile.other") },
+                        ]}
+                        value={editData.gender || ""}
+                        onChange={(value: string) =>
+                          setEditData({
+                            ...editData,
+                            gender: value as "MALE" | "FEMALE" | "OTHER",
+                          })
+                        }
+                        placeholder={t("profile.selectGender")}
+                        variant="default"
+                        className="w-[180px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <CustomTextarea
+                      label={t("profile.address")}
+                      icon={MapPin}
+                      value={editData.address || ""}
+                      onChange={(e) =>
+                        setEditData({ ...editData, address: e.target.value })
+                      }
+                      rows={3}
+                      placeholder={t("profile.address")}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving || !editData.fullName?.trim()}
+                    className="px-6 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        {t("profile.saving")}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        {t("profile.saveChanges")}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

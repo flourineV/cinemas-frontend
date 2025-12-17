@@ -55,4 +55,15 @@ export const bookingService = {
   deleteBooking: async (id: string): Promise<void> => {
     await bookingClient.delete(`/${id}`);
   },
+
+  // GET /api/bookings/check?userId={userId}&movieId={movieId}
+  checkUserBookedMovie: async (
+    userId: string,
+    movieId: string
+  ): Promise<boolean> => {
+    const res = await bookingClient.get<boolean>(`/check`, {
+      params: { userId, movieId },
+    });
+    return res.data;
+  },
 };

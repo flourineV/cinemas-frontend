@@ -1,7 +1,9 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { User, ChevronDown, Search, Settings } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "../../stores/authStore";
+import { useLanguage } from "../../contexts/LanguageContext";
+import "flag-icons/css/flag-icons.min.css";
 
 const Header = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
@@ -9,8 +11,37 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const { user, signout } = useAuthStore();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Debug log
+  console.log("Header - Current language:", language);
+  console.log("Header - Translation test:", t("header.about"));
+
+  const languageRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        languageRef.current &&
+        !languageRef.current.contains(event.target as Node)
+      ) {
+        setIsLanguageOpen(false);
+      }
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Check if user has access to dashboard
   const hasAdminAccess =
@@ -51,7 +82,7 @@ const Header = () => {
                   : "hover:text-yellow-400"
               }`}
             >
-              Giới thiệu
+              {language === "vi" ? "Giới thiệu" : "About"}
             </Link>
             <Link
               to="/showtime"
@@ -61,7 +92,7 @@ const Header = () => {
                   : "hover:text-yellow-400"
               }`}
             >
-              Lịch chiếu
+              {language === "vi" ? "Lịch chiếu" : "Showtimes"}
             </Link>
             <Link
               to="/popcorn-drink"
@@ -71,7 +102,7 @@ const Header = () => {
                   : "hover:text-yellow-400"
               }`}
             >
-              Đặt bắp nước
+              {language === "vi" ? "Đặt bắp nước" : "Snacks"}
             </Link>
           </nav>
 
@@ -80,7 +111,7 @@ const Header = () => {
             <div className="flex items-center bg-white rounded-full px-4 py-2 min-w-[300px]">
               <input
                 type="text"
-                placeholder="Tìm phim hoặc rạp chiếu..."
+                placeholder={t("header.search")}
                 className="flex-1 bg-white text-black text-sm outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -100,11 +131,11 @@ const Header = () => {
                 className="flex items-center space-x-1 hover:text-yellow-400 transition-colors whitespace-nowrap"
               >
                 <User className="w-4 h-4" />
-                <span className="text-base">Đăng nhập</span>
+                <span className="text-base">{t("header.login")}</span>
               </Link>
             ) : (
               // Đã đăng nhập
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-1 hover:text-yellow-400 transition-colors whitespace-nowrap focus:outline-none border-0"
@@ -114,70 +145,116 @@ const Header = () => {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="py-1">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-[9999] overflow-hidden">
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 flex items-center gap-2.5 first:rounded-t-lg text-gray-700"
+                    >
+                      <User className="w-4 h-4 flex-shrink-0" />
+                      <span>{t("header.profile")}</span>
+                    </Link>
+
+                    {hasAdminAccess && (
                       <Link
-                        to="/profile"
+                        to={`/dashboard/${user.role}`}
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 flex items-center gap-2.5 text-gray-700"
                       >
-                        <User className="w-4 h-4" />
-                        Hồ sơ cá nhân
+                        <Settings className="w-4 h-4 flex-shrink-0" />
+                        <span>{t("header.dashboard")}</span>
                       </Link>
+                    )}
 
-                      {hasAdminAccess && (
-                        <Link
-                          to={`/dashboard/${user.role}`}
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <Settings className="w-4 h-4" />
-                          Bảng điều khiển
-                        </Link>
-                      )}
-
-                      <hr className="my-1 border-gray-200" />
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Đăng xuất
-                      </button>
-                    </div>
+                    <hr className="my-0 border-gray-200" />
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 flex items-center gap-2.5 last:rounded-b-lg text-gray-700"
+                    >
+                      <span>{t("header.logout")}</span>
+                    </button>
                   </div>
                 )}
               </div>
             )}
 
             {/* Language Selector */}
-            <div className="relative">
+            <div className="relative" ref={languageRef}>
               <button
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="flex items-center space-x-1 hover:text-yellow-400 transition-colors whitespace-nowrap focus:outline-none border-0"
+                className="flex items-center space-x-2 hover:text-yellow-400 transition-colors whitespace-nowrap focus:outline-none border-0"
               >
-                <span className="text-red-500 font-bold text-sm">★</span>
-                <span className="text-base">VN</span>
+                <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                  <span
+                    className={`fi fi-${language === "vi" ? "vn" : "us"}`}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      backgroundSize: "cover",
+                      display: "block",
+                    }}
+                  ></span>
+                </div>
+                <span className="text-base">
+                  {language === "vi" ? "VN" : "EN"}
+                </span>
                 <ChevronDown className="w-3 h-3" />
               </button>
 
               {isLanguageOpen && (
-                <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  <div className="py-1">
-                    <button
-                      onClick={() => setIsLanguageOpen(false)}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                    >
-                      <span className="text-red-500 font-bold">★</span>
-                      <span>Tiếng Việt</span>
-                    </button>
-                    <button
-                      onClick={() => setIsLanguageOpen(false)}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                    >
-                      <span className="text-blue-600 font-bold">🇺🇸</span>
-                      <span>English</span>
-                    </button>
-                  </div>
+                <div className="absolute right-0 mt-2 w-36 bg-white rounded-lg shadow-lg border border-gray-200 z-[9999] overflow-hidden">
+                  <button
+                    onClick={() => {
+                      console.log("🇻🇳 Switching to Vietnamese");
+                      setLanguage("vi");
+                      setIsLanguageOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 flex items-center gap-2.5 first:rounded-t-lg ${
+                      language === "vi"
+                        ? "bg-yellow-50 text-yellow-700 font-semibold"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <span
+                        className="fi fi-vn"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          backgroundSize: "cover",
+                          display: "block",
+                        }}
+                      ></span>
+                    </div>
+                    <span>
+                      {language === "vi" ? "Tiếng Việt" : "Vietnamese"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      console.log("🇺🇸 Switching to English");
+                      setLanguage("en");
+                      setIsLanguageOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 flex items-center gap-2.5 last:rounded-b-lg ${
+                      language === "en"
+                        ? "bg-yellow-50 text-yellow-700 font-semibold"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <span
+                        className="fi fi-us"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          backgroundSize: "cover",
+                          display: "block",
+                        }}
+                      ></span>
+                    </div>
+                    <span>English</span>
+                  </button>
                 </div>
               )}
             </div>

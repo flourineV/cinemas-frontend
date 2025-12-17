@@ -4,14 +4,27 @@ const GUEST_SESSION_KEY = "guest_session_id";
 
 const isUserLoggedIn = (): boolean => {
   const token = localStorage.getItem("accessToken");
-  const user = localStorage.getItem("user");
-  const result = !!(token && user);
+  const authStorage = localStorage.getItem("auth-storage");
+
+  let hasUser = false;
+  if (authStorage) {
+    try {
+      const parsed = JSON.parse(authStorage);
+      hasUser = !!parsed?.state?.user?.id;
+    } catch (e) {
+      console.error("Error parsing auth-storage:", e);
+    }
+  }
+
+  const result = !!(token && hasUser);
 
   console.log(
     "🔍 [isUserLoggedIn] token:",
     !!token,
-    "user:",
-    !!user,
+    "authStorage:",
+    !!authStorage,
+    "hasUser:",
+    hasUser,
     "result:",
     result
   );
@@ -58,23 +71,29 @@ export const guestSessionUtils = {
     console.log("🔍 [getUserOrGuestId] isLoggedIn:", loggedIn);
 
     if (loggedIn) {
-      const user = localStorage.getItem("user");
-      console.log("🔍 [getUserOrGuestId] user from localStorage:", user);
+      const authStorage = localStorage.getItem("auth-storage");
+      console.log(
+        "🔍 [getUserOrGuestId] authStorage from localStorage:",
+        !!authStorage
+      );
 
-      if (user) {
+      if (authStorage) {
         try {
-          const userData = JSON.parse(user);
-          console.log("✅ [getUserOrGuestId] Returning userId:", userData.id);
-          return { userId: userData.id };
+          const parsed = JSON.parse(authStorage);
+          const userId = parsed?.state?.user?.id;
+          if (userId) {
+            console.log("✅ [getUserOrGuestId] Returning userId:", userId);
+            return { userId };
+          }
         } catch (error) {
           console.error(
-            "❌ [getUserOrGuestId] Error parsing user data:",
+            "❌ [getUserOrGuestId] Error parsing auth-storage:",
             error
           );
         }
       } else {
         console.warn(
-          "⚠️ [getUserOrGuestId] User is logged in but no user data in localStorage!"
+          "⚠️ [getUserOrGuestId] User is logged in but no auth-storage in localStorage!"
         );
       }
     }

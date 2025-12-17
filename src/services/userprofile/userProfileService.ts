@@ -35,23 +35,62 @@ export const userProfileService = {
     return res.data;
   },
 
-  uploadAvatar: async (
-    userId: string,
-    file: File
-  ): Promise<{ avatarUrl: string }> => {
-    const formData = new FormData();
-    formData.append("avatar", file);
+  // Upload avatar using presigned URL
+  uploadAvatar: async (file: File): Promise<string> => {
+    try {
+      // Generate unique filename
+      const timestamp = Date.now();
+      const fileExtension = file.name.split(".").pop();
+      const fileName = `avatar_${timestamp}.${fileExtension}`;
 
-    const res = await profileClient.post<{ avatarUrl: string }>(
-      `/${userId}/avatar`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
+      console.log("🔄 Getting presigned URL for:", {
+        fileName,
+        contentType: file.type,
+      });
+
+      // 1. Get presigned URL
+      const res = await profileClient.get<string>(`/s3/presigned-url`, {
+        params: {
+          fileName,
+          contentType: file.type,
         },
+      });
+
+      const presignedUrl = res.data;
+      console.log("✅ Got presigned URL:", presignedUrl);
+
+      // 2. Upload file to S3 using presigned URL
+      console.log("🔄 Uploading to S3...");
+
+      // Try simple PUT without any headers to avoid CORS preflight
+      const uploadResponse = await fetch(presignedUrl, {
+        method: "PUT",
+        body: file,
+      });
+
+      console.log("📤 Upload response:", {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        ok: uploadResponse.ok,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(
+          `Failed to upload avatar to S3: ${uploadResponse.status} ${errorText}`
+        );
       }
-    );
-    return res.data;
+
+      // 3. Return fileUrl (presigned URL without query params)
+      const fileUrl = presignedUrl.split("?")[0];
+      console.log("✅ Upload successful, fileUrl:", fileUrl);
+      return fileUrl;
+    } catch (error) {
+      console.error("❌ Avatar upload error:", error);
+      throw new Error(
+        `Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
   },
 
   updateLoyalty: async (
@@ -71,7 +110,7 @@ export const userProfileService = {
     const res = await profileClient.get<{
       rankName: string;
       discountRate: number;
-    }>(`/${userId}/rank`);
+    }>(`profiles/${userId}/rank`);
     return res.data;
   },
 
@@ -93,13 +132,13 @@ export const userProfileService = {
     return res.data;
   },
 
-  removeFavorite: async (userId: string, tmdbId: number): Promise<void> => {
-    await profileClient.delete(`/favorites/${userId}/${tmdbId}`);
+  removeFavorite: async (userId: string, movieId: string): Promise<void> => {
+    await profileClient.delete(`/favorites/${userId}/${movieId}`);
   },
 
-  isFavorite: async (userId: string, tmdbId: number): Promise<boolean> => {
+  isFavorite: async (userId: string, movieId: string): Promise<boolean> => {
     const res = await profileClient.get<boolean>(
-      `/favorites/check/${userId}/${tmdbId}`
+      `/favorites/check/${userId}/${movieId}`
     );
     return res.data;
   },
@@ -113,6 +152,18 @@ export const userProfileService = {
     const res = await profileClient.get(`/loyalty-history/${userId}`, {
       params: { page, size },
     });
+    return res.data;
+  },
+
+  // User Stats
+  getUserStats: async (
+    userId: string
+  ): Promise<{
+    totalBookings: number;
+    totalFavoriteMovies: number;
+    totalLoyaltyPoints: number;
+  }> => {
+    const res = await profileClient.get(`/stats/user/${userId}`);
     return res.data;
   },
 };

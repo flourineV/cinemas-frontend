@@ -20,6 +20,7 @@ interface SelectSeatProps {
   onSeatSelect: (seats: ShowtimeSeatResponse[]) => void;
   selectedTickets: Record<string, number>;
   onSeatLock?: (ttl: number | null) => void;
+  shouldUnlockOnUnmount?: boolean; // Control việc unlock khi unmount
 }
 
 const SelectSeat: React.FC<SelectSeatProps> = ({
@@ -27,6 +28,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
   onSeatSelect,
   selectedTickets,
   onSeatLock,
+  shouldUnlockOnUnmount = true, // Default true để giữ behavior cũ
 }) => {
   const [seats, setSeats] = useState<ShowtimeSeatResponse[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<ShowtimeSeatResponse[]>(
@@ -209,9 +211,12 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
 
-      if (selectedSeatsRef.current.length > 0) {
+      // Chỉ unlock ghế khi shouldUnlockOnUnmount = true
+      if (selectedSeatsRef.current.length > 0 && shouldUnlockOnUnmount) {
         const identity = getSafeIdentity();
-        // Unlock từng ghế một khi unmount (chuyển trang trong app)
+        console.log("[UNMOUNT] Unlocking seats due to component unmount");
+
+        // Unlock từng ghế một khi unmount
         selectedSeatsRef.current.forEach((seat) => {
           seatLockService
             .unlockSingleSeat(
@@ -224,6 +229,10 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
               console.error(`Failed to unlock seat ${seat.seatId}:`, error);
             });
         });
+      } else if (!shouldUnlockOnUnmount) {
+        console.log(
+          "[UNMOUNT] Keeping seats locked - shouldUnlockOnUnmount = false"
+        );
       }
     };
   }, [showtimeId]);
@@ -359,6 +368,12 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     }
 
     try {
+      // Optimistic update - Update UI immediately
+      const updatedSeats = [...selectedSeats, seat];
+      setSelectedSeats(updatedSeats);
+      selectedSeatsRef.current = updatedSeats;
+      onSeatSelect(updatedSeats);
+
       // Xác định loại vé cho ghế này
       let ticketType: "ADULT" | "CHILD" | "STUDENT" = "ADULT";
       const ticketEntries = Object.entries(selectedTickets);
@@ -380,12 +395,17 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
       });
 
       if (lockResponse.status === "LOCKED") {
-        const updatedSeats = [...selectedSeats, seat];
-        setSelectedSeats(updatedSeats);
-        selectedSeatsRef.current = updatedSeats;
-        onSeatSelect(updatedSeats);
+        // API success - keep the optimistic update
         if (onSeatLock) onSeatLock(lockResponse.ttl ?? null);
       } else if (lockResponse.status === "ALREADY_LOCKED") {
+        // Revert optimistic update
+        const revertedSeats = selectedSeats.filter(
+          (s) => s.seatId !== seat.seatId
+        );
+        setSelectedSeats(revertedSeats);
+        selectedSeatsRef.current = revertedSeats;
+        onSeatSelect(revertedSeats);
+
         await Swal.fire({
           title: "Ghế đã được giữ",
           text: "Ghế này vừa được người khác chọn.",
@@ -394,6 +414,14 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         });
       }
     } catch (error) {
+      // Revert optimistic update on error
+      const revertedSeats = selectedSeats.filter(
+        (s) => s.seatId !== seat.seatId
+      );
+      setSelectedSeats(revertedSeats);
+      selectedSeatsRef.current = revertedSeats;
+      onSeatSelect(revertedSeats);
+
       console.error("Failed to lock seat:", error);
       await Swal.fire({
         title: "Lỗi",
