@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -38,8 +38,10 @@ type TabType = "info" | "comments";
 export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedShowtimeId = searchParams.get("showtimeId");
   const { user } = useAuthStore();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +77,7 @@ export default function MovieDetailPage() {
         setMovie(res);
       } catch (err) {
         console.error(err);
-        setError("Không thể tải thông tin phim.");
+        setError(t("movie.cannotLoad"));
       } finally {
         setLoading(false);
       }
@@ -192,11 +194,11 @@ export default function MovieDetailPage() {
     if (!user?.id || !movie?.id) {
       Swal.fire({
         icon: "warning",
-        title: "Chưa đăng nhập",
-        text: "Vui lòng đăng nhập để thêm phim yêu thích!",
-        confirmButtonText: "Đăng nhập",
+        title: t("movie.loginRequired"),
+        text: t("movie.loginToFavorite"),
+        confirmButtonText: t("movie.login"),
         showCancelButton: true,
-        cancelButtonText: "Hủy",
+        cancelButtonText: t("movie.cancel"),
         confirmButtonColor: "#f59e0b",
       }).then((result) => {
         if (result.isConfirmed) {
@@ -213,8 +215,8 @@ export default function MovieDetailPage() {
         setIsFavorite(false);
         Swal.fire({
           icon: "success",
-          title: "Đã xóa khỏi yêu thích",
-          text: "Phim đã được xóa khỏi danh sách yêu thích!",
+          title: t("movie.removedFromFavorite"),
+          text: t("movie.removedFromFavoriteDesc"),
           timer: 2000,
           showConfirmButton: false,
           toast: true,
@@ -222,14 +224,14 @@ export default function MovieDetailPage() {
         });
       } else {
         await userProfileService.addFavorite({
-          userId: user.id, // Use actual userId from auth
+          userId: user.id,
           movieId: movie.id,
         });
         setIsFavorite(true);
         Swal.fire({
           icon: "success",
-          title: "Đã thêm vào yêu thích",
-          text: "Phim đã được thêm vào danh sách yêu thích!",
+          title: t("movie.addedToFavorite"),
+          text: t("movie.addedToFavoriteDesc"),
           timer: 2000,
           showConfirmButton: false,
           toast: true,
@@ -240,8 +242,8 @@ export default function MovieDetailPage() {
       console.error("Error toggling favorite:", err);
       Swal.fire({
         icon: "error",
-        title: "Lỗi",
-        text: "Không thể cập nhật phim yêu thích!",
+        title: t("movie.error"),
+        text: t("movie.cannotUpdateFavorite"),
         confirmButtonText: "OK",
         confirmButtonColor: "#f59e0b",
       });
@@ -260,12 +262,12 @@ export default function MovieDetailPage() {
 
     if (!user) {
       Swal.fire({
-        title: "Yêu cầu đăng nhập",
-        text: "Bạn cần đăng nhập để đánh giá phim",
+        title: t("movie.loginToRate"),
+        text: t("movie.loginToRateDesc"),
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "Đăng nhập",
-        cancelButtonText: "Hủy",
+        confirmButtonText: t("movie.login"),
+        cancelButtonText: t("movie.cancel"),
         confirmButtonColor: "#f59e0b",
       }).then((result) => {
         if (result.isConfirmed) {
@@ -278,16 +280,15 @@ export default function MovieDetailPage() {
     if (!hasBooked) {
       console.log("❌ [MovieDetail] Blocking rating - hasBooked is false");
       Swal.fire({
-        title: "Chưa đặt vé phim này",
-        text: "Bạn cần đặt vé xem phim này để có thể đánh giá",
+        title: t("movie.notBooked"),
+        text: t("movie.notBookedDesc"),
         icon: "info",
         showCancelButton: true,
-        confirmButtonText: "Đặt vé ngay",
-        cancelButtonText: "Hủy",
+        confirmButtonText: t("movie.bookNow"),
+        cancelButtonText: t("movie.cancel"),
         confirmButtonColor: "#f59e0b",
       }).then((result) => {
         if (result.isConfirmed) {
-          // Scroll to showtime section
           const showtimeSection = document.querySelector("#showtime-section");
           if (showtimeSection) {
             showtimeSection.scrollIntoView({ behavior: "smooth" });
@@ -303,14 +304,13 @@ export default function MovieDetailPage() {
       await reviewService.upsertRating(movie!.id, { rating });
       setUserRating(rating);
 
-      // Reload average rating
       const newAvgResponse = await reviewService.getAverageRating(movie!.id);
       setAvgRating(newAvgResponse.averageRating || 0);
       setReviewCount(newAvgResponse.ratingCount || 0);
 
       Swal.fire({
-        title: "Đánh giá thành công!",
-        text: `Bạn đã đánh giá ${rating} sao cho phim này`,
+        title: t("movie.ratingSuccess"),
+        text: t("movie.ratingSuccessDesc").replace("{rating}", String(rating)),
         icon: "success",
         timer: 2000,
         showConfirmButton: false,
@@ -318,8 +318,8 @@ export default function MovieDetailPage() {
     } catch (error) {
       console.error("Error rating movie:", error);
       Swal.fire({
-        title: "Lỗi",
-        text: "Không thể gửi đánh giá. Vui lòng thử lại sau.",
+        title: t("movie.error"),
+        text: t("movie.ratingError"),
         icon: "error",
       });
     }
@@ -333,7 +333,7 @@ export default function MovieDetailPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-zinc-950"></div>
           <div className="relative z-10 text-center text-white">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-400 mx-auto"></div>
-            <p className="mt-4 text-lg">Đang tải...</p>
+            <p className="mt-4 text-lg">{t("movie.loading")}</p>
           </div>
         </div>
       </Layout>
@@ -359,7 +359,7 @@ export default function MovieDetailPage() {
         <div className="relative min-h-screen bg-zinc-950 flex items-center justify-center">
           <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-zinc-950"></div>
           <div className="relative z-10 text-center text-gray-400 text-xl">
-            Không tìm thấy phim.
+            {t("movie.notFound")}
           </div>
         </div>
       </Layout>
@@ -473,7 +473,7 @@ export default function MovieDetailPage() {
                           <div className="w-px h-6 bg-white/30"></div>
                           <div className="text-center">
                             <span className="text-yellow-400 text-sm font-semibold">
-                              Bạn: {userRating}/5
+                              {t("movie.yourRating")}: {userRating}/5
                             </span>
                           </div>
                         </>
@@ -481,7 +481,7 @@ export default function MovieDetailPage() {
                     </div>
 
                     <p className="text-center text-white/80 text-sm">
-                      {reviewCount} lượt đánh giá
+                      {reviewCount} {t("movie.ratings")}
                     </p>
                   </div>
                 </div>
@@ -497,7 +497,9 @@ export default function MovieDetailPage() {
                       disabled={favoriteLoading}
                       className="group flex-shrink-0 ml-4 p-3 rounded-full transition-all disabled:opacity-50"
                       title={
-                        isFavorite ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"
+                        isFavorite
+                          ? t("movie.removeFromFavorite")
+                          : t("movie.addToFavorite")
                       }
                     >
                       <Heart
@@ -522,7 +524,7 @@ export default function MovieDetailPage() {
                         }`}
                       >
                         <Film className="w-5 h-5" />
-                        <span className="font-semibold">Thông tin phim</span>
+                        <span className="font-semibold">{t("movie.info")}</span>
                       </button>
                       <button
                         onClick={() => setActiveTab("comments")}
@@ -533,7 +535,9 @@ export default function MovieDetailPage() {
                         }`}
                       >
                         <MessageCircle className="w-5 h-5" />
-                        <span className="font-semibold">Bình luận</span>
+                        <span className="font-semibold">
+                          {t("movie.comments")}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -558,7 +562,7 @@ export default function MovieDetailPage() {
                           <div className="flex items-center gap-3">
                             <Clock className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
-                              {movie.time} phút
+                              {movie.time} {t("movie.minutes")}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
@@ -574,7 +578,7 @@ export default function MovieDetailPage() {
                           <div className="flex items-center gap-3">
                             <ShieldCheck className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                             <span className="text-white">
-                              {formatAgeRating(movie.age)}
+                              {formatAgeRating(movie.age, language)}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
@@ -594,7 +598,7 @@ export default function MovieDetailPage() {
                                 <span className="flex items-center gap-2 group cursor-pointer -ml-3">
                                   <MonitorPlay className="w-6 h-6 text-yellow-500 group-hover:text-yellow-700 transition-colors" />
                                   <span className="text-white group-hover:text-yellow-700 group-hover:underline text-lg font-semibold transition-colors">
-                                    Xem Trailer
+                                    {t("movie.watchTrailer")}
                                   </span>
                                 </span>
                               }
@@ -607,13 +611,13 @@ export default function MovieDetailPage() {
                         {(movie.crew?.length > 0 || movie.cast?.length > 0) && (
                           <div className="pt-6 border-t border-gray-300">
                             <h2 className="text-xl font-bold mb-3 text-white">
-                              Thông tin
+                              {t("movie.details")}
                             </h2>
 
                             {movie.crew?.length > 0 && (
                               <p className="text-white mb-2">
                                 <strong className="text-white">
-                                  Đạo diễn:
+                                  {t("movie.director")}:
                                 </strong>{" "}
                                 {movie.crew.join(", ")}
                               </p>
@@ -622,7 +626,7 @@ export default function MovieDetailPage() {
                             {movie.cast?.length > 0 && (
                               <p className="text-white">
                                 <strong className="text-white">
-                                  Diễn viên:
+                                  {t("movie.cast")}:
                                 </strong>{" "}
                                 {movie.cast.join(", ")}
                               </p>
@@ -633,7 +637,7 @@ export default function MovieDetailPage() {
                         {/* Overview */}
                         <div className="mt-6 pt-6 border-t border-gray-300">
                           <h2 className="text-xl font-bold mb-3 text-white">
-                            Nội dung phim
+                            {t("movie.overview")}
                           </h2>
                           <p className="text-white text-justify leading-relaxed">
                             {movie.overview}
@@ -681,6 +685,7 @@ export default function MovieDetailPage() {
               movieTitle={movie.title}
               movieStatus={movie.status}
               onSelectShowtime={() => {}}
+              preselectedShowtimeId={preselectedShowtimeId}
             />
           </div>
         </div>

@@ -442,7 +442,10 @@ const Home = () => {
                       </p>
                     )}
                     <p className="text-xs text-gray-500 mb-5">
-                      HSD: {new Date(promo.endDate).toLocaleDateString("vi-VN")}
+                      {language === "en" ? "Exp:" : "HSD:"}{" "}
+                      {new Date(promo.endDate).toLocaleDateString(
+                        language === "en" ? "en-US" : "vi-VN"
+                      )}
                     </p>
                     <AnimatedButton
                       variant="orange-to-f3ea28"

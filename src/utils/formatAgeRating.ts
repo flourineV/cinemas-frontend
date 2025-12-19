@@ -1,10 +1,39 @@
 /**
- * Format age rating from number to Vietnamese description
+ * Format age rating from number to description based on language
  * @param age - Age rating number (e.g., 0, 13, 16, 18)
+ * @param language - Language code ('vi' or 'en')
  * @returns Formatted age rating string
  */
-export const formatAgeRating = (age: number | string): string => {
+export const formatAgeRating = (
+  age: number | string | null | undefined,
+  language: string = "vi"
+): string => {
+  // Handle null, undefined, empty string, or invalid values
+  if (age === null || age === undefined || age === "") {
+    return language === "en" ? "No age restriction" : "Không giới hạn độ tuổi";
+  }
+
   const ageNum = typeof age === "string" ? parseInt(age) : age;
+
+  // Handle NaN or invalid number
+  if (isNaN(ageNum)) {
+    return language === "en" ? "No age restriction" : "Không giới hạn độ tuổi";
+  }
+
+  if (language === "en") {
+    switch (ageNum) {
+      case 0:
+        return "Suitable for all ages";
+      case 13:
+        return "Suitable for ages 13 and above (13+)";
+      case 16:
+        return "Suitable for ages 16 and above (16+)";
+      case 18:
+        return "Suitable for ages 18 and above (18+)";
+      default:
+        return `Suitable for ages ${ageNum} and above`;
+    }
+  }
 
   switch (ageNum) {
     case 0:

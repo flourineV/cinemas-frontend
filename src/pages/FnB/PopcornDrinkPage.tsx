@@ -7,6 +7,7 @@ import type { TheaterResponse } from "@/types/showtime/theater.type";
 import { ChevronDown, Plus, Minus, ShoppingCart } from "lucide-react";
 import FnbSummaryBar from "@/components/fnb/FnbSummaryBar";
 import { useAuthStore } from "@/stores/authStore";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Swal from "sweetalert2";
 
 interface CartItem extends FnbItemResponse {
@@ -16,6 +17,7 @@ interface CartItem extends FnbItemResponse {
 const PopcornDrinkPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { t, language } = useLanguage();
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
   const [selectedTheater, setSelectedTheater] =
     useState<TheaterResponse | null>(null);
@@ -90,12 +92,12 @@ const PopcornDrinkPage = () => {
     // Check authentication first
     if (!user) {
       return Swal.fire({
-        title: "Yêu cầu đăng nhập",
-        text: "Bạn cần đăng nhập để đặt bắp nước",
+        title: t("fnb.loginRequired"),
+        text: t("fnb.loginRequiredDesc"),
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "Đăng nhập",
-        cancelButtonText: "Hủy",
+        confirmButtonText: t("fnb.login"),
+        cancelButtonText: t("fnb.cancel"),
         confirmButtonColor: "#eab308",
       }).then((result) => {
         if (result.isConfirmed) {
@@ -108,8 +110,8 @@ const PopcornDrinkPage = () => {
     if (!selectedTheater) {
       return Swal.fire({
         icon: "warning",
-        title: "Chưa chọn rạp",
-        text: "Vui lòng chọn rạp để tiếp tục đặt hàng!",
+        title: t("fnb.noTheaterSelected"),
+        text: t("fnb.noTheaterSelectedDesc"),
         confirmButtonColor: "#eab308",
       });
     }
@@ -117,8 +119,8 @@ const PopcornDrinkPage = () => {
     if (cart.length === 0) {
       return Swal.fire({
         icon: "warning",
-        title: "Giỏ hàng trống",
-        text: "Vui lòng chọn ít nhất một món để tiếp tục!",
+        title: t("fnb.emptyCart"),
+        text: t("fnb.emptyCartDesc"),
         confirmButtonColor: "#eab308",
       });
     }
@@ -128,8 +130,8 @@ const PopcornDrinkPage = () => {
     if (total <= 0) {
       return Swal.fire({
         icon: "error",
-        title: "Lỗi giỏ hàng",
-        text: "Tổng tiền phải lớn hơn 0. Vui lòng kiểm tra lại giỏ hàng!",
+        title: t("fnb.cartError"),
+        text: t("fnb.cartErrorDesc"),
         confirmButtonColor: "#eab308",
       });
     }
@@ -184,8 +186,8 @@ const PopcornDrinkPage = () => {
 
       Swal.fire({
         icon: "error",
-        title: "Lỗi",
-        text: `${errorMessage}. Vui lòng thử lại!`,
+        title: t("fnb.error"),
+        text: `${errorMessage}. ${t("fnb.tryAgain")}`,
         confirmButtonColor: "#eab308",
       });
     } finally {
@@ -212,9 +214,9 @@ const PopcornDrinkPage = () => {
             <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
               <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 mx-auto mb-4"></div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Đang tạo đơn hàng...
+                {t("fnb.creatingOrder")}
               </h3>
-              <p className="text-gray-600">Vui lòng đợi trong giây lát</p>
+              <p className="text-gray-600">{t("fnb.pleaseWait")}</p>
             </div>
           </div>
         )}
@@ -222,11 +224,9 @@ const PopcornDrinkPage = () => {
         <div className="max-w-7xl mx-auto px-4 mb-8">
           <div className="text-center mb-8">
             <h1 className="text-5xl font-extrabold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-4">
-              ĐẶT BẮP NƯỚC
+              {t("fnb.title")}
             </h1>
-            <p className="text-gray-600 text-lg">
-              Thưởng thức bắp rang bơ và nước uống thơm ngon tại rạp
-            </p>
+            <p className="text-gray-600 text-lg">{t("fnb.subtitle")}</p>
           </div>
 
           {/* Theater Selection */}
@@ -236,7 +236,7 @@ const PopcornDrinkPage = () => {
                 <ShoppingCart className="w-8 h-8 text-yellow-600" />
               </div>
               <h2 className="text-3xl font-bold text-gray-900">
-                Chọn rạp để nhận hàng
+                {t("fnb.selectTheater")}
               </h2>
             </div>
 
@@ -257,8 +257,9 @@ const PopcornDrinkPage = () => {
                   }
                 >
                   {selectedTheater
-                    ? selectedTheater.name
-                    : "🎬 Chọn rạp gần bạn"}
+                    ? (language === "en" && selectedTheater.nameEn) ||
+                      selectedTheater.name
+                    : t("fnb.selectTheaterPlaceholder")}
                 </span>
                 <ChevronDown
                   className={`w-6 h-6 text-gray-400 transition-transform duration-200 ${
@@ -280,10 +281,12 @@ const PopcornDrinkPage = () => {
                       className="w-full px-6 py-4 text-left hover:bg-yellow-50 transition-colors border-b border-gray-50 last:border-b-0 group"
                     >
                       <div className="font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">
-                        {theater.name}
+                        {(language === "en" && theater.nameEn) || theater.name}
                       </div>
                       <div className="text-sm text-gray-500 mt-1">
-                        📍 {theater.address}
+                        📍{" "}
+                        {(language === "en" && theater.addressEn) ||
+                          theater.address}
                       </div>
                     </button>
                   ))}
@@ -298,11 +301,9 @@ const PopcornDrinkPage = () => {
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             <div className="text-center mb-8">
               <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                🍿 Thực đơn đặc biệt
+                🍿 {t("fnb.menuTitle")}
               </h3>
-              <p className="text-gray-600">
-                Tất cả rạp đều có cùng thực đơn với chất lượng tuyệt vời
-              </p>
+              <p className="text-gray-600">{t("fnb.menuSubtitle")}</p>
             </div>
 
             {fnbItems.length === 0 ? (
@@ -310,9 +311,7 @@ const PopcornDrinkPage = () => {
                 <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
                   <ShoppingCart className="w-12 h-12 text-gray-400" />
                 </div>
-                <p className="text-gray-500 text-lg">
-                  Hiện chưa có sản phẩm nào
-                </p>
+                <p className="text-gray-500 text-lg">{t("fnb.noItems")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -336,10 +335,11 @@ const PopcornDrinkPage = () => {
 
                     <div className="p-5">
                       <h4 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-yellow-600 transition-colors">
-                        {item.name}
+                        {(language === "en" && item.nameEn) || item.name}
                       </h4>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {item.description}
+                        {(language === "en" && item.descriptionEn) ||
+                          item.description}
                       </p>
 
                       <div className="flex items-center justify-between">
@@ -355,7 +355,7 @@ const PopcornDrinkPage = () => {
                             className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold px-5 py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
                           >
                             <Plus className="w-4 h-4" />
-                            Thêm
+                            {t("fnb.add")}
                           </button>
                         ) : (
                           <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1">
@@ -387,7 +387,12 @@ const PopcornDrinkPage = () => {
 
         {/* FnB Summary Bar */}
         <FnbSummaryBar
-          theaterName={selectedTheater?.name || "Chưa chọn rạp"}
+          theaterName={
+            selectedTheater
+              ? (language === "en" && selectedTheater.nameEn) ||
+                selectedTheater.name
+              : t("fnb.noTheater")
+          }
           totalPrice={getTotalAmount()}
           itemCount={cart.reduce((total, item) => total + item.quantity, 0)}
           isVisible={cart.length > 0}

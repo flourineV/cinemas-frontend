@@ -38,9 +38,10 @@ export interface FinalizeBookingRequest {
   useLoyaltyDiscount: boolean;
 }
 
-// Map từ: BookingSeatResponse (Giả định structure)
+// Map từ: BookingSeatResponse
 export interface BookingSeatResponse {
   seatId: string; // UUID as string
+  seatNumber?: string; // Snapshot field
   seatType: string;
   ticketType: string;
   price: number; // BigDecimal as number
@@ -55,6 +56,9 @@ export interface BookingResponse {
   showtimeId: string; // UUID
   movieId?: string;
   movieTitle?: string;
+  theaterName?: string; // Snapshot field
+  roomName?: string; // Snapshot field
+  showDateTime?: string; // Snapshot field - ISO string
   guestName?: string;
   guestEmail?: string;
 

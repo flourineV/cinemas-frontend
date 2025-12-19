@@ -9,6 +9,7 @@ export interface MovieSummary {
   status: MovieStatus;
   time: number;
   spokenLanguages: string[];
+  country?: string;
   genres: string[];
   trailer: string;
   startDate: string;

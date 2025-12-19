@@ -54,7 +54,10 @@ export const movieService = {
     id: string,
     language: string = "vi"
   ): Promise<MovieDetail> => {
-    const res = await movieClient.get<MovieDetail>(`/${id}`, {
+    // Check if id is a number (tmdbId) or UUID
+    const isNumeric = /^\d+$/.test(id);
+    const endpoint = isNumeric ? `/tmdb/${id}` : `/${id}`;
+    const res = await movieClient.get<MovieDetail>(endpoint, {
       headers: { "Accept-Language": language },
     });
     return res.data;

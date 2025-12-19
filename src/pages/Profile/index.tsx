@@ -143,7 +143,7 @@ const Profile = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -617,7 +617,7 @@ const Profile = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center justify-center gap-2 py-4 border-t transition-colors ${
+                    className={`flex items-center justify-center gap-2 py-4 border-t border-t-2 transition-colors ${
                       isActive
                         ? "border-gray-900 text-gray-900"
                         : "border-transparent text-gray-400 hover:text-gray-600"
@@ -664,15 +664,17 @@ const Profile = () => {
                 }
               />
               <InfoItem
-                label="Date of Birth"
+                label={t("profile.dateOfBirth")}
                 value={
                   profile.dateOfBirth
-                    ? new Date(profile.dateOfBirth).toLocaleDateString("vi-VN")
+                    ? new Date(profile.dateOfBirth).toLocaleDateString(
+                        language === "en" ? "en-US" : "vi-VN"
+                      )
                     : t("profile.notUpdated")
                 }
               />
               <InfoItem
-                label="National ID"
+                label={t("profile.nationalId")}
                 value={profile.nationalId || t("profile.notUpdated")}
               />
               <InfoItem
@@ -681,7 +683,7 @@ const Profile = () => {
               />
 
               <InfoItem
-                label="Status"
+                label={t("profile.status")}
                 value={
                   profile.status === "ACTIVE"
                     ? t("profile.active")
@@ -689,10 +691,12 @@ const Profile = () => {
                 }
               />
               <InfoItem
-                label="Created Date"
+                label={t("profile.createdDate")}
                 value={
                   profile.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString("vi-VN")
+                    ? new Date(profile.createdAt).toLocaleDateString(
+                        language === "en" ? "en-US" : "vi-VN"
+                      )
                     : "N/A"
                 }
               />
@@ -752,22 +756,22 @@ const Profile = () => {
                           <span className="font-medium">
                             {t("profile.theater")}:
                           </span>{" "}
-                          {booking.showtime?.theaterName || "N/A"}
+                          {booking.theaterName || "N/A"}
                         </div>
                         <div className="text-gray-600">
                           <span className="font-medium">
                             {t("profile.room")}:
                           </span>{" "}
-                          {booking.showtime?.roomName || "N/A"}
+                          {booking.roomName || "N/A"}
                         </div>
                         <div className="text-gray-600 col-span-2">
                           <span className="font-medium">
                             {t("profile.showtime")}:
                           </span>{" "}
-                          {booking.showtime?.startTime
-                            ? new Date(
-                                booking.showtime.startTime
-                              ).toLocaleString("vi-VN")
+                          {booking.showDateTime
+                            ? new Date(booking.showDateTime).toLocaleString(
+                                language === "en" ? "en-US" : "vi-VN"
+                              )
                             : "N/A"}
                         </div>
                       </div>
@@ -1113,9 +1117,9 @@ const Profile = () => {
         {/* Edit Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-2xl w-full mx-4">
               <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-semibold">{t("profile.edit")}</h3>
                   <button
                     onClick={() => {
@@ -1129,76 +1133,108 @@ const Profile = () => {
                   </button>
                 </div>
 
-                {/* Avatar Upload */}
-                <div className="flex flex-col items-center mb-6">
-                  <div className="relative group">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-yellow-400 via-yellow-500 to-yellow-600 p-1">
-                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white">
-                        {avatarPreview ? (
-                          <img
-                            src={avatarPreview}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : editData.avatarUrl ? (
-                          <img
-                            src={editData.avatarUrl}
-                            alt="Avatar"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-12 h-12 text-gray-400" />
-                        )}
+                {/* Top Row: Avatar left, Name + Gender right */}
+                <div className="flex gap-10 mb-6">
+                  {/* Avatar Upload */}
+                  <div className="flex flex-col items-center mt-7">
+                    <div className="relative group">
+                      <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-yellow-400 via-yellow-500 to-yellow-600 p-1">
+                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white">
+                          {avatarPreview ? (
+                            <img
+                              src={avatarPreview}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : editData.avatarUrl ? (
+                            <img
+                              src={editData.avatarUrl}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-16 h-16 text-gray-400" />
+                          )}
+                        </div>
                       </div>
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all flex items-center justify-center">
+                        <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const modalFileInput =
+                            document.createElement("input");
+                          modalFileInput.type = "file";
+                          modalFileInput.accept = "image/jpeg,image/png";
+                          modalFileInput.onchange = (e) => {
+                            const target = e.target as HTMLInputElement;
+                            if (target.files?.[0]) {
+                              handleAvatarChange(target.files[0]);
+                            }
+                          };
+                          modalFileInput.click();
+                        }}
+                        className="absolute bottom-0 right-0 w-9 h-9 bg-yellow-500 hover:bg-yellow-600 rounded-full flex items-center justify-center text-white transition-all hover:scale-110 shadow-lg"
+                        title={t("profile.changeAvatar")}
+                      >
+                        <Camera className="w-4 h-4" />
+                      </button>
                     </div>
-                    {/* Overlay for better UX */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <button
-                      onClick={() => {
-                        const modalFileInput = document.createElement("input");
-                        modalFileInput.type = "file";
-                        modalFileInput.accept = "image/jpeg,image/png";
-                        modalFileInput.onchange = (e) => {
-                          const target = e.target as HTMLInputElement;
-                          if (target.files?.[0]) {
-                            handleAvatarChange(target.files[0]);
-                          }
-                        };
-                        modalFileInput.click();
-                      }}
-                      className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-500 hover:bg-yellow-600 rounded-full flex items-center justify-center text-white transition-all hover:scale-110 shadow-lg"
-                      title={t("profile.changeAvatar")}
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="text-center mt-3">
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-400 mt-2">
                       {t("profile.avatarFormat")}
                     </p>
                   </div>
+
+                  {/* Name + Gender */}
+                  <div className="flex-1 flex flex-col gap-4">
+                    <CustomInput
+                      label={`${t("profile.fullName")} *`}
+                      icon={User}
+                      type="text"
+                      value={editData.fullName || ""}
+                      onChange={(e) =>
+                        setEditData({ ...editData, fullName: e.target.value })
+                      }
+                      placeholder={t("profile.fullName")}
+                      error={
+                        !editData.fullName?.trim()
+                          ? `${t("profile.fullName")} ${t("profile.requiredField")}`
+                          : undefined
+                      }
+                    />
+
+                    <div className="w-full">
+                      <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
+                        {t("profile.gender")}
+                      </label>
+                      <div className="relative group">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300 z-10">
+                          <Users size={20} />
+                        </div>
+                        <CustomSelect
+                          options={[
+                            { value: "MALE", label: t("profile.male") },
+                            { value: "FEMALE", label: t("profile.female") },
+                            { value: "OTHER", label: t("profile.other") },
+                          ]}
+                          value={editData.gender || "MALE"}
+                          onChange={(value: string) =>
+                            setEditData({
+                              ...editData,
+                              gender: value as "MALE" | "FEMALE" | "OTHER",
+                            })
+                          }
+                          placeholder={t("profile.male")}
+                          variant="solid"
+                          className="w-full [&_button]:pl-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <CustomInput
-                    label={`${t("profile.fullName")} *`}
-                    icon={User}
-                    type="text"
-                    value={editData.fullName || ""}
-                    onChange={(e) =>
-                      setEditData({ ...editData, fullName: e.target.value })
-                    }
-                    placeholder={t("profile.fullName")}
-                    error={
-                      !editData.fullName?.trim()
-                        ? `${t("profile.fullName")} ${t("profile.requiredField")}`
-                        : undefined
-                    }
-                  />
-
+                {/* Bottom Row: Phone + Address */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <CustomInput
                     label={t("profile.phone")}
                     icon={Phone}
@@ -1221,47 +1257,16 @@ const Profile = () => {
                     }
                   />
 
-                  <div className="w-full">
-                    <label className="block text-sm font-semibold text-zinc-700 mb-1.5 ml-1">
-                      {t("profile.gender")}
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-yellow-500 transition-colors duration-300 z-10">
-                        <Users size={20} />
-                      </div>
-                      <CustomSelect
-                        options={[
-                          { value: "", label: t("profile.selectGender") },
-                          { value: "MALE", label: t("profile.male") },
-                          { value: "FEMALE", label: t("profile.female") },
-                          { value: "OTHER", label: t("profile.other") },
-                        ]}
-                        value={editData.gender || ""}
-                        onChange={(value: string) =>
-                          setEditData({
-                            ...editData,
-                            gender: value as "MALE" | "FEMALE" | "OTHER",
-                          })
-                        }
-                        placeholder={t("profile.selectGender")}
-                        variant="default"
-                        className="w-[180px]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <CustomTextarea
-                      label={t("profile.address")}
-                      icon={MapPin}
-                      value={editData.address || ""}
-                      onChange={(e) =>
-                        setEditData({ ...editData, address: e.target.value })
-                      }
-                      rows={3}
-                      placeholder={t("profile.address")}
-                    />
-                  </div>
+                  <CustomTextarea
+                    label={t("profile.address")}
+                    icon={MapPin}
+                    value={editData.address || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, address: e.target.value })
+                    }
+                    rows={1}
+                    placeholder={t("profile.address")}
+                  />
                 </div>
 
                 <div className="flex justify-end mt-6">
@@ -1292,13 +1297,13 @@ const Profile = () => {
   );
 };
 
-// Info Item Component
+// Info Item Component - ĐÃ CHỈNH SỬA: Title bold, value font thường
 const InfoItem = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-500 mb-1">
+    <label className="block text-sm font-bold text-gray-900 mb-1">
       {label}
     </label>
-    <p className="text-gray-900 font-medium">{value}</p>
+    <p className="text-gray-600">{value}</p>
   </div>
 );
 

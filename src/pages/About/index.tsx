@@ -12,6 +12,7 @@ const TheaterGallery = () => {
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     theaterService
@@ -34,7 +35,7 @@ const TheaterGallery = () => {
       <div className="relative flex items-center justify-center mb-10">
         <MapPin className="w-8 h-8 text-yellow-500 mr-3" />
         <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
-          RẠP CHIẾU ({theaters.length})
+          {language === "en" ? "THEATERS" : "RẠP CHIẾU"} ({theaters.length})
         </h2>
       </div>
 
@@ -61,19 +62,27 @@ const TheaterGallery = () => {
               {/* PHẦN TRÊN: Tên và Địa chỉ */}
               <div className="mb-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  {theater.name}
+                  {language === "en"
+                    ? theater.nameEn || theater.name
+                    : theater.name}
                 </h3>
                 <div className="flex items-start gap-2 text-gray-600 text-sm">
                   <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <p className="line-clamp-2">{theater.address}</p>
+                  <p className="line-clamp-2">
+                    {language === "en"
+                      ? theater.addressEn || theater.address
+                      : theater.address}
+                  </p>
                 </div>
               </div>
 
               {/* PHẦN DƯỚI: Tỉnh thành và Nút (Được đẩy xuống đáy nhờ mt-auto) */}
               <div className="mt-auto w-full">
-                {theater.provinceName && (
+                {(theater.provinceName || theater.provinceNameEn) && (
                   <p className="text-lg text-yellow-500 font-light mb-4">
-                    {theater.provinceName}
+                    {language === "en"
+                      ? theater.provinceNameEn || theater.provinceName
+                      : theater.provinceName}
                   </p>
                 )}
 
@@ -97,6 +106,7 @@ const TheaterGallery = () => {
 const TheaterList = () => {
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     theaterService
@@ -128,12 +138,16 @@ const TheaterList = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-extrabold text-white mb-3 uppercase tracking-wide">
-                {theater.name}
+                {language === "en"
+                  ? theater.nameEn || theater.name
+                  : theater.name}
               </h3>
               <div className="flex items-start gap-3 text-gray-100">
                 <MapPin size={20} className="text-purple-400 flex-shrink-0" />
                 <span className="leading-relaxed font-light -mt-1 -ml-2">
-                  {theater.address}
+                  {language === "en"
+                    ? theater.addressEn || theater.address
+                    : theater.address}
                 </span>
               </div>
             </div>
@@ -152,7 +166,6 @@ const About = () => {
     benefits: false,
     cta: false,
   });
-  const navigate = useNavigate();
 
   // Trigger animations on mount - giống Home
   useEffect(() => {

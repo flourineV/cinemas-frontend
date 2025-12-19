@@ -7,7 +7,9 @@ export interface FnbItemRequest {
 export interface FnbItemResponse {
   id: string;
   name: string;
+  nameEn?: string;
   description?: string;
+  descriptionEn?: string;
   unitPrice: number;
   imageUrl: string;
 }

@@ -39,6 +39,7 @@ interface MovieShowtimeProps {
   movieTitle: string;
   movieStatus?: "NOW_PLAYING" | "UPCOMING" | "ARCHIVED";
   onSelectShowtime?: (showtime: ShowtimeResponse) => void;
+  preselectedShowtimeId?: string | null;
 }
 
 const MovieShowtime: React.FC<MovieShowtimeProps> = ({
@@ -46,6 +47,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   movieTitle,
   movieStatus = "NOW_PLAYING",
   onSelectShowtime,
+  preselectedShowtimeId,
 }) => {
   const [provinces, setProvinces] = useState<ProvinceResponse[]>([]);
   const [selectedProvinceId, setSelectedProvinceId] = useState<string>("");
@@ -198,6 +200,56 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
     };
     fetchTheaterShowtimes();
   }, [movieId, selectedProvinceId]);
+
+  // --- Auto-select showtime from URL params ---
+  useEffect(() => {
+    if (
+      !preselectedShowtimeId ||
+      theaterShowtimes.length === 0 ||
+      selectedShowtime
+    )
+      return;
+
+    // Find the showtime in all theaters
+    for (const theater of theaterShowtimes) {
+      const foundShowtime = theater.showtimes.find(
+        (st) => st.showtimeId === preselectedShowtimeId
+      );
+      if (foundShowtime) {
+        // Set the date to match the showtime
+        const showtimeDate = dayjs(foundShowtime.startTime).format(
+          "YYYY-MM-DD"
+        );
+        setSelectedDate(showtimeDate);
+
+        // Create ShowtimeResponse and select it
+        const res: ShowtimeResponse = {
+          id: foundShowtime.showtimeId,
+          movieId,
+          theaterName: theater.theaterName,
+          roomId: foundShowtime.roomId,
+          roomName: foundShowtime.roomName,
+          startTime: foundShowtime.startTime,
+          endTime: foundShowtime.endTime,
+        };
+        setSelectedShowtime(res);
+        onSelectShowtime?.(res);
+
+        // Scroll to showtime section after a short delay
+        setTimeout(() => {
+          const showtimeSection = document.getElementById("showtime-section");
+          if (showtimeSection) {
+            showtimeSection.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 500);
+
+        break;
+      }
+    }
+  }, [preselectedShowtimeId, theaterShowtimes, movieId]);
 
   // --- Date Handling ---
   const getFixedDates = () => {

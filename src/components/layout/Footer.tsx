@@ -6,7 +6,7 @@ import type { TheaterResponse } from "@/types/showtime/theater.type";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Footer = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const Footer = () => {
                 key={theater.id}
                 className="hover:text-yellow-400 transition-colors cursor-pointer"
               >
-                {theater.name}
+                {(language === "en" && theater.nameEn) || theater.name}
               </li>
             ))}
           </ul>

@@ -10,6 +10,7 @@ import type {
 } from "@/types/showtime/theater.type";
 import type { MovieDetail } from "@/types/movie/movie.type";
 import { MapPin } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Function to get theater image based on name
 const getTheaterImage = (theaterName: string): string => {
@@ -41,6 +42,7 @@ const getTheaterImage = (theaterName: string): string => {
 
 const TheaterDetail = () => {
   const { theaterId } = useParams<{ theaterId: string }>();
+  const { language, t } = useLanguage();
   const [theater, setTheater] = useState<TheaterResponse | null>(null);
   const [moviesWithShowtimes, setMoviesWithShowtimes] = useState<
     Array<{ movie: MovieDetail; showtimes: MovieShowtimesResponse }>
@@ -93,13 +95,24 @@ const TheaterDetail = () => {
     return (
       <Layout>
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-          <p className="text-gray-700 text-xl">Không tìm thấy rạp</p>
+          <p className="text-gray-700 text-xl">{t("theater.notFound")}</p>
         </div>
       </Layout>
     );
   }
 
-  const theaterImage = getTheaterImage(theater.name);
+  // Use theater image from backend or fallback to local
+  const theaterImage = theater.imageUrl || getTheaterImage(theater.name);
+
+  // Get localized theater data
+  const theaterName =
+    language === "en" ? theater.nameEn || theater.name : theater.name;
+  const theaterAddress =
+    language === "en" ? theater.addressEn || theater.address : theater.address;
+  const theaterDescription =
+    language === "en"
+      ? theater.descriptionEn || theater.description
+      : theater.description;
 
   return (
     <Layout>
@@ -108,8 +121,11 @@ const TheaterDetail = () => {
         <div className="relative w-full h-[60vh] overflow-hidden">
           <img
             src={theaterImage}
-            alt={theater.name}
+            alt={theaterName}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/buvn.jpg";
+            }}
           />
           <div className="absolute inset-0 bg-gradient-radial from-transparent via-black/60 to-black/70"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-100/40 to-gray-100"></div>
@@ -123,7 +139,7 @@ const TheaterDetail = () => {
                     "0 0 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.7), 4px 4px 8px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
                 }}
               >
-                {theater.name}
+                {theaterName}
               </h1>
               <div className="flex items-center justify-center gap-3 text-white text-lg md:text-xl">
                 <MapPin size={24} className="text-yellow-400" />
@@ -133,31 +149,31 @@ const TheaterDetail = () => {
                       "0 0 10px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
                   }}
                 >
-                  {theater.address}
+                  {theaterAddress}
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {theater.description && (
-          <section className="w-full max-w-5xl mx-auto px-4 py-8">
+        {theaterDescription && (
+          <section className="w-full max-w-5xl mx-auto py-8">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">
-              Giới thiệu
+              {t("theater.introduction")}
             </h3>
             <p className="text-gray-700 text-lg leading-relaxed text-justify">
-              {theater.description}
+              {theaterDescription}
             </p>
           </section>
         )}
 
         <div className="max-w-7xl mx-auto px-4 py-12">
           <h2 className="text-3xl font-extrabold text-yellow-500 mb-8 text-center">
-            PHIM ĐANG CHIẾU
+            {t("theater.nowPlaying")}
           </h2>
           {moviesWithShowtimes.length === 0 ? (
             <p className="text-gray-600 text-center py-12">
-              Hiện tại rạp chưa có suất chiếu nào
+              {t("theater.noShowtimes")}
             </p>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

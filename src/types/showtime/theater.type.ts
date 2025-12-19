@@ -8,9 +8,13 @@ export interface TheaterRequest {
 export interface TheaterResponse {
   id: string;
   name: string;
+  nameEn?: string;
   address: string;
+  addressEn?: string;
   description: string;
+  descriptionEn?: string;
   provinceName: string;
+  provinceNameEn?: string;
   imageUrl?: string;
 }
 
@@ -33,7 +37,9 @@ export interface MoviesWithTheatersResponse {
   theaters: Array<{
     theaterId: string;
     theaterName: string;
+    theaterNameEn?: string;
     theaterAddress: string;
+    theaterAddressEn?: string;
     showtimes: Array<{
       showtimeId: string;
       startTime: string;
