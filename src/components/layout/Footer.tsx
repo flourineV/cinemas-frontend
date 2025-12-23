@@ -1,12 +1,14 @@
 import { FaFacebook, FaTiktok, FaYoutube } from "react-icons/fa";
 import { SiZalo } from "react-icons/si";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { theaterService } from "@/services/showtime/theaterService";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Footer = () => {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
 
   useEffect(() => {
@@ -15,6 +17,10 @@ const Footer = () => {
       .then((data) => setTheaters(data))
       .catch((err) => console.error("Failed to load theaters:", err));
   }, []);
+
+  const handleTheaterClick = (theaterId: string) => {
+    navigate(`/theater/${theaterId}`);
+  };
 
   return (
     <footer
@@ -32,6 +38,7 @@ const Footer = () => {
               <li
                 key={theater.id}
                 className="hover:text-yellow-400 transition-colors cursor-pointer"
+                onClick={() => handleTheaterClick(theater.id)}
               >
                 {(language === "en" && theater.nameEn) || theater.name}
               </li>
