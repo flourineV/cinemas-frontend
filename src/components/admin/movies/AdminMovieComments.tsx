@@ -30,7 +30,7 @@ const AdminMovieComments: React.FC<AdminMovieCommentsProps> = ({ movieId }) => {
       );
 
       setReviews(sorted);
-      setAvgRating(avgRatingData || 0);
+      setAvgRating(avgRatingData?.averageRating || 0);
     } catch (error) {
       console.error("Error loading reviews:", error);
       setReviews([]);
@@ -60,10 +60,12 @@ const AdminMovieComments: React.FC<AdminMovieCommentsProps> = ({ movieId }) => {
     }
 
     try {
+      const review = reviews.find((r) => r.id === reviewId);
       await reviewService.updateReview(reviewId, {
         movieId,
         userId,
-        rating: 5, // Keep existing rating
+        fullName: review?.fullName || "",
+        avatarUrl: review?.avatarUrl || "",
         comment: editComment.trim(),
       });
 

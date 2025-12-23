@@ -1,4 +1,9 @@
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -38,8 +43,11 @@ type TabType = "info" | "comments";
 export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const preselectedShowtimeId = searchParams.get("showtimeId");
+  const preselectedShowtime =
+    (location.state as any)?.preselectedShowtime || null;
   const { user } = useAuthStore();
   const { language, t } = useLanguage();
   const [movie, setMovie] = useState<MovieDetail | null>(null);
@@ -84,6 +92,49 @@ export default function MovieDetailPage() {
     };
     fetchMovie();
   }, [id, language]);
+
+  // Scroll to ticket section when preselectedShowtimeId is present
+  useEffect(() => {
+    if (preselectedShowtimeId && !loading && movie) {
+      // Retry scroll until ticket section is found
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      const tryScroll = () => {
+        attempts++;
+        const ticketSection = document.querySelector("[data-ticket-section]");
+
+        if (ticketSection) {
+          console.log("✅ [MovieDetail] Found ticket section, scrolling...");
+          ticketSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        } else if (attempts < maxAttempts) {
+          // Retry after 500ms
+          console.log(
+            `⏳ [MovieDetail] Ticket section not found, retry ${attempts}/${maxAttempts}`
+          );
+          setTimeout(tryScroll, 500);
+        } else {
+          // Fallback to showtime section
+          console.log(
+            "⚠️ [MovieDetail] Max attempts reached, scrolling to showtime section"
+          );
+          const showtimeSection = document.querySelector("#showtime-section");
+          if (showtimeSection) {
+            showtimeSection.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }
+      };
+
+      // Start trying after initial delay
+      setTimeout(tryScroll, 500);
+    }
+  }, [preselectedShowtimeId, loading, movie]);
 
   // Check if movie is favorited by user
   useEffect(() => {
@@ -381,9 +432,10 @@ export default function MovieDetailPage() {
             }}
           >
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
-            {/* Gradient Overlay - Mờ dần xuống và hòa vào background trắng */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-100/40 to-gray-100"></div>
           </div>
+
+          {/* Gradient Overlay - chỉ ở phía dưới để hòa vào section tiếp theo */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-gray-100 z-[1]"></div>
 
           <motion.div
             initial={{ opacity: 0 }}
@@ -452,7 +504,7 @@ export default function MovieDetailPage() {
                                     ? "fill-yellow-500 text-yellow-500"
                                     : starState === "half"
                                       ? "fill-yellow-500/50 text-yellow-500"
-                                      : "text-white/30"
+                                      : "text-white/60"
                               } transition-colors`}
                             />
                           </button>
@@ -686,6 +738,7 @@ export default function MovieDetailPage() {
               movieStatus={movie.status}
               onSelectShowtime={() => {}}
               preselectedShowtimeId={preselectedShowtimeId}
+              preselectedShowtime={preselectedShowtime}
             />
           </div>
         </div>

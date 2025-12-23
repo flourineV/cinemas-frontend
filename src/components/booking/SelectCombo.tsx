@@ -1,29 +1,44 @@
 import React, { useEffect, useState } from "react";
 import { fnbService } from "@/services/fnb/fnbService";
-import { Plus, Minus } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SelectedComboItem {
   id: string;
   name: string;
+  nameEn?: string;
   qty: number;
   price: number;
 }
 
 interface SelectComboProps {
   onComboSelect: (selected: Record<string, SelectedComboItem>) => void;
+  initialSelected?: Record<string, SelectedComboItem>;
 }
 
 interface FnbItemResponse {
   id: string;
   name: string;
+  nameEn?: string;
   description?: string;
+  descriptionEn?: string;
   unitPrice: number;
   imageUrl: string;
 }
 
-const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
+const SelectCombo: React.FC<SelectComboProps> = ({
+  onComboSelect,
+  initialSelected = {},
+}) => {
+  const { t, language } = useLanguage();
   const [combos, setCombos] = useState<FnbItemResponse[]>([]);
-  const [selected, setSelected] = useState<Record<string, number>>({});
+  const [selected, setSelected] = useState<Record<string, number>>(() => {
+    // Initialize from initialSelected
+    const initial: Record<string, number> = {};
+    Object.entries(initialSelected).forEach(([key, item]) => {
+      initial[key] = item.qty;
+    });
+    return initial;
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,6 +64,7 @@ const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
             selectedCombosForParent[key] = {
               id: combo.id,
               name: combo.name,
+              nameEn: combo.nameEn,
               qty,
               price: combo.unitPrice,
             };
@@ -62,7 +78,14 @@ const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
   };
 
   if (loading)
-    return <p className="text-white text-center mt-6">Đang tải combo...</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-yellow-500"></div>
+        <p className="text-zinc-600 mt-4 font-medium">
+          {t("checkout.loadingCombo")}
+        </p>
+      </div>
+    );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto mt-10">
@@ -83,8 +106,8 @@ const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
             <div
               className={`relative h-full border rounded-2xl flex p-6 transition-all duration-300 overflow-hidden ${
                 isSelected
-                  ? "bg-zinc-900 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-                  : "bg-zinc-900 border-zinc-800 hover:border-zinc-600"
+                  ? "bg-gray-200 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                  : "bg-gray-200 border-zinc-800 hover:border-zinc-600"
               }`}
             >
               {/* Lớp màu vàng cố định */}
@@ -100,17 +123,19 @@ const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
               {/* INFO + CONTROLS */}
               <div className="flex flex-col justify-between flex-1 relative z-10">
                 <div>
-                  <span className="font-bold text-lg text-white tracking-wide">
-                    {c.name}
+                  <span className="font-bold text-lg text-black tracking-wide">
+                    {language === "en" && c.nameEn ? c.nameEn : c.name}
                   </span>
-                  {c.description && (
-                    <div className="text-zinc-400 text-sm font-light mt-1 line-clamp-2">
-                      {c.description}
+                  {(c.description || c.descriptionEn) && (
+                    <div className="text-black text-sm font-light mt-1 line-clamp-2">
+                      {language === "en" && c.descriptionEn
+                        ? c.descriptionEn
+                        : c.description}
                     </div>
                   )}
                   <div className="text-yellow-500 font-semibold text-xl mt-2 tracking-tighter">
                     {c.unitPrice.toLocaleString()}
-                    <span className="text-sm font-normal text-zinc-500 ml-1">
+                    <span className="text-sm font-normal text-black ml-1">
                       đ
                     </span>
                   </div>
@@ -132,7 +157,7 @@ const SelectCombo: React.FC<SelectComboProps> = ({ onComboSelect }) => {
                     −
                   </button>
 
-                  <div className="min-w-[50px] text-center font-mono text-xl text-white font-bold">
+                  <div className="min-w-[50px] text-center font-mono text-xl text-black font-bold">
                     {count}
                   </div>
 

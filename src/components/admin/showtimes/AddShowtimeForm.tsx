@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Clock, Minus } from "lucide-react";
+import { Plus, Clock, Minus, ArrowUpFromLine } from "lucide-react";
 import Swal from "sweetalert2";
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { movieManagementService } from "@/services/movie/movieManagementService";
@@ -241,22 +241,9 @@ export default function AddShowtimeForm({
   return (
     <div className="bg-white border border-gray-400 rounded-lg p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Plus className="w-5 h-5 text-yellow-600" />
-          <h3 className="text-lg font-semibold text-gray-800">
-            Tạo lịch chiếu
-          </h3>
-        </div>
-        <button
-          type="button"
-          onClick={addShowtimeRow}
-          className="flex items-center gap-1 px-3 py-1 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-          disabled={isSubmitting}
-        >
-          <Plus size={14} />
-          Thêm lịch chiếu
-        </button>
+      <div className="flex items-center gap-2 mb-4">
+        <Plus className="w-5 h-5 text-yellow-600" />
+        <h3 className="text-lg font-semibold text-gray-800">Tạo lịch chiếu</h3>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -285,6 +272,7 @@ export default function AddShowtimeForm({
                     updateShowtimeRow(row.id, "movieId", value)
                   }
                   placeholder="Chọn phim"
+                  fullWidth
                 />
               </div>
 
@@ -306,6 +294,7 @@ export default function AddShowtimeForm({
                     updateShowtimeRow(row.id, "theaterId", value)
                   }
                   placeholder="Chọn rạp"
+                  fullWidth
                 />
               </div>
 
@@ -328,6 +317,7 @@ export default function AddShowtimeForm({
                   }
                   placeholder="Chọn phòng"
                   disabled={!row.theaterId}
+                  fullWidth
                 />
               </div>
 
@@ -393,21 +383,30 @@ export default function AddShowtimeForm({
           ))}
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end pt-2">
+        {/* Submit Buttons */}
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={addShowtimeRow}
+            className="flex items-center justify-center w-10 h-10 bg-yellow-500 text-black rounded-full hover:bg-yellow-600 transition-colors"
+            disabled={isSubmitting}
+            title="Thêm dòng mới"
+          >
+            <Plus size={18} />
+          </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent"></div>
                 Đang tạo...
               </>
             ) : (
               <>
-                <Plus size={16} />
+                <ArrowUpFromLine size={16} />
                 Tạo tất cả lịch chiếu
               </>
             )}

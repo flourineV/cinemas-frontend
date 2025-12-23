@@ -10,7 +10,7 @@ interface CustomSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  variant?: "default" | "glass" | "solid";
+  variant?: "default" | "glass" | "solid" | "gold";
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -124,6 +124,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           bg-white text-gray-900 border border-gray-400
           focus:border-yellow-500 focus:ring-yellow-500/20
           hover:border-gray-500 shadow-sm
+        `;
+      case "gold":
+        return `${baseStyles}
+          bg-white text-gray-900 border border-gray-400
+          focus:border-yellow-500 focus:ring-yellow-500/20
+          hover:border-yellow-500 shadow-sm
         `;
       default:
         return `${baseStyles}

@@ -4,10 +4,11 @@ import Layout from "@/components/layout/Layout";
 import { fnbService } from "@/services/fnb/fnbService";
 import type { FnbItemResponse } from "@/types/fnb/fnb.type";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
-import { ChevronDown, Plus, Minus, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import FnbSummaryBar from "@/components/fnb/FnbSummaryBar";
 import { useAuthStore } from "@/stores/authStore";
 import { useLanguage } from "@/contexts/LanguageContext";
+import CustomSelect from "@/components/ui/CustomSelect";
 import Swal from "sweetalert2";
 
 interface CartItem extends FnbItemResponse {
@@ -19,13 +20,14 @@ const PopcornDrinkPage = () => {
   const { user } = useAuthStore();
   const { t, language } = useLanguage();
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
-  const [selectedTheater, setSelectedTheater] =
-    useState<TheaterResponse | null>(null);
+  const [selectedTheaterId, setSelectedTheaterId] = useState<string>("");
   const [fnbItems, setFnbItems] = useState<FnbItemResponse[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [creatingOrder, setCreatingOrder] = useState(false);
+
+  // Get selected theater object
+  const selectedTheater = theaters.find((t) => t.id === selectedTheaterId);
 
   // Load theaters and FnB items on mount (tất cả rạp đều có cùng thực đơn)
   useEffect(() => {
@@ -138,6 +140,15 @@ const PopcornDrinkPage = () => {
 
     setCreatingOrder(true);
 
+    // Show Swal loading
+    Swal.fire({
+      title: t("fnb.creatingOrder"),
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+      background: "#18181b",
+      color: "#fff",
+    });
+
     try {
       // Create FnB order
       const orderData = {
@@ -148,6 +159,7 @@ const PopcornDrinkPage = () => {
           fnbItemId: item.id,
           quantity: item.quantity,
         })),
+        language: language,
       };
 
       const order = await fnbService.createOrder(orderData);
@@ -162,6 +174,8 @@ const PopcornDrinkPage = () => {
         0,
         Math.floor((expiresAt.getTime() - Date.now()) / 1000)
       );
+
+      Swal.close();
 
       // Navigate to FnB checkout with order data and TTL
       navigate("/fnb-checkout", {
@@ -189,6 +203,8 @@ const PopcornDrinkPage = () => {
         title: t("fnb.error"),
         text: `${errorMessage}. ${t("fnb.tryAgain")}`,
         confirmButtonColor: "#eab308",
+        background: "#18181b",
+        color: "#fff",
       });
     } finally {
       setCreatingOrder(false);
@@ -198,8 +214,16 @@ const PopcornDrinkPage = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+        <div
+          className="min-h-screen flex items-center justify-center relative"
+          style={{
+            backgroundImage: "url('/background_profile.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 relative z-10"></div>
         </div>
       </Layout>
     );
@@ -207,179 +231,145 @@ const PopcornDrinkPage = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-100 pt-8 pb-16 relative">
-        {/* Loading Overlay */}
-        {creatingOrder && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {t("fnb.creatingOrder")}
-              </h3>
-              <p className="text-gray-600">{t("fnb.pleaseWait")}</p>
-            </div>
-          </div>
-        )}
+      <div
+        className="min-h-screen pt-8 pb-32 relative"
+        style={{
+          backgroundImage: "url('/background_profile.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/60" />
         {/* Header */}
-        <div className="max-w-7xl mx-auto px-4 mb-8">
+        <div className="max-w-5xl mx-auto mb-8 relative z-10">
           <div className="text-center mb-8">
-            <h1 className="text-5xl font-extrabold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-4">
+            <h1 className="text-5xl font-extrabold text-yellow-500 mb-3">
               {t("fnb.title")}
             </h1>
-            <p className="text-gray-600 text-lg">{t("fnb.subtitle")}</p>
+            <p className="text-gray-300 font-light text-lg">
+              {t("fnb.subtitle")}
+            </p>
           </div>
 
-          {/* Theater Selection */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
-            <div className="flex items-center justify-center mb-6">
-              <div className="bg-yellow-100 p-3 rounded-full mr-4">
-                <ShoppingCart className="w-8 h-8 text-yellow-600" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900">
-                {t("fnb.selectTheater")}
-              </h2>
-            </div>
-
-            <div className="relative max-w-lg mx-auto">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`w-full border-2 rounded-xl px-6 py-4 text-left flex items-center justify-between transition-all duration-200 ${
-                  selectedTheater
-                    ? "border-yellow-400 bg-yellow-50 shadow-md"
-                    : "border-gray-200 bg-white hover:border-yellow-300 hover:shadow-md"
-                }`}
-              >
-                <span
-                  className={
-                    selectedTheater
-                      ? "text-gray-900 font-semibold"
-                      : "text-gray-500"
-                  }
-                >
-                  {selectedTheater
-                    ? (language === "en" && selectedTheater.nameEn) ||
-                      selectedTheater.name
-                    : t("fnb.selectTheaterPlaceholder")}
-                </span>
-                <ChevronDown
-                  className={`w-6 h-6 text-gray-400 transition-transform duration-200 ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-100 rounded-xl shadow-2xl z-20 max-h-80 overflow-y-auto">
-                  {theaters.map((theater) => (
-                    <button
-                      key={theater.id}
-                      onClick={() => {
-                        setSelectedTheater(theater);
-                        setIsDropdownOpen(false);
-                        setCart([]); // Clear cart when changing theater
-                      }}
-                      className="w-full px-6 py-4 text-left hover:bg-yellow-50 transition-colors border-b border-gray-50 last:border-b-0 group"
-                    >
-                      <div className="font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">
-                        {(language === "en" && theater.nameEn) || theater.name}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        📍{" "}
-                        {(language === "en" && theater.addressEn) ||
-                          theater.address}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Theater Selection - giống ShowtimePage */}
+          <div className="space-y-2 max-w-md mx-auto mb-8 relative z-30">
+            <CustomSelect
+              variant="solid"
+              options={[
+                { value: "", label: t("fnb.selectTheaterPlaceholder") },
+                ...theaters.map((theater) => ({
+                  value: theater.id,
+                  label:
+                    language === "en" && theater.nameEn
+                      ? theater.nameEn
+                      : theater.name,
+                })),
+              ]}
+              value={selectedTheaterId}
+              onChange={setSelectedTheaterId}
+              placeholder={t("fnb.selectTheaterPlaceholder")}
+            />
           </div>
         </div>
 
         {/* FnB Items */}
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            <div className="text-center mb-8">
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="max-w-5xl mx-auto relative z-0">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
                 🍿 {t("fnb.menuTitle")}
               </h3>
               <p className="text-gray-600">{t("fnb.menuSubtitle")}</p>
             </div>
 
             {fnbItems.length === 0 ? (
-              <div className="text-center py-16">
+              <div className="text-center py-16 bg-gray-50 rounded-xl">
                 <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
                   <ShoppingCart className="w-12 h-12 text-gray-400" />
                 </div>
                 <p className="text-gray-500 text-lg">{t("fnb.noItems")}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {fnbItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="group bg-white border-2 border-gray-100 rounded-2xl overflow-hidden hover:border-yellow-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                  >
-                    <div className="relative overflow-hidden">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {false && ( // Tạm thời disable available check
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                          <span className="text-white font-bold">Hết hàng</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {fnbItems.map((item) => {
+                  const quantity = getItemQuantity(item.id);
+                  const isSelected = quantity > 0;
+
+                  return (
+                    <div key={item.id} className="relative group">
+                      {/* Badge số lượng */}
+                      {isSelected && (
+                        <div className="absolute -top-3 -right-3 bg-yellow-500 text-black font-extrabold rounded-full w-8 h-8 flex items-center justify-center shadow-lg border-2 border-gray-900 z-10">
+                          {quantity}
                         </div>
                       )}
-                    </div>
 
-                    <div className="p-5">
-                      <h4 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-yellow-600 transition-colors">
-                        {(language === "en" && item.nameEn) || item.name}
-                      </h4>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {(language === "en" && item.descriptionEn) ||
-                          item.description}
-                      </p>
-
-                      <div className="flex items-center justify-between">
-                        <div className="text-2xl font-bold text-yellow-600">
-                          {item.unitPrice.toLocaleString()}
-                          <span className="text-sm text-gray-500 ml-1">đ</span>
+                      {/* Card */}
+                      <div
+                        className={`relative h-full border rounded-xl overflow-hidden transition-all duration-300 ${
+                          isSelected
+                            ? "bg-gray-100 border-yellow-500 shadow-lg"
+                            : "bg-gray-100 border-gray-300 hover:border-gray-400 hover:shadow-md"
+                        }`}
+                      >
+                        <div className="relative overflow-hidden">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
                         </div>
 
-                        {getItemQuantity(item.id) === 0 ? (
-                          <button
-                            onClick={() => addToCart(item)}
-                            disabled={false}
-                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold px-5 py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
-                          >
-                            <Plus className="w-4 h-4" />
-                            {t("fnb.add")}
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1">
-                            <button
-                              onClick={() => removeFromCart(item.id)}
-                              className="bg-white hover:bg-red-50 text-red-500 w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm border border-gray-200"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </button>
-                            <span className="font-bold text-xl min-w-[2.5rem] text-center text-gray-900">
-                              {getItemQuantity(item.id)}
-                            </span>
-                            <button
-                              onClick={() => addToCart(item)}
-                              className="bg-yellow-400 hover:bg-yellow-500 text-black w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
+                        <div className="p-4">
+                          <h4 className="font-bold text-lg text-gray-900 mb-1">
+                            {(language === "en" && item.nameEn) || item.name}
+                          </h4>
+                          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                            {(language === "en" && item.descriptionEn) ||
+                              item.description}
+                          </p>
+
+                          <div className="flex items-center justify-between">
+                            <div className="text-xl font-bold text-yellow-600">
+                              {item.unitPrice.toLocaleString()}
+                              <span className="text-sm text-gray-500 ml-1">
+                                đ
+                              </span>
+                            </div>
+
+                            {/* Controls giống SelectTicket */}
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => removeFromCart(item.id)}
+                                disabled={quantity <= 0}
+                                className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl transition-all ${
+                                  quantity <= 0
+                                    ? "text-gray-300 cursor-not-allowed"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300 hover:text-red-500 active:scale-95"
+                                }`}
+                              >
+                                −
+                              </button>
+
+                              <div className="min-w-[40px] text-center font-mono text-xl text-gray-900 font-bold">
+                                {quantity}
+                              </div>
+
+                              <button
+                                onClick={() => addToCart(item)}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg bg-yellow-500 text-black font-bold text-xl transition-all hover:bg-yellow-400 active:scale-95"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

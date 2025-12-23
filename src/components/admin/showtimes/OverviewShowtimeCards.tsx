@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Calendar, Clock, Building2, Users, TrendingUp } from "lucide-react";
+import { Calendar, Clock, AlertTriangle } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { theaterService } from "@/services/showtime/theaterService";
 
 interface ShowtimeStats {
   totalShowtimes: number;
   activeShowtimes: number;
+  suspendedShowtimes: number;
   upcomingShowtimes: number;
   weeklyShowtimes: number;
 }
@@ -15,13 +26,13 @@ interface TheaterStats {
   theaterName: string;
   totalShowtimes: number;
   activeShowtimes: number;
-  upcomingShowtimes: number;
 }
 
 export default function OverviewShowtimeCards(): React.JSX.Element {
   const [stats, setStats] = useState<ShowtimeStats>({
     totalShowtimes: 0,
     activeShowtimes: 0,
+    suspendedShowtimes: 0,
     upcomingShowtimes: 0,
     weeklyShowtimes: 0,
   });
@@ -35,7 +46,13 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
 
         // Fetch overall stats
         const overallStats = await showtimeService.getStatsOverview();
-        setStats(overallStats);
+        setStats({
+          totalShowtimes: overallStats.totalShowtimes || 0,
+          activeShowtimes: overallStats.activeShowtimes || 0,
+          suspendedShowtimes: (overallStats as any).suspendedShowtimes || 0,
+          upcomingShowtimes: overallStats.upcomingShowtimes || 0,
+          weeklyShowtimes: overallStats.weeklyShowtimes || 0,
+        });
 
         // Fetch all theaters and their stats
         const theaters = await theaterService.getAllTheaters();
@@ -49,7 +66,6 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
               theaterName: theater.name,
               totalShowtimes: theaterStat.totalShowtimes || 0,
               activeShowtimes: theaterStat.activeShowtimes || 0,
-              upcomingShowtimes: theaterStat.upcomingShowtimes || 0,
             };
           } catch (error) {
             console.error(
@@ -61,7 +77,6 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
               theaterName: theater.name,
               totalShowtimes: 0,
               activeShowtimes: 0,
-              upcomingShowtimes: 0,
             };
           }
         });
@@ -84,8 +99,8 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
         {/* Overall Stats Skeleton */}
         <div>
           <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, idx) => (
               <div
                 key={idx}
                 className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm animate-pulse"
@@ -105,36 +120,20 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
         {/* Theater Stats Skeleton */}
         <div>
           <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
-          <div className="bg-white border border-gray-400 rounded-lg shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {Array.from({ length: 4 }).map((_, idx) => (
-                      <th key={idx} className="px-6 py-3">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {Array.from({ length: 3 }).map((_, rowIdx) => (
-                    <tr key={rowIdx}>
-                      {Array.from({ length: 4 }).map((_, colIdx) => (
-                        <td key={colIdx} className="px-6 py-4">
-                          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
+            <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
           </div>
         </div>
       </div>
     );
   }
+
+  // Prepare data for recharts - keep full theater name
+  const chartData = theaterStats.map((theater) => ({
+    name: theater.theaterName,
+    "Tổng lịch chiếu": theater.totalShowtimes,
+    "Đang hoạt động": theater.activeShowtimes,
+  }));
 
   return (
     <div className="space-y-6">
@@ -143,7 +142,7 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
           Thống kê tổng quan
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -163,7 +162,9 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
           <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Đang chiếu</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Đang hoạt động
+                </p>
                 <p className="text-2xl font-bold text-green-600">
                   {stats.activeShowtimes}
                 </p>
@@ -177,99 +178,70 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
           <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Sắp chiếu</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Đã tạm ngưng
+                </p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {stats.upcomingShowtimes}
+                  {stats.suspendedShowtimes || 0}
                 </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tuần này</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {stats.weeklyShowtimes}
-                </p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <Users className="w-6 h-6 text-purple-600" />
+                <AlertTriangle className="w-6 h-6 text-orange-600" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Theater Stats */}
+      {/* Theater Stats - Bar Chart using Recharts */}
       <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
           Thống kê theo rạp
         </h3>
-        <div className="bg-white border border-gray-400 rounded-lg shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rạp
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tổng lịch chiếu
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Đang chiếu
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sắp chiếu
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {theaterStats.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-6 py-4 text-center text-gray-500"
-                    >
-                      Không có dữ liệu
-                    </td>
-                  </tr>
-                ) : (
-                  theaterStats.map((theater) => (
-                    <tr key={theater.theaterId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Building2 className="w-5 h-5 text-gray-400 mr-3" />
-                          <div className="text-sm font-medium text-gray-900">
-                            {theater.theaterName}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className="text-sm text-gray-900 font-semibold">
-                          {theater.totalShowtimes}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {theater.activeShowtimes}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                          {theater.upcomingShowtimes}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
+          {theaterStats.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">Không có dữ liệu</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                barGap={0}
+                barCategoryGap="20%"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: "#374151" }}
+                  angle={0}
+                  textAnchor="middle"
+                  height={50}
+                  interval={0}
+                />
+                <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                  labelStyle={{ fontWeight: "bold", color: "#111827" }}
+                />
+                <Legend wrapperStyle={{ paddingTop: "10px" }} iconType="rect" />
+                <Bar
+                  dataKey="Tổng lịch chiếu"
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="Đang hoạt động"
+                  fill="#22c55e"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>

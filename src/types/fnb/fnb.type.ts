@@ -30,6 +30,7 @@ export interface FnbOrderRequest {
   theaterId: string;
   paymentMethod: string;
   items: FnbOrderItemRequest[];
+  language?: string;
 }
 
 export interface FnbOrderItemRequest {
@@ -51,9 +52,10 @@ export interface FnbOrderResponse {
 }
 
 export interface FnbOrderItemResponse {
-  id: string;
-  name: string;
-  unitPrice: number;
+  fnbItemId: string;
+  itemName?: string;
+  itemNameEn?: string;
   quantity: number;
-  subtotal: number;
+  unitPrice: number;
+  totalPrice: number;
 }

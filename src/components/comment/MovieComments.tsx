@@ -5,14 +5,15 @@ import { Star } from "lucide-react";
 import Swal from "sweetalert2";
 import { useAuthStore } from "@/stores/authStore";
 import { userProfileService } from "@/services/userprofile/userProfileService";
+import { useLanguage } from "@/contexts/LanguageContext";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import "dayjs/locale/en";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-dayjs.locale("vi");
 
 interface MovieCommentsProps {
   movieId: string;
@@ -28,11 +29,17 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
   onCommentSubmit,
 }) => {
   const { user } = useAuthStore();
+  const { t, language } = useLanguage();
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
   const [comment, setComment] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [userProfile, setUserProfile] = useState<any>(null);
+
+  // Set dayjs locale based on language
+  useEffect(() => {
+    dayjs.locale(language);
+  }, [language]);
 
   const loadReviews = async () => {
     setLoadingReviews(true);
@@ -83,8 +90,8 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
     if (!userId) {
       return Swal.fire({
         icon: "warning",
-        title: "Cần đăng nhập",
-        text: "Bạn cần đăng nhập để bình luận!",
+        title: t("comment.loginRequired"),
+        text: t("comment.loginRequiredDesc"),
         scrollbarPadding: false,
       });
     }
@@ -92,8 +99,8 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
       console.log("❌ [MovieComments] Blocking comment - hasBooked is false");
       return Swal.fire({
         icon: "warning",
-        title: "Cần đặt vé",
-        text: "Bạn cần đặt vé xem phim này để có thể bình luận!",
+        title: t("comment.bookingRequired"),
+        text: t("comment.bookingRequiredDesc"),
         scrollbarPadding: false,
       });
     }
@@ -102,8 +109,8 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
     if (comment.trim().length < 3) {
       return Swal.fire({
         icon: "warning",
-        title: "Bình luận quá ngắn",
-        text: "Vui lòng nhập ít nhất 3 ký tự!",
+        title: t("comment.tooShort"),
+        text: t("comment.tooShortDesc"),
         scrollbarPadding: false,
       });
     }
@@ -134,8 +141,8 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
       );
       Swal.fire({
         icon: "error",
-        title: "Lỗi",
-        text: "Không thể gửi bình luận. Vui lòng thử lại sau.",
+        title: t("comment.error"),
+        text: t("comment.errorDesc"),
       });
     } finally {
       setLoading(false);
@@ -154,7 +161,7 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
           <div className="flex flex-col gap-4">
             {reviews.length === 0 && (
               <p className="text-white/60 text-center py-8">
-                Chưa có bình luận nào.
+                {t("comment.noComments")}
               </p>
             )}
 
@@ -202,10 +209,10 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
             onChange={(e) => setComment(e.target.value)}
             placeholder={
               !userId
-                ? "Vui lòng đăng nhập để bình luận"
+                ? t("comment.loginPlaceholder")
                 : !hasBooked
-                  ? "Vui lòng đặt vé xem phim này để có thể bình luận"
-                  : "Bạn nghĩ gì về bộ phim này?"
+                  ? t("comment.bookingPlaceholder")
+                  : t("comment.placeholder")
             }
             disabled={!userId || !hasBooked}
             className={`w-full p-3 pr-24 rounded-lg bg-white/10 text-white placeholder:text-white/50 border border-white/20 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all ${
@@ -218,7 +225,7 @@ const MovieComments: React.FC<MovieCommentsProps> = ({
             disabled={loading || !userId || !hasBooked}
             className="absolute bottom-3 right-3 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg disabled:opacity-50 transition-colors"
           >
-            {loading ? "Đang gửi..." : "Gửi"}
+            {loading ? t("comment.sending") : t("comment.send")}
           </button>
         </div>
       </div>

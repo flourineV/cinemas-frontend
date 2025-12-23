@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import type { SelectedComboItem } from "./SelectComboStep";
 import type { PromotionResponse } from "@/types/promotion/promotion.type";
 import { userProfileService } from "@/services/userprofile/userProfileService";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   booking: any;
@@ -12,7 +13,6 @@ interface Props {
   finalTotal: number;
   useRankDiscount: boolean;
   rankDiscountValue: number;
-  goToStep: (step: number) => void;
   ttl?: number | null; // <-- new prop: ttl in seconds, null = chưa lock ghế
 }
 
@@ -33,9 +33,9 @@ const BookingSummary: React.FC<Props> = ({
   finalTotal,
   useRankDiscount,
   rankDiscountValue,
-  goToStep,
   ttl = null,
 }) => {
+  const { t, language } = useLanguage();
   const [userRank, setUserRank] = useState<string | null>(null);
 
   const combosArray = Object.values(selectedCombos).filter((c) => c.qty > 0);
@@ -72,18 +72,18 @@ const BookingSummary: React.FC<Props> = ({
 
   return (
     <aside className="space-y-4 lg:sticky lg:top-20 self-start">
-      <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg">
+      <div className="bg-white border-2 border-gray-400 rounded-2xl p-6 shadow-lg">
         {/* Header row with title + TTL on the right */}
         <div className="flex items-start justify-between">
           <h3 className="text-xl font-extrabold text-gray-800">
-            Tóm tắt đơn hàng
+            {t("checkout.orderSummary")}
           </h3>
 
           <div
             className={`h-9 px-3 py-1 rounded-md flex items-center justify-center min-w-[96px] ${ttlBgClass}`}
           >
             <div className="text-xs font-semibold uppercase opacity-90 mr-2">
-              Thời gian giữ vé
+              {t("checkout.holdTime")}
             </div>
             <div className="text-sm font-extrabold leading-none">
               {formatTime(timeToShow)}
@@ -93,29 +93,42 @@ const BookingSummary: React.FC<Props> = ({
 
         <div className="mt-3 text-sm text-gray-700">
           <div className="flex justify-between">
-            <span>Phim</span>
+            <span>{t("checkout.movie")}</span>
             <span className="font-semibold">
               {booking.movieTitle || booking.movie?.title || "N/A"}
             </span>
           </div>
           <div className="flex justify-between mt-2">
-            <span>Rạp</span>
+            <span>{t("checkout.theater")}</span>
             <span className="font-semibold">
-              {booking.showtime?.theaterName ??
-                booking.showtime?.cinemaName ??
-                booking.theater?.name ??
-                booking.cinemaName ??
-                "N/A"}
+              {language === "en"
+                ? (booking.showtime?.theaterNameEn ??
+                  booking.showtime?.theaterName ??
+                  booking.theater?.nameEn ??
+                  booking.theater?.name ??
+                  booking.cinemaName ??
+                  "N/A")
+                : (booking.showtime?.theaterName ??
+                  booking.showtime?.cinemaName ??
+                  booking.theater?.name ??
+                  booking.cinemaName ??
+                  "N/A")}
             </span>
           </div>
           <div className="flex justify-between mt-2">
-            <span>Phòng</span>
+            <span>{t("checkout.room")}</span>
             <span className="font-semibold">
-              {booking.showtime?.roomName ?? booking.roomName ?? "N/A"}
+              {language === "en"
+                ? (booking.showtime?.roomNameEn ??
+                  booking.showtime?.roomName ??
+                  booking.roomNameEn ??
+                  booking.roomName ??
+                  "N/A")
+                : (booking.showtime?.roomName ?? booking.roomName ?? "N/A")}
             </span>
           </div>
           <div className="flex justify-between mt-2">
-            <span>Thời gian</span>
+            <span>{t("checkout.time")}</span>
             <span className="font-semibold">
               {booking.showtime?.startTime
                 ? new Date(booking.showtime.startTime).toLocaleString("vi-VN", {
@@ -129,7 +142,7 @@ const BookingSummary: React.FC<Props> = ({
             </span>
           </div>
           <div className="flex justify-between mt-2">
-            <span>Ghế</span>
+            <span>{t("checkout.seats")}</span>
             <span className="font-semibold">
               {(() => {
                 console.log(
@@ -174,7 +187,7 @@ const BookingSummary: React.FC<Props> = ({
           {userRank && (
             <div className="mt-3 pt-3 border-t border-gray-300">
               <div className="flex justify-between items-center">
-                <span className="text-sm">Hạng thành viên</span>
+                <span className="text-sm">{t("checkout.memberRank")}</span>
                 <span className="font-bold text-yellow-600 text-lg">
                   {userRank}
                 </span>
@@ -183,15 +196,19 @@ const BookingSummary: React.FC<Props> = ({
           )}
 
           <div className="mt-3">
-            <div className="font-semibold text-gray-800">Combo</div>
+            <div className="font-semibold text-gray-800">
+              {t("checkout.combo")}
+            </div>
             {combosArray.length === 0 ? (
-              <div className="text-gray-500 text-sm">Không có combo</div>
+              <div className="text-gray-500 text-sm">
+                {t("checkout.noCombo")}
+              </div>
             ) : (
               <ul className="text-sm list-disc ml-4 mt-2">
                 {combosArray.map((c, idx) => (
                   <li key={idx}>
-                    {c.name} x {c.qty} — {(c.qty * c.price).toLocaleString()}{" "}
-                    VND
+                    {language === "en" && c.nameEn ? c.nameEn : c.name} x{" "}
+                    {c.qty} — {(c.qty * c.price).toLocaleString()} VND
                   </li>
                 ))}
               </ul>
@@ -200,16 +217,18 @@ const BookingSummary: React.FC<Props> = ({
 
           <div className="pt-4 border-t border-gray-300 mt-4">
             <div className="flex justify-between text-gray-700">
-              <span>Tạm tính</span>
+              <span>{t("checkout.subtotal")}</span>
               <span>{booking.totalPrice.toLocaleString()} VND</span>
             </div>
             <div className="flex justify-between text-gray-700 mt-2">
-              <span>Combo</span>
+              <span>{t("checkout.combo")}</span>
               <span>{comboTotal.toLocaleString()} VND</span>
             </div>
             {appliedPromo && (
               <div className="flex justify-between text-red-600 mt-2">
-                <span>Mã giảm giá ({appliedPromo.code})</span>
+                <span>
+                  {t("checkout.promoDiscount")} ({appliedPromo.code})
+                </span>
                 <span>
                   -
                   {appliedPromo.discountType === "PERCENTAGE"
@@ -220,12 +239,14 @@ const BookingSummary: React.FC<Props> = ({
             )}
             {useRankDiscount && rankDiscountValue > 0 && userRank && (
               <div className="flex justify-between text-green-600 mt-2">
-                <span>Giảm giá hạng {userRank}</span>
+                <span>
+                  {t("checkout.rankDiscountLabel")} {userRank}
+                </span>
                 <span>-{rankDiscountValue}%</span>
               </div>
             )}
             <div className="flex justify-between text-yellow-600 font-bold mt-3 text-lg">
-              <span>Tổng</span>
+              <span>{t("checkout.total")}</span>
               <span>{finalTotal.toLocaleString()} VND</span>
             </div>
           </div>

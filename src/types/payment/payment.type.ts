@@ -26,6 +26,7 @@ export interface ZaloPayCheckStatusResponse {
   zp_trans_id?: string;
   server_time?: number;
   discount_amount?: number;
+  bookingId?: string;
 }
 
 // Payment Confirmation Request (internal)

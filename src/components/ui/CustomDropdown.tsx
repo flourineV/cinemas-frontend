@@ -15,6 +15,7 @@ interface CustomDropdownProps {
   disabled?: boolean;
   className?: string;
   dropdownPosition?: "bottom" | "top";
+  fullWidth?: boolean;
 }
 
 export function CustomDropdown({
@@ -25,6 +26,7 @@ export function CustomDropdown({
   disabled = false,
   className = "",
   dropdownPosition = "bottom",
+  fullWidth = false,
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -38,15 +40,18 @@ export function CustomDropdown({
     dropdownPosition === "top" ? "bottom-full mb-2" : "mt-2";
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div
+      className={`relative ${fullWidth ? "w-full" : ""} ${className}`}
+      ref={dropdownRef}
+    >
       <button
         onClick={() => !disabled && setIsOpen((s) => !s)}
         disabled={disabled}
-        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-white border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-50 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`flex items-center justify-between space-x-2 px-3 py-2 text-sm font-medium bg-white border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${fullWidth ? "w-full" : "whitespace-nowrap"}`}
       >
-        <span>{displayText}</span>
+        <span className={fullWidth ? "truncate" : ""}>{displayText}</span>
         <ChevronDown
-          className={`w-4 h-4 transition-transform ${
+          className={`w-4 h-4 flex-shrink-0 transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -54,7 +59,7 @@ export function CustomDropdown({
 
       {isOpen && !disabled && (
         <div
-          className={`absolute right-0 w-48 rounded-md shadow-lg bg-white border border-gray-400 z-20 animate-fadeIn ${positionClasses}`}
+          className={`absolute left-0 right-0 ${fullWidth ? "w-full" : "w-48"} rounded-md shadow-lg bg-white border border-gray-400 z-20 animate-fadeIn ${positionClasses} max-h-60 overflow-y-auto`}
         >
           <div className="py-1">
             {options.map((option) => (

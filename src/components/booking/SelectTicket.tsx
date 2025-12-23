@@ -3,25 +3,24 @@ import { pricingService } from "@/services/pricing/pricingService";
 import type { SeatPriceResponse } from "@/types/pricing/seatprice.type";
 import { Ticket } from "lucide-react";
 import Swal from "sweetalert2";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SelectTicketProps {
   seatType: string;
   onTicketChange: (tickets: Record<string, number>) => void;
-  selectedSeats: string[];
+  selectedSeats?: string[];
 }
 
-const TICKET_LABELS: Record<string, string> = {
-  ADULT: "Người lớn",
-  CHILD: "Trẻ em",
-  STUDENT: "HSSV-U22",
-  COUPLE: "Đôi",
-};
+const SelectTicket: React.FC<SelectTicketProps> = ({ onTicketChange }) => {
+  const { t } = useLanguage();
 
-const SelectTicket: React.FC<SelectTicketProps> = ({
-  seatType,
-  onTicketChange,
-  selectedSeats,
-}) => {
+  const TICKET_LABELS: Record<string, string> = {
+    ADULT: t("ticket.adult"),
+    CHILD: t("ticket.child"),
+    STUDENT: t("ticket.student"),
+    COUPLE: t("ticket.couple"),
+  };
+
   const [tickets, setTickets] = useState<SeatPriceResponse[]>([]);
   const [selectedTickets, setSelectedTickets] = useState<
     Record<string, number>
@@ -35,11 +34,11 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
       try {
         const allPrices = await pricingService.getAllSeatPrices();
         const normalPrices = allPrices.filter(
-          (t) => t.seatType === "NORMAL" || t.seatType === "COUPLE"
+          (p) => p.seatType === "NORMAL" || p.seatType === "COUPLE"
         );
         setTickets(normalPrices);
       } catch (err) {
-        console.error("Không lấy được dữ liệu ticket:", err);
+        console.error("Cannot fetch ticket data:", err);
         setTickets([]);
       } finally {
         setLoading(false);
@@ -66,20 +65,9 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
     ) {
       await Swal.fire({
         icon: "info",
-        title: "Lưu ý vé HSSV-U22",
-        html: `
-          <div class="text-left">
-            <p class="mb-3">Khi sử dụng vé HSSV-U22, bạn cần mang theo:</p>
-            <ul class="list-disc list-inside space-y-1 text-sm">
-              <li><strong>Thẻ sinh viên</strong> hoặc <strong>Thẻ học sinh</strong> còn hạn</li>
-              <li><strong>Căn cước công dân</strong> để xác minh tuổi (dưới 22 tuổi)</li>
-            </ul>
-            <p class="mt-3 text-sm text-gray-600">
-              Nhân viên rạp sẽ kiểm tra giấy tờ trước khi vào phòng chiếu.
-            </p>
-          </div>
-        `,
-        confirmButtonText: "Đã hiểu",
+        title: t("ticket.studentNote"),
+        html: t("ticket.studentNoteHtml"),
+        confirmButtonText: t("ticket.understood"),
         confirmButtonColor: "#eab308",
         scrollbarPadding: false,
       });
@@ -100,7 +88,7 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
   if (!tickets.length)
     return (
       <p className="text-zinc-500 text-center mt-6 italic">
-        Loại vé không tồn tại.
+        {t("ticket.notExist")}
       </p>
     );
 
@@ -112,66 +100,58 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
         const isSelected = count > 0;
 
         return (
-          // --- WRAPPER DIV ---
-          // Dùng để chứa Badge (badge sẽ nằm đè lên border của Card bên trong)
           <div key={key} className="relative group">
-            {/* --- BADGE SỐ LƯỢNG (Đưa ra ngoài Card để không bị overflow cắt) --- */}
             {isSelected && (
-              <div className="absolute -top-3 -right-3 bg-yellow-500 text-black font-extrabold rounded-full w-8 h-8 flex items-center justify-center shadow-lg z-30 animate-in zoom-in duration-200 border-2 border-zinc-900">
+              <div className="absolute -top-3 -right-3 bg-zinc-900 text-yellow-500 font-extrabold rounded-full w-8 h-8 flex items-center justify-center shadow-lg z-30 animate-in zoom-in duration-200 border-2 border-zinc-900">
                 {count}
               </div>
             )}
 
-            {/* --- CARD MAIN CONTENT --- */}
-            {/* Giữ overflow-hidden để cắt góc cho thanh vàng bên dưới */}
             <div
               className={`relative h-full border rounded-2xl flex flex-col justify-between items-center p-6 transition-all duration-300 overflow-hidden ${
                 isSelected
-                  ? "bg-zinc-900 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-                  : "bg-zinc-900 border-zinc-800 hover:border-zinc-600"
+                  ? "bg-yellow-500 border-zinc-900"
+                  : "bg-yellow-500 border-zinc-900"
               }`}
             >
-              {/* --- LỚP MÀU VÀNG CỐ ĐỊNH --- */}
-              <div className="absolute bottom-0 left-0 w-full h-4 bg-yellow-500"></div>
+              <div className="absolute bottom-0 left-0 w-full h-5 bg-zinc-900"></div>
 
-              {/* Header */}
               <div className="relative z-10 flex flex-col items-center gap-3 mb-2 w-full">
                 <div className="flex items-center gap-2 justify-center">
                   <Ticket
                     className={`w-5 h-5 ${
-                      isSelected ? "text-yellow-500" : "text-zinc-600"
+                      isSelected ? "text-zinc-900" : "text-zinc-700"
                     }`}
                   />
-                  <span className="font-bold text-xl text-white tracking-wide">
+                  <span className="font-bold text-xl text-black tracking-wide">
                     {TICKET_LABELS[ticket.ticketType] || ticket.ticketType}
                   </span>
 
-                  {/* Tag loại ghế */}
                   <span
-                    className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
+                    className={`text-[12px] uppercase font-bold px-2 py-0.5 rounded border ${
                       ticket.seatType === "COUPLE"
-                        ? "border-pink-500/30 text-pink-500 bg-pink-500/10"
-                        : "border-zinc-400 text-zinc-300 bg-zinc-800"
+                        ? "border-zinc-700 text-zinc-800 bg-pink-300"
+                        : "border-zinc-700 text-zinc-800 bg-pink-300"
                     }`}
                   >
-                    {ticket.seatType === "COUPLE" ? "Đôi" : "Đơn"}
+                    {ticket.seatType === "COUPLE"
+                      ? t("ticket.couple")
+                      : t("ticket.single")}
                   </span>
                 </div>
 
-                {/* Giá tiền */}
-                <div className="text-yellow-500 font-semibold text-2xl tracking-tighter">
+                <div className="text-red-500 font-bold text-2xl tracking-tighter">
                   {Number(ticket.basePrice).toLocaleString()}
-                  <span className="text-sm font-normal text-zinc-500 ml-1 align-top relative top-1">
+                  <span className="text-sm font-normal text-red-500 ml-1 align-top relative top-1">
                     đ
                   </span>
                 </div>
               </div>
 
-              {/* Controls */}
               <div className="relative z-10 w-full flex items-center justify-center gap-4 p-2">
                 <button
                   type="button"
-                  aria-label="Giảm"
+                  aria-label="Decrease"
                   onClick={async () =>
                     await handleChange(ticket.seatType, ticket.ticketType, -1)
                   }
@@ -179,24 +159,24 @@ const SelectTicket: React.FC<SelectTicketProps> = ({
                   className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl transition-all
                   ${
                     count <= 0
-                      ? "text-zinc-700 cursor-not-allowed"
-                      : "bg-zinc-800 text-white hover:bg-zinc-700 hover:text-red-400 active:scale-95"
+                      ? "text-yellow-700 cursor-not-allowed"
+                      : "text-black hover:bg-yellow-300 hover:text-red-600 active:scale-95"
                   }`}
                 >
                   −
                 </button>
 
-                <div className="min-w-[50px] text-center font-mono text-xl text-white font-bold">
+                <div className="min-w-[50px] text-center font-mono text-xl text-black font-bold">
                   {count}
                 </div>
 
                 <button
                   type="button"
-                  aria-label="Tăng"
+                  aria-label="Increase"
                   onClick={async () =>
                     await handleChange(ticket.seatType, ticket.ticketType, 1)
                   }
-                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-yellow-500 text-black font-bold text-xl transition-all hover:bg-yellow-400 active:scale-95 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-white text-zinc-800 font-bold text-xl transition-all hover:bg-zinc-800 hover:text-yellow-500 active:scale-95 border border-zinc-900"
                 >
                   +
                 </button>

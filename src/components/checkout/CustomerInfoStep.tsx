@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Swal from "sweetalert2";
 import { bookingService } from "@/services/booking/booking.service";
 import type { CreateBookingRequest } from "@/types/booking/booking.type";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   customer: { name: string; email: string; phone: string };
@@ -23,6 +24,7 @@ const CustomerInfoStep: React.FC<Props> = ({
   pendingRequestData,
   onBookingCreated,
 }) => {
+  const { t } = useLanguage();
   const [errors, setErrors] = useState<any>({});
   const [agreeAge, setAgreeAge] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -34,22 +36,22 @@ const CustomerInfoStep: React.FC<Props> = ({
 
   const validateAll = async () => {
     const newErrors: any = {};
-    if (!customer.name?.trim()) newErrors.name = "Họ và tên là bắt buộc";
-    if (!customer.email?.trim()) newErrors.email = "Email là bắt buộc";
+    if (!customer.name?.trim()) newErrors.name = t("checkout.fullNameRequired");
+    if (!customer.email?.trim()) newErrors.email = t("checkout.emailRequired");
     else if (!/^[\w.-]+@[\w.-]+\.\w+$/.test(customer.email))
-      newErrors.email = "Email không hợp lệ";
-    if (!customer.phone?.trim()) newErrors.phone = "Số điện thoại là bắt buộc";
+      newErrors.email = t("checkout.emailInvalid");
+    if (!customer.phone?.trim()) newErrors.phone = t("checkout.phoneRequired");
     else if (!/^\d{9,11}$/.test(customer.phone))
-      newErrors.phone = "Số điện thoại không hợp lệ";
+      newErrors.phone = t("checkout.phoneInvalid");
 
-    if (!agreeAge) newErrors.ageAgree = "Bạn cần xác nhận đúng độ tuổi";
-    if (!agreeTerms) newErrors.terms = "Bạn cần đồng ý điều khoản";
+    if (!agreeAge) newErrors.ageAgree = t("checkout.ageRequired");
+    if (!agreeTerms) newErrors.terms = t("checkout.termsRequired");
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       await Swal.fire({
         icon: "warning",
-        title: "Thông tin chưa hợp lệ",
+        title: t("checkout.invalidInfo"),
         confirmButtonColor: "#eab308",
       });
       return false;
@@ -65,7 +67,7 @@ const CustomerInfoStep: React.FC<Props> = ({
     if (pendingRequestData && onBookingCreated) {
       try {
         Swal.fire({
-          title: "Đang khởi tạo vé...",
+          title: t("booking.creatingTicket"),
           allowOutsideClick: false,
           didOpen: () => Swal.showLoading(),
         });
@@ -86,7 +88,7 @@ const CustomerInfoStep: React.FC<Props> = ({
         onBookingCreated(bookingResponse);
       } catch (error) {
         console.error(error);
-        Swal.fire("Lỗi", "Không thể tạo đơn hàng. Vui lòng thử lại", "error");
+        Swal.fire(t("booking.error"), t("booking.cannotCreateOrder"), "error");
       }
     } else {
       // Normal flow (shouldn't happen for Guest in this specific logic but good fallback)
@@ -101,12 +103,12 @@ const CustomerInfoStep: React.FC<Props> = ({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.35 }}
-      className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 space-y-6"
+      className="bg-white rounded-2xl p-8 border border-gray-400 space-y-6"
     >
       <div className="space-y-4">
         <div>
           <label className="text-md font-bold text-gray-800 block">
-            Họ và tên <span className="text-red-500">*</span>
+            {t("checkout.fullName")} <span className="text-red-500">*</span>
           </label>
           <input
             value={customer.name}
@@ -117,7 +119,7 @@ const CustomerInfoStep: React.FC<Props> = ({
         </div>
         <div>
           <label className="text-md font-bold text-gray-800 block">
-            Email <span className="text-red-500">*</span>
+            {t("checkout.email")} <span className="text-red-500">*</span>
           </label>
           <input
             value={customer.email}
@@ -130,7 +132,7 @@ const CustomerInfoStep: React.FC<Props> = ({
         </div>
         <div>
           <label className="text-md font-bold text-gray-800 block">
-            Số điện thoại <span className="text-red-500">*</span>
+            {t("checkout.phone")} <span className="text-red-500">*</span>
           </label>
           <input
             value={customer.phone}
@@ -169,7 +171,7 @@ const CustomerInfoStep: React.FC<Props> = ({
             )}
           </div>
           <span className="text-sm text-gray-700">
-            Đảm bảo mua vé đúng số tuổi quy định.
+            {t("checkout.ageConfirm")}
           </span>
         </label>
 
@@ -198,7 +200,7 @@ const CustomerInfoStep: React.FC<Props> = ({
             )}
           </div>
           <span className="text-sm text-gray-700">
-            Đồng ý với điều khoản của Cinestar.
+            {t("checkout.termsAgree")}
           </span>
         </label>
       </div>
@@ -208,7 +210,7 @@ const CustomerInfoStep: React.FC<Props> = ({
           onClick={handleProcess}
           className="bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition transform hover:scale-105 shadow-lg"
         >
-          Tiếp tục
+          {t("checkout.continue")}
         </button>
       </div>
     </motion.div>

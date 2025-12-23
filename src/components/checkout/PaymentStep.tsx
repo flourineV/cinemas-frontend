@@ -13,6 +13,7 @@ import type {
   CalculatedFnbItemDto,
 } from "@/types/booking/booking.type";
 import type { SelectedComboItem } from "@/components/checkout/SelectComboStep";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   paymentMethod: string;
@@ -42,6 +43,7 @@ const PaymentStep: React.FC<Props> = ({
   onRankDiscountValueChange,
   onPrev,
 }) => {
+  const { t, language } = useLanguage();
   const [userPromotions, setUserPromotions] =
     useState<UserPromotionsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -58,14 +60,23 @@ const PaymentStep: React.FC<Props> = ({
 
   useEffect(() => {
     const fetchPromotions = async () => {
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const data = await promotionService.getActivePromotionsForUser(userId);
-        setUserPromotions(data);
+        if (userId) {
+          // User đã đăng nhập - lấy promotions theo user
+          const data =
+            await promotionService.getActivePromotionsForUser(userId);
+          setUserPromotions(data);
+        } else {
+          // Guest - lấy tất cả active promotions nhưng đặt vào notApplicable
+          const allPromotions = await promotionService.getActivePromotions();
+          setUserPromotions({
+            applicable: [],
+            notApplicable: allPromotions.map((promo) => ({
+              promotion: promo,
+              reason: t("checkout.loginToUsePromo"),
+            })),
+          });
+        }
       } catch (err) {
         console.error("Lấy danh sách promotion thất bại:", err);
       } finally {
@@ -73,7 +84,7 @@ const PaymentStep: React.FC<Props> = ({
       }
     };
     fetchPromotions();
-  }, [userId]);
+  }, [userId, t]);
 
   useEffect(() => {
     const fetchRankDiscount = async () => {
@@ -104,8 +115,8 @@ const PaymentStep: React.FC<Props> = ({
     if (!bookingId) {
       await Swal.fire({
         icon: "error",
-        title: "Lỗi",
-        text: "Không tìm thấy thông tin booking. Vui lòng thử lại!",
+        title: t("booking.error"),
+        text: t("checkout.noBookingInfo"),
         confirmButtonColor: "#d97706",
       });
       return;
@@ -130,6 +141,7 @@ const PaymentStep: React.FC<Props> = ({
         fnbItems: fnbItems,
         promotionCode: appliedPromo?.code,
         useLoyaltyDiscount: useRankDiscount,
+        language: language, // Send current language for email/notification
       };
 
       console.log("Finalizing booking with data:", finalizeRequest);
@@ -146,17 +158,15 @@ const PaymentStep: React.FC<Props> = ({
         return; // Exit early, không chạy finally
       } else {
         throw new Error(
-          response.return_message || "Không thể tạo liên kết thanh toán"
+          response.return_message || t("checkout.cannotCreatePayment")
         );
       }
     } catch (error: any) {
       console.error("Lỗi khi tạo thanh toán:", error);
       await Swal.fire({
         icon: "error",
-        title: "Lỗi thanh toán",
-        text:
-          error.message ||
-          "Không thể tạo liên kết thanh toán. Vui lòng thử lại!",
+        title: t("checkout.paymentError"),
+        text: error.message || t("checkout.cannotCreatePayment"),
         confirmButtonColor: "#d97706",
       });
       // Chỉ set isProcessing = false khi có lỗi
@@ -178,7 +188,7 @@ const PaymentStep: React.FC<Props> = ({
       {userRank && rankDiscountPercent >= 0 && (
         <div className="mb-6">
           <h3 className="text-2xl font-bold text-zinc-800 mb-4">
-            Giảm giá theo hạng
+            {t("checkout.rankDiscount")}
           </h3>
           <div
             onClick={() => onToggleRankDiscount(!useRankDiscount)}
@@ -198,17 +208,17 @@ const PaymentStep: React.FC<Props> = ({
                 <div
                   className={`font-bold text-lg mb-1 ${useRankDiscount ? "text-black" : "text-zinc-800"}`}
                 >
-                  Hạng {userRank}
+                  {t("checkout.rank")} {userRank}
                 </div>
                 <div
                   className={`text-sm mb-2 ${useRankDiscount ? "text-zinc-900" : "text-zinc-600"}`}
                 >
-                  Giảm giá dành riêng cho thành viên hạng {userRank}
+                  {t("checkout.rankDiscountDesc")} {userRank}
                 </div>
                 <div
                   className={`text-xs font-semibold ${useRankDiscount ? "text-zinc-800" : "text-yellow-600"}`}
                 >
-                  Giảm {rankDiscountPercent}%
+                  {t("checkout.discount")} {rankDiscountPercent}%
                 </div>
               </div>
             </div>
@@ -218,14 +228,21 @@ const PaymentStep: React.FC<Props> = ({
 
       {/* Danh sách mã giảm giá */}
       <div>
-        <h3 className="text-2xl font-bold text-zinc-800 mb-4">Mã giảm giá</h3>
+        <h3 className="text-2xl font-bold text-zinc-800 mb-4">
+          {t("checkout.promoCode")}
+        </h3>
         {loading ? (
-          <div className="text-zinc-600 text-center py-8">Đang tải...</div>
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-yellow-500"></div>
+            <p className="text-zinc-600 mt-4 font-medium">
+              {t("checkout.loadingPromo")}
+            </p>
+          </div>
         ) : !userPromotions ||
           (userPromotions.applicable.length === 0 &&
             userPromotions.notApplicable.length === 0) ? (
           <div className="text-zinc-600 text-center py-8 bg-zinc-100 rounded-xl border border-zinc-300">
-            Không có mã giảm giá nào
+            {t("checkout.noPromo")}
           </div>
         ) : (
           <div className="space-y-6">
@@ -233,7 +250,7 @@ const PaymentStep: React.FC<Props> = ({
             {userPromotions.applicable.length > 0 && (
               <div>
                 <h4 className="text-lg font-semibold text-zinc-700 mb-3">
-                  Có thể sử dụng
+                  {t("checkout.canUse")}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {userPromotions.applicable.map((item) => {
@@ -264,14 +281,16 @@ const PaymentStep: React.FC<Props> = ({
                             <div
                               className={`text-sm mb-2 ${isSelected ? "text-zinc-900" : "text-zinc-600"}`}
                             >
-                              {promo.description}
+                              {language === "en" && promo.descriptionEn
+                                ? promo.descriptionEn
+                                : promo.description}
                             </div>
                             <div
                               className={`text-xs font-semibold ${isSelected ? "text-zinc-800" : "text-yellow-600"}`}
                             >
                               {promo.discountType === "PERCENTAGE"
-                                ? `Giảm ${promo.discountValue}%`
-                                : `Giảm ${Number(promo.discountValue).toLocaleString()}đ`}
+                                ? `${t("checkout.discountPercent")} ${promo.discountValue}%`
+                                : `${t("checkout.discountAmount")} ${Number(promo.discountValue).toLocaleString()}đ`}
                             </div>
                           </div>
                         </div>
@@ -286,7 +305,9 @@ const PaymentStep: React.FC<Props> = ({
             {userPromotions.notApplicable.length > 0 && (
               <div>
                 <h4 className="text-lg font-semibold text-zinc-500 mb-3">
-                  Không thể sử dụng
+                  {!userId
+                    ? t("checkout.loginToUsePromo")
+                    : t("checkout.cannotUse")}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {userPromotions.notApplicable.map((item) => {
@@ -302,12 +323,14 @@ const PaymentStep: React.FC<Props> = ({
                               {promo.code}
                             </div>
                             <div className="text-sm mb-2 text-gray-400">
-                              {promo.description}
+                              {language === "en" && promo.descriptionEn
+                                ? promo.descriptionEn
+                                : promo.description}
                             </div>
                             <div className="text-xs font-semibold text-gray-400">
                               {promo.discountType === "PERCENTAGE"
-                                ? `Giảm ${promo.discountValue}%`
-                                : `Giảm ${Number(promo.discountValue).toLocaleString()}đ`}
+                                ? `${t("checkout.discountPercent")} ${promo.discountValue}%`
+                                : `${t("checkout.discountAmount")} ${Number(promo.discountValue).toLocaleString()}đ`}
                             </div>
                           </div>
                         </div>
@@ -328,7 +351,7 @@ const PaymentStep: React.FC<Props> = ({
           className="bg-zinc-800 text-white py-3 px-6 rounded-lg hover:bg-zinc-700 transition font-semibold border border-zinc-700"
           disabled={isProcessing}
         >
-          Quay lại
+          {t("checkout.back")}
         </button>
         <button
           onClick={handlePayment}
@@ -339,8 +362,8 @@ const PaymentStep: React.FC<Props> = ({
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent"></div>
           )}
           {isProcessing
-            ? "Đang tạo liên kết thanh toán..."
-            : "Xác nhận & Thanh toán"}
+            ? t("checkout.creatingPayment")
+            : t("checkout.confirmPay")}
         </button>
       </div>
     </motion.div>

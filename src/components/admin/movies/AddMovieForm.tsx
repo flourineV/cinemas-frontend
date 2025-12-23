@@ -198,32 +198,11 @@ export default function AddMovieForm({
   return (
     <div className="bg-white border border-gray-400 rounded-lg p-6">
       {/* Header */}
-      <div className="flex items-center justify-end mb-4 gap-5">
-        <button
-          type="button"
-          onClick={addMovieRow}
-          className="flex items-center justify-center w-10 h-10 bg-yellow-500 text-black rounded-full hover:bg-yellow-600 transition-colors"
-          disabled={isSubmitting}
-        >
-          <Plus size={18} />
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isSubmitting ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              Đang thêm...
-            </>
-          ) : (
-            <>
-              <ArrowUpFromLine size={16} />
-              Thêm tất cả phim
-            </>
-          )}
-        </button>
+      <div className="flex items-center gap-2 mb-4">
+        <Plus className="w-5 h-5 text-yellow-600" />
+        <h3 className="text-lg font-semibold text-gray-800">
+          Thêm phim từ TMDB
+        </h3>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -322,6 +301,36 @@ export default function AddMovieForm({
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Submit Buttons */}
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={addMovieRow}
+            className="flex items-center justify-center w-10 h-10 bg-yellow-500 text-black rounded-full hover:bg-yellow-600 transition-colors"
+            disabled={isSubmitting}
+            title="Thêm dòng mới"
+          >
+            <Plus size={18} />
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Đang thêm...
+              </>
+            ) : (
+              <>
+                <ArrowUpFromLine size={16} />
+                Thêm tất cả phim
+              </>
+            )}
+          </button>
         </div>
       </form>
     </div>

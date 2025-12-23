@@ -80,3 +80,10 @@ export const reviewClient: AxiosInstance = applyInterceptors(
     headers: { "Content-Type": "application/json" },
   })
 );
+
+export const notificationClient: AxiosInstance = applyInterceptors(
+  axios.create({
+    baseURL: `${baseURL}/notifications`,
+    headers: { "Content-Type": "application/json" },
+  })
+);

@@ -157,11 +157,11 @@ export default function UserManagementTable(): React.JSX.Element {
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page + 1 }));
-      // Scroll to table top when changing page
+      // Scroll to section title when changing page
       setTimeout(() => {
         const element = document.getElementById("user-management-table");
         if (element) {
-          const headerHeight = 80; // Account for fixed header
+          const headerHeight = 200; // Account for fixed header + section title
           const elementTop = element.offsetTop - headerHeight;
           window.scrollTo({ top: elementTop, behavior: "smooth" });
         }
@@ -171,11 +171,11 @@ export default function UserManagementTable(): React.JSX.Element {
   const goToPrevPage = () => {
     if (paging.page > 1 && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page - 1 }));
-      // Scroll to table top when changing page
+      // Scroll to section title when changing page
       setTimeout(() => {
         const element = document.getElementById("user-management-table");
         if (element) {
-          const headerHeight = 80; // Account for fixed header
+          const headerHeight = 200; // Account for fixed header + section title
           const elementTop = element.offsetTop - headerHeight;
           window.scrollTo({ top: elementTop, behavior: "smooth" });
         }
@@ -330,8 +330,6 @@ export default function UserManagementTable(): React.JSX.Element {
           phoneNumber: editProfile.phoneNumber,
           address: editProfile.address,
           gender: editProfile.gender,
-          dateOfBirth: editProfile.dateOfBirth,
-          nationalId: editProfile.nationalId,
         }
       );
 
@@ -555,7 +553,7 @@ export default function UserManagementTable(): React.JSX.Element {
         u.phoneNumber || "",
         ROLE_LABELS[u.role ?? ""] || u.role || "",
         STATUS_LABELS[u.status] || u.status || "",
-        new Date(u.createdAt).toLocaleDateString("vi-VN"),
+        u.createdAt ? new Date(u.createdAt).toLocaleDateString("vi-VN") : "N/A",
       ]);
 
       // Tạo CSV với BOM để Excel hiển thị đúng tiếng Việt
@@ -622,7 +620,9 @@ export default function UserManagementTable(): React.JSX.Element {
           u.phoneNumber || "",
           ROLE_LABELS[u.role ?? ""] || u.role || "",
           STATUS_LABELS[u.status] || u.status || "",
-          new Date(u.createdAt).toLocaleDateString("vi-VN"),
+          u.createdAt
+            ? new Date(u.createdAt).toLocaleDateString("vi-VN")
+            : "N/A",
         ]),
       ];
 
@@ -905,7 +905,9 @@ export default function UserManagementTable(): React.JSX.Element {
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-900 text-center">
-                      {new Date(u.createdAt).toLocaleDateString("vi-VN")}
+                      {u.createdAt
+                        ? new Date(u.createdAt).toLocaleDateString("vi-VN")
+                        : "N/A"}
                     </td>
 
                     <td className="px-6 py-3 text-center text-base font-medium">
@@ -1119,7 +1121,9 @@ export default function UserManagementTable(): React.JSX.Element {
                           type="date"
                           value={
                             editProfile.dateOfBirth
-                              ? editProfile.dateOfBirth.split("T")[0]
+                              ? typeof editProfile.dateOfBirth === "string"
+                                ? editProfile.dateOfBirth.split("T")[0]
+                                : ""
                               : ""
                           }
                           onChange={(e) =>
@@ -1341,7 +1345,7 @@ export default function UserManagementTable(): React.JSX.Element {
                 </>
               ) : (
                 <>
-                  {isAdmin && (
+                  {isAdmin && userProfile && (
                     <>
                       <button
                         onClick={toggleEditMode}

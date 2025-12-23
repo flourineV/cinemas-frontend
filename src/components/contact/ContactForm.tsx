@@ -112,51 +112,51 @@ const ContactForm = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* LEFT SIDE */}
-      <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-8 text-white shadow-2xl">
+      {/* LEFT SIDE - Contact Info */}
+      <div className="bg-zinc-900 rounded-2xl p-8 text-white shadow-2xl border border-zinc-800">
         <div className="space-y-6">
           <div className="flex items-start space-x-4">
-            <div className="bg-white/50 p-3 rounded-lg">
-              <Mail className="w-6 h-6 text-zinc-800" />
+            <div className="bg-yellow-500 p-3 rounded-lg">
+              <Mail className="w-6 h-6 text-black" />
             </div>
             <div>
-              <p className="font-semibold text-lg text-zinc-800">Email</p>
-              <p className="text-zinc-800">trananhtuan2005dh@gmail.com</p>
+              <p className="font-semibold text-lg text-yellow-500">Email</p>
+              <p className="text-gray-300">trananhtuan2005dh@gmail.com</p>
             </div>
           </div>
 
           <div className="flex items-start space-x-4">
-            <div className="bg-white/50 p-3 rounded-lg">
-              <Phone className="w-6 h-6 text-zinc-800" />
+            <div className="bg-yellow-500 p-3 rounded-lg">
+              <Phone className="w-6 h-6 text-black" />
             </div>
             <div>
-              <p className="font-semibold text-lg text-zinc-800">Hotline</p>
-              <p className="text-zinc-800">0123456789</p>
+              <p className="font-semibold text-lg text-yellow-500">Hotline</p>
+              <p className="text-gray-300">0123456789</p>
             </div>
           </div>
 
           <div className="flex items-start space-x-4">
-            <div className="bg-white/50 p-3 rounded-lg">
-              <MapPin className="w-6 h-6 text-zinc-800" />
+            <div className="bg-yellow-500 p-3 rounded-lg">
+              <MapPin className="w-6 h-6 text-black" />
             </div>
             <div>
-              <p className="font-semibold text-lg text-zinc-800">
+              <p className="font-semibold text-lg text-yellow-500">
                 {t("contact.address")}
               </p>
-              <p className="text-zinc-800">{t("contact.university")}</p>
+              <p className="text-gray-300">{t("contact.university")}</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-600">
-          <p className="text-md text-zinc-800">{t("contact.description")}</p>
+        <div className="mt-8 pt-8 border-t border-zinc-700">
+          <p className="text-md text-gray-400">{t("contact.description")}</p>
         </div>
 
         <img src="LogoFullfinal.png" className="w-3/4 mx-auto mt-10" />
       </div>
 
-      {/* RIGHT SIDE */}
-      <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-200">
+      {/* RIGHT SIDE - Form */}
+      <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-300">
         <h3 className="text-2xl font-bold text-gray-900 mb-6">
           {t("contact.title")}
         </h3>
@@ -244,11 +244,11 @@ const ContactForm = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-orange-500 to-yellow-400 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition disabled:opacity-60"
+            className="w-full bg-zinc-900 text-yellow-500 font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-black transition border border-zinc-800 disabled:opacity-60"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-yellow-500"></div>
                 <span>{t("contact.sending")}</span>
               </>
             ) : (

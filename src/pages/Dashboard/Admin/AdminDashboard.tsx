@@ -1,6 +1,6 @@
 // src/app/(admin)/AdminDashboard.tsx  (hoặc đường dẫn file bạn đang dùng)
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../../../components/layout/Header";
 import { useAuthStore } from "@/stores/authStore";
 import { useScrollToTop } from "@/hooks/useScrollToTop";
@@ -12,7 +12,13 @@ import UserManagementTable from "@/components/admin/accounts/UserManagementTable
 import MovieManagementTable from "@/components/admin/movies/MovieManagementTable";
 import ShowtimeManagement from "@/components/admin/showtimes/ShowtimeManagement";
 import BookingManagementTable from "@/components/admin/bookings/BookingManagementTable";
+import OverviewBookingCards from "@/components/admin/bookings/OverviewBookingCards";
+import PaymentManagementTable from "@/components/admin/payments/PaymentManagementTable";
+import OverviewPaymentCards from "@/components/admin/payments/OverviewPaymentCards";
 import FacilitiesManagement from "@/components/admin/facilities/FacilitiesManagement";
+import NotificationManagementTable from "@/components/admin/notifications/NotificationManagementTable";
+import ReviewManagementTable from "@/components/admin/reviews/ReviewManagementTable";
+import PromotionManagementTable from "@/components/admin/promotions/PromotionManagementTable";
 
 type Tab = {
   id: string;
@@ -47,9 +53,25 @@ const TABS: Tab[] = [
   { id: "promotions", label: "Quản lý mã giảm giá" },
 ];
 
+const STORAGE_KEY = "admin_dashboard_tab";
+
 const AdminDashboard: React.FC = () => {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<string>("accounts");
+
+  // Initialize from localStorage or default to "accounts"
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    // Validate saved tab exists in TABS
+    if (saved && TABS.some((tab) => tab.id === saved)) {
+      return saved;
+    }
+    return "accounts";
+  });
+
+  // Save to localStorage when tab changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, activeTab);
+  }, [activeTab]);
 
   // Scroll to top when route changes
   useScrollToTop();
@@ -156,11 +178,49 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {activeTab === "bookings" && (
-                <section>
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Quản lý giao dịch & thanh toán
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    Quản lý đặt vé
                   </h2>
+                  <OverviewBookingCards />
                   <BookingManagementTable />
+                </section>
+              )}
+
+              {activeTab === "payments" && (
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    Quản lý thanh toán
+                  </h2>
+                  <OverviewPaymentCards />
+                  <PaymentManagementTable />
+                </section>
+              )}
+
+              {activeTab === "notifications" && (
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    Quản lý thông báo
+                  </h2>
+                  <NotificationManagementTable />
+                </section>
+              )}
+
+              {activeTab === "reviews" && (
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    Quản lý đánh giá
+                  </h2>
+                  <ReviewManagementTable />
+                </section>
+              )}
+
+              {activeTab === "promotions" && (
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    Quản lý mã giảm giá
+                  </h2>
+                  <PromotionManagementTable />
                 </section>
               )}
             </div>

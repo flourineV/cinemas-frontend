@@ -1,4 +1,5 @@
 import { paymentClient } from "../apiClient";
+import type { PageResponse } from "@/types/PageResponse";
 import type {
   ZaloPayCreateOrderResponse,
   ZaloPayCallbackDTO,
@@ -6,7 +7,52 @@ import type {
   PaymentConfirmationRequest,
 } from "@/types/payment/payment.type";
 
+export interface PaymentStatsResponse {
+  totalPayments: number;
+  successfulPayments: number;
+  failedPayments: number;
+  pendingPayments: number;
+  totalRevenue: number;
+}
+
+export interface PaymentTransactionResponse {
+  id: string;
+  bookingId: string;
+  userId: string;
+  showtimeId: string;
+  seatIds: string[];
+  amount: number;
+  method: string;
+  status: string;
+  transactionRef: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const paymentService = {
+  // GET /api/payments/stats/overview
+  getStatsOverview: async (): Promise<PaymentStatsResponse> => {
+    const res =
+      await paymentClient.get<PaymentStatsResponse>("/stats/overview");
+    return res.data;
+  },
+
+  // GET /api/payments/admin/search
+  getPayments: async (
+    params: any
+  ): Promise<PageResponse<PaymentTransactionResponse>> => {
+    const res = await paymentClient.get<
+      PageResponse<PaymentTransactionResponse>
+    >("/admin/search", { params });
+    return res.data;
+  },
+
+  // GET /api/payments/{id}
+  getPaymentById: async (id: string): Promise<PaymentTransactionResponse> => {
+    const res = await paymentClient.get<PaymentTransactionResponse>(`/${id}`);
+    return res.data;
+  },
+
   createZaloPayUrl: async (
     bookingId: string
   ): Promise<ZaloPayCreateOrderResponse> => {

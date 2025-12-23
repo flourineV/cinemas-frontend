@@ -52,6 +52,9 @@ const TheaterDetail = () => {
   useEffect(() => {
     if (!theaterId) return;
 
+    setLoading(true);
+    setMoviesWithShowtimes([]);
+
     Promise.all([
       theaterService.getTheaterById(theaterId),
       theaterService.getMoviesByTheater(theaterId),
@@ -62,7 +65,7 @@ const TheaterDetail = () => {
         // Fetch movie details for each movieId
         const moviePromises = showtimesData.map(
           (showtime: MovieShowtimesResponse) =>
-            movieService.getMovieDetail(showtime.movieId)
+            movieService.getMovieDetail(showtime.movieId, language)
         );
 
         const movieDetails = await Promise.all(moviePromises);
@@ -79,7 +82,7 @@ const TheaterDetail = () => {
       })
       .catch((err) => console.error("Failed to load theater:", err))
       .finally(() => setLoading(false));
-  }, [theaterId]);
+  }, [theaterId, language]);
 
   if (loading) {
     return (
@@ -167,10 +170,7 @@ const TheaterDetail = () => {
           </section>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <h2 className="text-3xl font-extrabold text-yellow-500 mb-8 text-center">
-            {t("theater.nowPlaying")}
-          </h2>
+        <div className="max-w-5xl mx-auto py-12">
           {moviesWithShowtimes.length === 0 ? (
             <p className="text-gray-600 text-center py-12">
               {t("theater.noShowtimes")}
@@ -182,6 +182,9 @@ const TheaterDetail = () => {
                   key={movie.id}
                   movie={movie}
                   showtimes={showtimes}
+                  theaterName={theater.name}
+                  theaterNameEn={theater.nameEn}
+                  theaterId={theater.id}
                 />
               ))}
             </div>

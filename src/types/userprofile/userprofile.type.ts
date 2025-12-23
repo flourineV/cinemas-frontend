@@ -20,6 +20,7 @@ export interface UserProfileUpdateRequest {
   address?: string;
   avatarUrl?: string;
   gender?: Gender;
+  receivePromoEmail?: boolean;
   // dateOfBirth and nationalId are not supported by BE update API
 }
 
@@ -37,7 +38,9 @@ export interface UserProfileResponse {
   address: string;
   loyaltyPoint: number;
   rankName: string;
+  rankNameEn: string;
   status: UserStatus;
+  receivePromoEmail: boolean;
   createdAt: string;
   updatedAt: string;
 }

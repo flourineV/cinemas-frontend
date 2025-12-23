@@ -16,7 +16,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Lottie from "lottie-react";
 
 const NowPlayingPage = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [nowPlaying, setNowPlaying] = useState<MovieSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,15 +31,16 @@ const NowPlayingPage = () => {
   }, []);
 
   useEffect(() => {
-    movieService.getNowPlaying(0, 50).then((res) => {
+    setLoading(true);
+    movieService.getNowPlaying(0, 50, language).then((res) => {
       setNowPlaying(res.content || []);
       setLoading(false);
     });
-  }, []);
+  }, [language]);
 
   return (
     <Layout>
-      <div className="w-full min-h-screen pb-16 bg-gray-100 mt-3">
+      <div className="w-full min-h-screen pb-16 bg-gray-100 mt-1">
         <section className="w-full max-w-5xl mx-auto pt-8 px-4">
           <div className="relative flex justify-center mb-8">
             <h1 className="text-2xl md:text-4xl font-extrabold text-yellow-500 whitespace-nowrap">

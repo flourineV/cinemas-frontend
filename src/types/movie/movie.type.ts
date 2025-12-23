@@ -4,6 +4,7 @@ export interface MovieSummary {
   id: string;
   tmdbId: number;
   title: string;
+  titleEn?: string;
   posterUrl: string;
   age: string;
   status: MovieStatus;
@@ -22,6 +23,7 @@ export interface MovieDetail {
   id: string;
   tmdbId: number;
   title: string;
+  titleEn?: string;
   age: string;
   status: MovieStatus;
   genres: string[];
@@ -32,6 +34,7 @@ export interface MovieDetail {
   cast: string[];
   releaseDate: string;
   overview: string;
+  overviewEn?: string;
   trailer: string;
   posterUrl: string;
   startDate?: string;

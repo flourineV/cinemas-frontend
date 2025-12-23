@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Swal from "sweetalert2";
 import { useAccurateTimer } from "@/hooks/useAccurateTimer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface BookingSummaryBarProps {
   movieTitle: string;
@@ -22,6 +23,7 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
   onSubmit,
   onTTLExpired,
 }) => {
+  const { t } = useLanguage();
   const [isSticky, setIsSticky] = useState(true);
   const [topPosition, setTopPosition] = useState(0);
   const barRef = React.useRef<HTMLDivElement>(null);
@@ -79,10 +81,10 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
     // Điều kiện: Nếu chưa có thời gian đếm ngược (chưa lock ghế)
     if (timeLeft === null) {
       Swal.fire({
-        title: "Chưa chọn ghế!",
-        text: "Vui lòng chọn ghế trước khi tiến hành thanh toán.",
+        title: t("summaryBar.noSeat"),
+        text: t("summaryBar.noSeatText"),
         icon: "warning",
-        confirmButtonText: "Đã hiểu",
+        confirmButtonText: t("ticket.understood"),
         confirmButtonColor: "#ca8a04", // Màu vàng khớp theme (yellow-600)
         background: "#fff",
         color: "#000",
@@ -124,7 +126,7 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
               }`}
             >
               <span className="text-[11px] font-semibold uppercase opacity-90">
-                Thời gian giữ vé
+                {t("summaryBar.holdTime")}
               </span>
               <span className="text-xl font-extrabold leading-none mt-2">
                 {formatTime(timeLeft)}
@@ -134,7 +136,7 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
             // TRƯỜNG HỢP 2: Chưa chạy (chưa chọn ghế) -> Hiển thị mặc định 5 phút
             <div className="h-20 px-4 py-1 rounded-md bg-gray-300 text-gray-600 flex flex-col items-center justify-center min-w-[140px]">
               <span className="text-[11px] font-semibold uppercase opacity-90">
-                Thời gian giữ vé
+                {t("summaryBar.holdTime")}
               </span>
               <span className="text-xl font-extrabold leading-none mt-2">
                 {formatTime(DEFAULT_TTL_DISPLAY)}
@@ -146,7 +148,9 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
           <div className="flex flex-col gap-2 min-w-[240px]">
             {/* Hàng 1: Tạm tính */}
             <div className="flex justify-between items-baseline pt-3">
-              <span className="text-black text-md font-medium">Tạm tính</span>
+              <span className="text-black text-md font-medium">
+                {t("summaryBar.subtotal")}
+              </span>
               <span className="text-xl font-bold text-black">
                 {totalPrice.toLocaleString()} VNĐ
               </span>
@@ -157,7 +161,7 @@ const BookingSummaryBar: React.FC<BookingSummaryBarProps> = ({
               onClick={handleBooking} // Đổi thành hàm xử lý nội bộ có SweetAlert
               className="w-full h-11 mb-3 bg-yellow-200 hover:bg-yellow-400 text-black font-bold py-3 rounded-md uppercase tracking-wide transition-colors shadow-md"
             >
-              ĐẶT VÉ
+              {t("summaryBar.bookTicket")}
             </button>
           </div>
         </div>

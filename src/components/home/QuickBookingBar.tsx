@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { movieService } from "@/services/movie/movieService";
@@ -185,7 +185,7 @@ function CustomSelect({
 
 const QuickBookingBar: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // State for selections
   const [selectedMovie, setSelectedMovie] = useState("");
@@ -198,6 +198,19 @@ const QuickBookingBar: React.FC = () => {
   const [theaters, setTheaters] = useState<TheaterResponse[]>([]);
   const [availableDates, setAvailableDates] = useState<Option[]>([]);
   const [showtimes, setShowtimes] = useState<Option[]>([]);
+  // Store full showtime data for navigation
+  const [showtimeDataMap, setShowtimeDataMap] = useState<
+    Map<
+      string,
+      {
+        startTime: string;
+        endTime: string;
+        theaterId: string;
+        theaterName: string;
+        theaterNameEn?: string;
+      }
+    >
+  >(new Map());
 
   // Loading states
   const [loadingMovies, setLoadingMovies] = useState(false);
@@ -212,23 +225,24 @@ const QuickBookingBar: React.FC = () => {
 
   const theaterOptions: Option[] = theaters.map((theater) => ({
     value: theater.id,
-    label: theater.name,
+    label: language === "en" ? theater.nameEn || theater.name : theater.name,
   }));
 
-  // Generate next 7 days for date selection
-  const generateDateOptions = (): Option[] => {
+  // Generate next 7 days for date selection with language support
+  const generateDateOptions = useMemo((): Option[] => {
     const dates: Option[] = [];
     const today = new Date();
+    const locale = language === "en" ? "en-US" : "vi-VN";
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
 
       const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
-      const displayStr = date.toLocaleDateString("vi-VN", {
+      const displayStr = date.toLocaleDateString(locale, {
+        weekday: "short",
         day: "2-digit",
         month: "2-digit",
-        year: "numeric",
       });
 
       dates.push({
@@ -238,7 +252,7 @@ const QuickBookingBar: React.FC = () => {
     }
 
     return dates;
-  };
+  }, [language]);
 
   // Load movies on component mount
   useEffect(() => {
@@ -255,8 +269,12 @@ const QuickBookingBar: React.FC = () => {
     };
 
     loadMovies();
-    setAvailableDates(generateDateOptions());
   }, []);
+
+  // Update available dates when language changes
+  useEffect(() => {
+    setAvailableDates(generateDateOptions);
+  }, [generateDateOptions]);
 
   // Load theaters when movie is selected
   useEffect(() => {
@@ -297,6 +315,16 @@ const QuickBookingBar: React.FC = () => {
         );
 
         const showtimeOptions: Option[] = [];
+        const dataMap = new Map<
+          string,
+          {
+            startTime: string;
+            endTime: string;
+            theaterId: string;
+            theaterName: string;
+            theaterNameEn?: string;
+          }
+        >();
 
         moviesWithTheaters.forEach((movieData) => {
           movieData.theaters.forEach((theater) => {
@@ -313,12 +341,22 @@ const QuickBookingBar: React.FC = () => {
                   value: showtime.showtimeId,
                   label: timeStr,
                 });
+
+                // Store full showtime data for navigation
+                dataMap.set(showtime.showtimeId, {
+                  startTime: showtime.startTime,
+                  endTime: showtime.endTime,
+                  theaterId: theater.theaterId,
+                  theaterName: theater.theaterName,
+                  theaterNameEn: theater.theaterNameEn,
+                });
               });
             }
           });
         });
 
         setShowtimes(showtimeOptions);
+        setShowtimeDataMap(dataMap);
       } catch (error) {
         console.error("Error loading showtimes:", error);
       } finally {
@@ -404,8 +442,31 @@ const QuickBookingBar: React.FC = () => {
                      hover:scale-105 hover:shadow-[0_0_30px_rgba(251,146,60,0.8)]"
           onClick={() => {
             if (selectedShowtime) {
-              // Navigate to seat selection page with showtime ID
-              navigate(`/booking/seats/${selectedShowtime}`);
+              // Find the selected movie to get tmdbId
+              const movie = movies.find((m) => m.id === selectedMovie);
+              const showtimeData = showtimeDataMap.get(selectedShowtime);
+
+              if (movie && showtimeData) {
+                // Navigate to movie detail page with preselectedShowtime state
+                navigate(
+                  `/movies/${movie.tmdbId}?showtimeId=${selectedShowtime}`,
+                  {
+                    state: {
+                      preselectedShowtime: {
+                        id: selectedShowtime,
+                        movieId: selectedMovie,
+                        theaterId: showtimeData.theaterId,
+                        theaterName: showtimeData.theaterName,
+                        theaterNameEn: showtimeData.theaterNameEn,
+                        roomId: "",
+                        roomName: "",
+                        startTime: showtimeData.startTime,
+                        endTime: showtimeData.endTime,
+                      },
+                    },
+                  }
+                );
+              }
             }
           }}
         >

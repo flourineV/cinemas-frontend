@@ -36,6 +36,7 @@ export interface FinalizeBookingRequest {
   promotionCode?: string;
   refundVoucherCode?: string; // Support refund voucher
   useLoyaltyDiscount: boolean;
+  language?: string; // 'vi' or 'en' - for email/notification language
 }
 
 // Map từ: BookingSeatResponse
@@ -56,8 +57,11 @@ export interface BookingResponse {
   showtimeId: string; // UUID
   movieId?: string;
   movieTitle?: string;
+  movieTitleEn?: string;
   theaterName?: string; // Snapshot field
+  theaterNameEn?: string;
   roomName?: string; // Snapshot field
+  roomNameEn?: string;
   showDateTime?: string; // Snapshot field - ISO string
   guestName?: string;
   guestEmail?: string;

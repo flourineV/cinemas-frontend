@@ -34,7 +34,7 @@ import {
 } from "@/utils/format";
 
 const SearchPage = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get("keyword") || "";
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ const SearchPage = () => {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        const data = await searchService.search(keyword);
+        const data = await searchService.search(keyword, language);
         setResults(data);
       } catch (error) {
         console.error("Search error:", error);
@@ -61,7 +61,7 @@ const SearchPage = () => {
     };
 
     fetchResults();
-  }, [keyword]);
+  }, [keyword, language]); // Re-fetch when language changes
 
   // Carousel
   const movieCarousel = useCarousel(results?.movies || [], itemsPerSlide);
@@ -131,7 +131,7 @@ const SearchPage = () => {
           className="w-1/2"
           onClick={() => navigate(`/movies/${movie.id}`)}
         >
-          {t("search.bookTicket")}
+          {t("search.book")}
         </AnimatedButton>
       </div>
     </div>
@@ -212,8 +212,9 @@ const SearchPage = () => {
           </h1>
           {!loading && results && (
             <p className="text-gray-600">
-              Tìm thấy {results.movies.length} phim và {results.theaters.length}{" "}
-              rạp
+              {t("search.found")} {results.movies.length} {t("search.movies")}{" "}
+              {t("search.and")} {results.theaters.length}{" "}
+              {t("search.theatersCount")}
             </p>
           )}
         </div>
@@ -234,7 +235,7 @@ const SearchPage = () => {
                 <div className="relative flex items-center justify-center mb-10">
                   <Film className="w-8 h-8 text-yellow-500 mr-3" />
                   <h2 className="text-2xl md:text-4xl font-extrabold text-yellow-500">
-                    PHIM ({results.movies.length})
+                    {t("search.moviesSection")} ({results.movies.length})
                   </h2>
                 </div>
                 {renderCarousel()}
@@ -259,7 +260,7 @@ const SearchPage = () => {
                     >
                       {/* Theater Image */}
                       {theater.imageUrl && (
-                        <div className="relative h-48 overflow-hidden">
+                        <div className="relative h-48 overflow-hidden flex-shrink-0">
                           <img
                             src={theater.imageUrl}
                             alt={theater.name}
@@ -269,29 +270,43 @@ const SearchPage = () => {
                         </div>
                       )}
 
-                      {/* Theater Info */}
+                      {/* Theater Info Container */}
                       <div className="p-6 flex flex-col flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">
-                          {theater.name}
-                        </h3>
-                        <div className="flex items-start gap-2 text-gray-600 text-sm mb-3">
-                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          <p className="line-clamp-2">{theater.address}</p>
+                        {/* PHẦN TRÊN: Tên và Địa chỉ */}
+                        <div className="mb-4">
+                          <h3 className="text-lg font-bold text-gray-900 mb-2">
+                            {language === "en"
+                              ? theater.nameEn || theater.name
+                              : theater.name}
+                          </h3>
+                          <div className="flex items-start gap-2 text-gray-600 text-sm">
+                            <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <p className="line-clamp-2">
+                              {language === "en"
+                                ? theater.addressEn || theater.address
+                                : theater.address}
+                            </p>
+                          </div>
                         </div>
-                        {theater.provinceName && (
-                          <p className="text-xs text-gray-500 mb-4">
-                            {theater.provinceName}
-                          </p>
-                        )}
 
-                        {/* Book Button - Always at bottom */}
-                        <button
-                          onClick={() => navigate(`/theater/${theater.id}`)}
-                          className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2.5 rounded-lg transition-colors mt-auto"
-                        >
-                          <Ticket className="w-4 h-4" />
-                          {t("search.bookTicket")}
-                        </button>
+                        {/* PHẦN DƯỚI: Tỉnh thành và Nút (Được đẩy xuống đáy nhờ mt-auto) */}
+                        <div className="mt-auto w-full">
+                          {(theater.provinceName || theater.provinceNameEn) && (
+                            <p className="text-lg text-yellow-500 font-light mb-4">
+                              {language === "en"
+                                ? theater.provinceNameEn || theater.provinceName
+                                : theater.provinceName}
+                            </p>
+                          )}
+
+                          <button
+                            onClick={() => navigate(`/theater/${theater.id}`)}
+                            className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2.5 rounded-lg transition-colors"
+                          >
+                            <Ticket className="w-4 h-4" />
+                            {t("search.book")}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

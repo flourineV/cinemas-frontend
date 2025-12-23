@@ -29,7 +29,11 @@ const ResetPassword: React.FC = () => {
 
     try {
       setLoading(true);
-      await authService.resetPassword({ token: token || "", newPassword });
+      await authService.resetPassword({
+        email: "",
+        otp: token || "",
+        newPassword,
+      });
       setSuccess("Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay.");
       setTimeout(() => navigate("/auth"), 2000);
     } catch (err: any) {

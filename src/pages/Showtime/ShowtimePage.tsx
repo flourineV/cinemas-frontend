@@ -50,16 +50,30 @@ const ShowtimePage = () => {
   const [selectedMovie, setSelectedMovie] = useState("");
   const [selectedTheater, setSelectedTheater] = useState("");
 
-  // Generate date options (next 7 days)
+  // Generate date options (next 5 days)
   const generateDateOptions = () => {
     const options = [];
     const today = new Date();
 
-    for (let i = 0; i < 7; i++) {
+    // Debug: Log current date and timezone
+    console.log("🗓️ [ShowtimePage] Current date:", today);
+    console.log(
+      "🗓️ [ShowtimePage] Timezone offset:",
+      today.getTimezoneOffset()
+    );
+
+    for (let i = 0; i < 5; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
 
-      const value = date.toISOString().split("T")[0];
+      // Use local date format to avoid timezone issues
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const value = `${year}-${month}-${day}`;
+
+      console.log(`🗓️ [ShowtimePage] Date ${i}: ${value}`);
+
       let label: string;
       if (language === "en") {
         label =
@@ -188,19 +202,24 @@ const ShowtimePage = () => {
     loadAllData();
   }, []);
 
+  // Track if initial load is done
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
   // Load showtimes when filters change (not on initial load)
   useEffect(() => {
     // Skip if no date selected or still loading initial data
     if (!selectedDate || movies.length === 0) return;
 
-    // Skip initial load (handled above)
+    // Skip only the very first render after initial load
     const today = dateOptions[0].value;
     if (
+      !initialLoadDone &&
       selectedDate === today &&
       !selectedMovie &&
       !selectedTheater &&
       movieShowtimes.length > 0
     ) {
+      setInitialLoadDone(true);
       return;
     }
 
@@ -216,17 +235,28 @@ const ShowtimePage = () => {
 
       try {
         setLoading(true);
+
+        console.log("🔍 [ShowtimePage] Calling API with date:", selectedDate);
+        console.log("🔍 [ShowtimePage] Movie filter:", selectedMovie || "all");
+        console.log(
+          "🔍 [ShowtimePage] Theater filter:",
+          selectedTheater || "all"
+        );
+
         const showtimeData = await theaterService.getMoviesWithTheaters(
           selectedDate,
           selectedMovie || undefined,
           selectedTheater || undefined
         );
 
+        console.log("✅ [ShowtimePage] API Response:", showtimeData);
+        console.log("✅ [ShowtimePage] Number of movies:", showtimeData.length);
+
         const processed = processShowtimeData(showtimeData, movies);
         setCache(cacheKey, processed);
         setMovieShowtimes(processed);
       } catch (error) {
-        console.error("Error loading showtimes:", error);
+        console.error("❌ [ShowtimePage] Error loading showtimes:", error);
         setMovieShowtimes([]);
       } finally {
         setLoading(false);
@@ -246,8 +276,16 @@ const ShowtimePage = () => {
   if (loading && movieShowtimes.length === 0) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+        <div
+          className="min-h-screen flex items-center justify-center relative"
+          style={{
+            backgroundImage: "url('/background_profile.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 relative z-10"></div>
         </div>
       </Layout>
     );
@@ -255,14 +293,25 @@ const ShowtimePage = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-100 text-gray-900 pt-8 pb-16">
-        <div className="max-w-5xl mx-auto">
+      <div
+        className="min-h-screen text-gray-900 pt-8 pb-36 relative"
+        style={{
+          backgroundImage: "url('/background_profile.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        {/* Dark overlay to not overpower content */}
+        <div className="absolute inset-0 bg-black/60" />
+
+        <div className="max-w-5xl mx-auto relative z-10">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-5xl font-extrabold text-yellow-500 mb-3">
               {t("showtime.title")}
             </h1>
-            <p className="text-gray-600 font-light text-lg">
+            <p className="text-gray-300 font-light text-lg">
               {t("showtime.subtitle")}
             </p>
           </div>
@@ -271,8 +320,8 @@ const ShowtimePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Date Filter */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-xl">
-                <Calendar className="w-5 h-5" />
+              <div className="flex items-center gap-2 font-bold text-lg text-white">
+                <Calendar className="w-5 h-5 text-yellow-500" />
                 <span>1. {t("showtime.date")}</span>
               </div>
               <CustomSelect
@@ -286,8 +335,8 @@ const ShowtimePage = () => {
 
             {/* Movie Filter */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-xl">
-                <Film className="w-5 h-5" />
+              <div className="flex items-center gap-2 font-bold text-lg text-white">
+                <Film className="w-5 h-5 text-yellow-500" />
                 <span>2. {t("showtime.movie")}</span>
               </div>
               <CustomSelect
@@ -307,8 +356,8 @@ const ShowtimePage = () => {
 
             {/* Theater Filter */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-xl">
-                <MapPin className="w-5 h-5" />
+              <div className="flex items-center gap-2 font-bold text-lg text-white">
+                <MapPin className="w-5 h-5 text-yellow-500" />
                 <span>3. {t("showtime.theater")}</span>
               </div>
               <CustomSelect
@@ -340,7 +389,7 @@ const ShowtimePage = () => {
               {movieShowtimes.map((movieShowtime) => (
                 <div
                   key={movieShowtime.movie.id}
-                  className="bg-white rounded-xl shadow-lg p-6 border border-gray-200"
+                  className="bg-white rounded-xl p-5 shadow-lg"
                 >
                   <div className="flex gap-6">
                     {/* Left: Poster + Movie Info */}
@@ -348,28 +397,28 @@ const ShowtimePage = () => {
                       <img
                         src={getPosterUrl(movieShowtime.movie.posterUrl)}
                         alt={movieShowtime.movie.title}
-                        className="w-full h-auto object-cover rounded-lg shadow-md"
+                        className="w-full h-auto object-cover rounded-lg shadow-md border-2 border-black"
                       />
                       <div className="mt-3">
-                        <h2 className="text-lg font-bold text-gray-900 mb-2">
+                        <h2 className="text-lg font-bold text-black mb-2">
                           {movieShowtime.movie.title}
                         </h2>
-                        <div className="space-y-1.5 text-xs text-gray-600">
+                        <div className="space-y-1.5 text-xs text-gray-800">
                           <div className="flex items-center gap-2">
-                            <Film className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                            <Film className="w-3.5 h-3.5 text-black flex-shrink-0" />
                             <span>
                               {movieShowtime.movie.genres?.join(", ") || "N/A"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Clock className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                            <Clock className="w-3.5 h-3.5 text-black flex-shrink-0" />
                             <span>
                               {movieShowtime.movie.time}{" "}
                               {language === "en" ? "min" : "phút"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Languages className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                            <Languages className="w-3.5 h-3.5 text-black flex-shrink-0" />
                             <span>
                               {formatSpokenLanguages(
                                 movieShowtime.movie.spokenLanguages
@@ -377,7 +426,7 @@ const ShowtimePage = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <ShieldCheck className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                            <ShieldCheck className="w-3.5 h-3.5 text-black flex-shrink-0" />
                             <span>
                               {formatAgeRating(
                                 movieShowtime.movie.age,
@@ -386,61 +435,72 @@ const ShowtimePage = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                            <Calendar className="w-3.5 h-3.5 text-black flex-shrink-0" />
                             <span>{movieShowtime.movie.startDate}</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Right: 2 columns - Theater info + Showtimes */}
-                    <div className="flex-1 grid grid-cols-2 gap-6">
-                      {/* Column 1: Theater & Address */}
-                      <div className="space-y-4">
-                        {movieShowtime.theaters.map((theaterData) => (
-                          <div
-                            key={theaterData.theaterId}
-                            className="p-4 bg-gray-50 rounded-lg"
-                          >
-                            <h3 className="text-lg font-bold text-gray-900 mb-1">
-                              {language === "en" && theaterData.theaterNameEn
-                                ? theaterData.theaterNameEn
-                                : theaterData.theaterName}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {language === "en" && theaterData.theaterAddressEn
-                                ? theaterData.theaterAddressEn
-                                : theaterData.theaterAddress}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
+                    {/* Right: Theater rows with showtimes - White cards */}
+                    <div className="flex-1 space-y-3">
+                      {movieShowtime.theaters.map((theaterData) => (
+                        <div
+                          key={theaterData.theaterId}
+                          className="bg-gray-100 border border-gray-400 rounded-xl p-4 shadow-md"
+                        >
+                          <div className="flex flex-col md:flex-row md:items-start gap-4">
+                            {/* Theater Info - 2/5 width */}
+                            <div className="w-full md:w-2/5 flex-shrink-0">
+                              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                                {language === "en" && theaterData.theaterNameEn
+                                  ? theaterData.theaterNameEn
+                                  : theaterData.theaterName}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {language === "en" &&
+                                theaterData.theaterAddressEn
+                                  ? theaterData.theaterAddressEn
+                                  : theaterData.theaterAddress}
+                              </p>
+                            </div>
 
-                      {/* Column 2: Showtimes */}
-                      <div className="space-y-4">
-                        {movieShowtime.theaters.map((theaterData) => (
-                          <div
-                            key={theaterData.theaterId}
-                            className="p-4 bg-gray-50 rounded-lg"
-                          >
-                            <div className="flex flex-wrap gap-2">
+                            {/* Showtimes - 3/5 width */}
+                            <div className="w-full md:w-3/5 flex flex-wrap gap-2">
                               {theaterData.showtimes.map((showtime) => (
                                 <button
                                   key={showtime.showtimeId}
                                   onClick={() =>
                                     navigate(
-                                      `/movies/${movieShowtime.movie.tmdbId}?showtimeId=${showtime.showtimeId}&theaterId=${theaterData.theaterId}`
+                                      `/movies/${movieShowtime.movie.tmdbId}?showtimeId=${showtime.showtimeId}`,
+                                      {
+                                        state: {
+                                          preselectedShowtime: {
+                                            id: showtime.showtimeId,
+                                            movieId: movieShowtime.movie.id,
+                                            theaterId: theaterData.theaterId,
+                                            theaterName:
+                                              theaterData.theaterName,
+                                            theaterNameEn:
+                                              theaterData.theaterNameEn,
+                                            roomId: "",
+                                            roomName: "",
+                                            startTime: showtime.startTime,
+                                            endTime: showtime.endTime,
+                                          },
+                                        },
+                                      }
                                     )
                                   }
-                                  className="px-4 py-2 border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-black font-semibold rounded-lg transition-colors text-sm"
+                                  className="px-4 py-2 bg-yellow-500 text-black hover:bg-black hover:text-yellow-500 font-bold rounded-lg transition-all duration-200 text-sm"
                                 >
                                   {formatTime(showtime.startTime)}
                                 </button>
                               ))}
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -449,10 +509,10 @@ const ShowtimePage = () => {
           ) : (
             <div className="text-center py-16">
               <div className="text-6xl mb-4">🎬</div>
-              <p className="text-gray-600 text-xl mb-2">
+              <p className="text-gray-300 text-xl mb-2">
                 {t("showtime.noShowtimes")}
               </p>
-              <p className="text-gray-500">{t("showtime.tryOther")}</p>
+              <p className="text-gray-400">{t("showtime.tryOther")}</p>
             </div>
           )}
         </div>

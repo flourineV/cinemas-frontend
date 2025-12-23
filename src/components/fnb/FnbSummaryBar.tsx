@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface FnbSummaryBarProps {
   theaterName: string;
@@ -18,6 +19,7 @@ const FnbSummaryBar: React.FC<FnbSummaryBarProps> = ({
   onSubmit,
   loading = false,
 }) => {
+  const { t } = useLanguage();
   const [isSticky, setIsSticky] = useState(true);
   const [topPosition, setTopPosition] = useState(0);
   const barRef = React.useRef<HTMLDivElement>(null);
@@ -62,7 +64,9 @@ const FnbSummaryBar: React.FC<FnbSummaryBarProps> = ({
     >
       <div className="bg-yellow-600 h-28 text-white flex justify-between items-center px-8 md:px-16 lg:px-32 xl:px-56 shadow-lg border-t border-yellow-600/30">
         <div>
-          <h2 className="text-2xl font-extrabold text-black">🍿 Bắp nước</h2>
+          <h2 className="text-2xl font-extrabold text-black">
+            {t("fnb.snacks")}
+          </h2>
           <p className="text-md text-gray-800 mt-2">{theaterName}</p>
         </div>
 
@@ -70,10 +74,10 @@ const FnbSummaryBar: React.FC<FnbSummaryBarProps> = ({
           {/* Số lượng món */}
           <div className="h-20 px-4 py-1 rounded-md bg-yellow-200 text-black flex flex-col items-center justify-center min-w-[140px]">
             <span className="text-[11px] font-semibold uppercase opacity-90">
-              Số lượng món
+              {t("fnb.itemCount")}
             </span>
             <span className="text-xl font-extrabold leading-none mt-2">
-              {itemCount} món
+              {itemCount} {t("fnb.items")}
             </span>
           </div>
 
@@ -81,7 +85,9 @@ const FnbSummaryBar: React.FC<FnbSummaryBarProps> = ({
           <div className="flex flex-col gap-2 min-w-[240px]">
             {/* Hàng 1: Tạm tính */}
             <div className="flex justify-between items-baseline pt-3">
-              <span className="text-black text-md font-medium">Tạm tính</span>
+              <span className="text-black text-md font-medium">
+                {t("fnb.subtotal")}
+              </span>
               <span className="text-xl font-bold text-black">
                 {totalPrice.toLocaleString()} VNĐ
               </span>
@@ -96,10 +102,10 @@ const FnbSummaryBar: React.FC<FnbSummaryBarProps> = ({
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-black"></div>
-                  ĐANG XỬ LÝ...
+                  {t("fnb.processing")}
                 </>
               ) : (
-                "TIẾP TỤC"
+                t("fnb.continue")
               )}
             </button>
           </div>

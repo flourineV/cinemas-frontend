@@ -10,8 +10,10 @@ export interface ShowtimeResponse {
   id: string;
   movieId: string;
   theaterName: string;
+  theaterNameEn?: string;
   roomId: string;
   roomName: string;
+  roomNameEn?: string;
   startTime: string;
   endTime: string;
 }
@@ -69,6 +71,7 @@ export interface ShowtimeInfo {
   showtimeId: string;
   roomId: string;
   roomName: string;
+  roomNameEn?: string;
   startTime: string;
   endTime: string;
 }
@@ -76,7 +79,9 @@ export interface ShowtimeInfo {
 export interface TheaterShowtimesResponse {
   theaterId: string;
   theaterName: string;
+  theaterNameEn?: string;
   theaterAddress: string;
+  theaterAddressEn?: string;
   showtimes: ShowtimeInfo[];
 }
 

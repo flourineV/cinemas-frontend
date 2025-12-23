@@ -7,12 +7,11 @@ import {
   Trash2,
   Film,
   Building2,
+  Download,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
-import TimePicker from "react-time-picker";
-import "react-time-picker/dist/TimePicker.css";
-import "react-clock/dist/Clock.css";
+import * as XLSX from "xlsx";
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { provinceService } from "@/services/showtime/provinceService";
 import { theaterService } from "@/services/showtime/theaterService";
@@ -35,6 +34,7 @@ export default function ShowtimeTable({
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState<string>("");
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -206,18 +206,25 @@ export default function ShowtimeTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paging.page]);
 
-  const deleteShowtime = async (id: string) => {
+  const deleteShowtime = async (id: string, bookedSeats: number) => {
+    const confirmText =
+      bookedSeats > 0
+        ? `Xóa lịch chiếu này sẽ phải hoàn tiền cho ${bookedSeats} người đã đặt vé. Bạn có chắc chắn muốn xóa?`
+        : "Hành động này không thể hoàn tác";
+
     const confirm = await Swal.fire({
       title: "Xóa lịch chiếu?",
-      text: "Hành động này không thể hoàn tác",
+      text: confirmText,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
       confirmButtonColor: "#ef4444",
     });
     if (!confirm.isConfirmed) return;
 
     try {
+      setDeletingId(id);
       await showtimeService.deleteShowtime(id);
       Swal.fire({
         icon: "success",
@@ -232,8 +239,159 @@ export default function ShowtimeTable({
         icon: "error",
         title: "Xóa thất bại",
       });
+    } finally {
+      setDeletingId(null);
     }
   };
+
+  async function exportAllCSV() {
+    try {
+      const criteria = {
+        provinceId: provinceFilter || undefined,
+        theaterId: theaterFilter || undefined,
+        roomId: roomFilter || undefined,
+        movieId: movieFilter || undefined,
+      };
+
+      const allShowtimesResp = await showtimeService.adminSearch(
+        criteria,
+        1,
+        10000,
+        "startTime",
+        "asc"
+      );
+      const allShowtimes = allShowtimesResp.data || [];
+
+      const headers = [
+        "Phim",
+        "Rạp",
+        "Tỉnh/Thành",
+        "Phòng",
+        "Thời gian bắt đầu",
+        "Thời gian kết thúc",
+        "Ghế trống",
+        "Ghế đã đặt",
+        "Tổng ghế",
+      ];
+
+      const rows = allShowtimes.map((st) => [
+        st.movieTitle,
+        st.theaterName,
+        st.provinceName,
+        st.roomName,
+        dayjs(st.startTime).format("DD/MM/YYYY HH:mm"),
+        dayjs(st.endTime).format("DD/MM/YYYY HH:mm"),
+        st.availableSeats,
+        st.bookedSeats,
+        st.totalSeats,
+      ]);
+
+      const csvContent =
+        "\uFEFF" +
+        [headers, ...rows]
+          .map((r) =>
+            r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")
+          )
+          .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `all_showtimes_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: "success",
+        title: `Đã xuất ${allShowtimes.length} lịch chiếu (CSV)`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi xuất file",
+        text: "Không thể xuất dữ liệu. Vui lòng thử lại.",
+      });
+    }
+  }
+
+  async function exportAllExcel() {
+    try {
+      const criteria = {
+        provinceId: provinceFilter || undefined,
+        theaterId: theaterFilter || undefined,
+        roomId: roomFilter || undefined,
+        movieId: movieFilter || undefined,
+      };
+
+      const allShowtimesResp = await showtimeService.adminSearch(
+        criteria,
+        1,
+        10000,
+        "startTime",
+        "asc"
+      );
+      const allShowtimes = allShowtimesResp.data || [];
+
+      const wb = XLSX.utils.book_new();
+      const wsData = [
+        [
+          "Phim",
+          "Rạp",
+          "Tỉnh/Thành",
+          "Phòng",
+          "Thời gian bắt đầu",
+          "Thời gian kết thúc",
+          "Ghế trống",
+          "Ghế đã đặt",
+          "Tổng ghế",
+        ],
+        ...allShowtimes.map((st) => [
+          st.movieTitle,
+          st.theaterName,
+          st.provinceName,
+          st.roomName,
+          dayjs(st.startTime).format("DD/MM/YYYY HH:mm"),
+          dayjs(st.endTime).format("DD/MM/YYYY HH:mm"),
+          st.availableSeats,
+          st.bookedSeats,
+          st.totalSeats,
+        ]),
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      const colWidths = wsData[0].map((_, colIndex) => {
+        const maxLength = Math.max(
+          ...wsData.map((row) => String(row[colIndex] || "").length)
+        );
+        return { wch: Math.min(Math.max(maxLength + 2, 10), 50) };
+      });
+      ws["!cols"] = colWidths;
+
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách lịch chiếu");
+      XLSX.writeFile(
+        wb,
+        `all_showtimes_${new Date().toISOString().split("T")[0]}.xlsx`
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: `Đã xuất ${allShowtimes.length} lịch chiếu (Excel)`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi xuất file Excel",
+        text: "Không thể xuất dữ liệu. Vui lòng thử lại.",
+      });
+    }
+  }
 
   if (loading) {
     return (
@@ -312,6 +470,29 @@ export default function ShowtimeTable({
           />
         </div>
 
+        <button
+          onClick={() => exportAllCSV()}
+          className="flex items-center gap-2 px-3 py-2 text-sm 
+                    border border-gray-400 rounded-lg 
+                    bg-white text-gray-700 hover:bg-gray-50
+                    whitespace-nowrap shrink-0"
+        >
+          <Download size={16} /> Export CSV
+        </button>
+
+        <button
+          onClick={() => exportAllExcel()}
+          className="flex items-center gap-2 px-3 py-2 text-sm 
+                    border border-gray-400 rounded-lg 
+                    bg-green-600 text-white hover:bg-green-700
+                    whitespace-nowrap shrink-0"
+        >
+          <Download size={16} /> Export Excel
+        </button>
+      </div>
+
+      {/* Filters Row 2: Province, Theater, Room */}
+      <div className="flex flex-col md:flex-row gap-3 mb-3">
         <CustomDropdown
           options={[
             { value: "", label: "Tất cả tỉnh/thành" },
@@ -402,35 +583,65 @@ export default function ShowtimeTable({
           />
         </div>
 
-        {/* From Time */}
+        {/* From Time - Text input */}
         <div className="flex items-center relative flex-1">
           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <TimePicker
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
-            value={fromTimeFilter || undefined}
-            onChange={(value) => {
-              setFromTimeFilter(value || "");
-              setPaging((p) => ({ ...p, page: 1 }));
+          <input
+            type="text"
+            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+            value={fromTimeFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Allow typing, validate on blur
+              setFromTimeFilter(value);
             }}
-            format="HH:mm"
-            clearIcon={null}
-            clockIcon={null}
+            onBlur={(e) => {
+              const value = e.target.value.trim();
+              if (value && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value)) {
+                Swal.fire({
+                  icon: "warning",
+                  title: "Giờ không hợp lệ",
+                  text: "Vui lòng nhập theo định dạng HH:MM (ví dụ: 09:30)",
+                  timer: 2000,
+                  showConfirmButton: false,
+                });
+                setFromTimeFilter("");
+              } else {
+                setPaging((p) => ({ ...p, page: 1 }));
+              }
+            }}
+            placeholder="HH:MM"
           />
         </div>
 
-        {/* To Time */}
+        {/* To Time - Text input */}
         <div className="flex items-center relative flex-1">
           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <TimePicker
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
-            value={toTimeFilter || undefined}
-            onChange={(value) => {
-              setToTimeFilter(value || "");
-              setPaging((p) => ({ ...p, page: 1 }));
+          <input
+            type="text"
+            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+            value={toTimeFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Allow typing, validate on blur
+              setToTimeFilter(value);
             }}
-            format="HH:mm"
-            clearIcon={null}
-            clockIcon={null}
+            onBlur={(e) => {
+              const value = e.target.value.trim();
+              if (value && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value)) {
+                Swal.fire({
+                  icon: "warning",
+                  title: "Giờ không hợp lệ",
+                  text: "Vui lòng nhập theo định dạng HH:MM (ví dụ: 21:00)",
+                  timer: 2000,
+                  showConfirmButton: false,
+                });
+                setToTimeFilter("");
+              } else {
+                setPaging((p) => ({ ...p, page: 1 }));
+              }
+            }}
+            placeholder="HH:MM"
           />
         </div>
       </div>
@@ -543,11 +754,16 @@ export default function ShowtimeTable({
                   <td className="px-6 py-3 text-center text-base font-medium">
                     <div className="flex items-center justify-center gap-2">
                       <button
-                        onClick={() => deleteShowtime(st.id)}
-                        className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                        onClick={() => deleteShowtime(st.id, st.bookedSeats)}
+                        disabled={deletingId === st.id}
+                        className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Xóa lịch chiếu"
                       >
-                        <Trash2 size={16} />
+                        {deletingId === st.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent"></div>
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
                       </button>
                     </div>
                   </td>

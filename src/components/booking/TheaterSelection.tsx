@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
 import { provinceService } from "../../services/showtime/provinceService";
 import { theaterService } from "../../services/showtime/theaterService";
-import { showtimeService } from "../../services/showtime/showtimeService";
+import { useLanguage } from "@/contexts/LanguageContext";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
-dayjs.locale("vi");
+import "dayjs/locale/en";
 
 interface TheaterSelectionProps {
   movie?: { id: string; title: string };
 }
 
 export default function TheaterSelection({ movie }: TheaterSelectionProps) {
+  const { t, language } = useLanguage();
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>(
     []
   );
   const [selectedProvinceId, setSelectedProvinceId] = useState<string>("");
 
   const [theaters, setTheaters] = useState<any[]>([]);
-  const [showtimes, setShowtimes] = useState<any[]>([]);
+  const [showtimes] = useState<any[]>([]);
 
   const [days, setDays] = useState<Date[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -54,27 +55,16 @@ export default function TheaterSelection({ movie }: TheaterSelectionProps) {
 
   useEffect(() => {
     if (!selectedProvinceId || !selectedDate || !movie) return;
-    const fetchShowtimes = async () => {
-      const start = selectedDate.toISOString().split("T")[0];
-      const end = start;
-      // const res = await showtimeService.getShowtimesByMovieAndProvince(
-      //   movie.id,
-      //   selectedProvinceId,
-      //   start,
-      //   end
-      // );
-      // setShowtimes(res);
-    };
-    fetchShowtimes();
+    // Placeholder for future showtime fetching
   }, [selectedProvinceId, selectedDate, movie]);
 
   return (
     <div className="w-full bg-gradient-to-b from-[#1a1446] to-[#000015] py-10 rounded-2xl text-white">
       <h1 className="text-4xl font-extrabold mb-8 text-center text-yellow-400 tracking-widest">
-        LỊCH CHIẾU
+        {t("showtime.title")}
       </h1>
 
-      {/* --- Chọn ngày --- */}
+      {/* --- Date Selection --- */}
       <div className="flex justify-center gap-4 mb-8">
         {days.map((d) => {
           const isSelected = d.toDateString() === selectedDate.toDateString();
@@ -89,13 +79,15 @@ export default function TheaterSelection({ movie }: TheaterSelectionProps) {
               }`}
             >
               <div>{dayjs(d).format("DD/MM")}</div>
-              <div className="text-sm">{dayjs(d).format("dddd")}</div>
+              <div className="text-sm">
+                {dayjs(d).locale(language).format("dddd")}
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* --- Dropdown chọn tỉnh --- */}
+      {/* --- Province Dropdown --- */}
       <div className="flex justify-center mb-10">
         <select
           value={selectedProvinceId}
@@ -114,7 +106,7 @@ export default function TheaterSelection({ movie }: TheaterSelectionProps) {
         </select>
       </div>
 
-      {/* --- Danh sách rạp --- */}
+      {/* --- Theater List --- */}
       <div className="max-w-5xl mx-auto space-y-6 px-4">
         {theaters.map((theater) => {
           const theaterShowtimes = showtimes.filter(

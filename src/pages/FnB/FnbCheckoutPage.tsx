@@ -1,57 +1,63 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { paymentService } from "@/services/payment/payment.service";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
-import { Check, CreditCard } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Swal from "sweetalert2";
-
-// Import FnB components
 import FnbOrderSummary from "@/components/fnb/FnbOrderSummary";
 import { useAccurateTimer } from "@/hooks/useAccurateTimer";
 
 interface CartItem {
   id: string;
   name: string;
+  nameEn?: string;
+  description?: string;
+  descriptionEn?: string;
+  imageUrl?: string;
   unitPrice: number;
   quantity: number;
 }
 
 const FNB_STEPS = [
-  { id: 1, label: "CHỌN BẮP NƯỚC" },
-  { id: 2, label: "THANH TOÁN" },
+  { id: 1, labelKey: "fnb.step1" },
+  { id: 2, labelKey: "fnb.step2" },
+  { id: 3, labelKey: "fnb.step3" },
 ];
 
 const FnbCheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { t, language } = useLanguage();
+
   const { theater, cart, totalAmount, order, ttl, ttlTimestamp } =
-    location.state as {
+    (location.state as {
       theater: TheaterResponse;
       cart: CartItem[];
       totalAmount: number;
       order: any;
       ttl: number;
       ttlTimestamp: number;
-    };
+    }) || {};
 
-  const [activeStep] = useState(2); // Nhảy thẳng step 2
+  const [activeStep] = useState(2);
   const [loading, setLoading] = useState(false);
 
   // Calculate accurate TTL
   const adjustedTTL = ttl
     ? Math.max(0, ttl - Math.floor((Date.now() - ttlTimestamp) / 1000))
     : null;
+
   const timeLeft = useAccurateTimer({
     initialTime: adjustedTTL,
     enabled: true,
     onExpired: () => {
       Swal.fire({
-        title: "Hết thời gian",
-        text: "Đơn hàng đã hết hạn. Vui lòng đặt lại.",
+        title: t("fnb.timeExpired"),
+        text: t("fnb.orderExpired"),
         icon: "warning",
         confirmButtonColor: "#eab308",
       }).then(() => {
@@ -64,12 +70,12 @@ const FnbCheckoutPage = () => {
   useEffect(() => {
     if (!user) {
       Swal.fire({
-        title: "Yêu cầu đăng nhập",
-        text: "Bạn cần đăng nhập để đặt bắp nước",
+        title: t("fnb.loginRequired"),
+        text: t("fnb.loginRequiredDesc"),
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "Đăng nhập",
-        cancelButtonText: "Quay lại",
+        confirmButtonText: t("fnb.login"),
+        cancelButtonText: t("fnb.cancel"),
         confirmButtonColor: "#eab308",
       }).then((result) => {
         if (result.isConfirmed) {
@@ -79,54 +85,53 @@ const FnbCheckoutPage = () => {
         }
       });
     }
-  }, [user, navigate]);
+  }, [user, navigate, t]);
 
   const handlePayment = async () => {
     if (!user || !order) {
       Swal.fire({
-        title: "Lỗi",
-        text: "Không tìm thấy thông tin đơn hàng",
+        title: t("fnb.error"),
+        text: t("fnb.orderNotFound"),
         icon: "error",
         confirmButtonColor: "#eab308",
       });
       return;
     }
 
-    console.log("🔍 [FnbCheckout] Order data:", order);
-    console.log("🔍 [FnbCheckout] Order ID:", order.id);
-
     setLoading(true);
+
+    Swal.fire({
+      title: t("fnb.processingPayment"),
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+      background: "#18181b",
+      color: "#fff",
+    });
+
     try {
-      // Chỉ tạo ZaloPay payment URL (order đã được tạo ở PopcornDrinkPage)
-      // Ensure order.id is string (not UUID object)
       const fnbOrderId =
         typeof order.id === "string" ? order.id : order.id.toString();
-      console.log("🔍 [FnbCheckout] Sending fnbOrderId:", fnbOrderId);
-
       const paymentResponse =
         await paymentService.createZaloPayUrlForFnb(fnbOrderId);
 
       if (paymentResponse.order_url) {
-        // Redirect to ZaloPay
         window.location.href = paymentResponse.order_url;
       } else {
-        throw new Error("Không thể tạo link thanh toán");
+        throw new Error(t("fnb.paymentLinkError"));
       }
     } catch (error: any) {
-      console.error("❌ [FnbCheckout] Payment error:", error);
-      console.error("❌ [FnbCheckout] Error response:", error.response?.data);
-      console.error("❌ [FnbCheckout] Error status:", error.response?.status);
-
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Có lỗi xảy ra khi tạo thanh toán";
+        t("fnb.paymentLinkError");
 
       Swal.fire({
-        title: "Lỗi",
-        text: `${errorMessage}. Vui lòng thử lại.`,
+        title: t("fnb.error"),
+        text: `${errorMessage}. ${t("fnb.tryAgain")}`,
         icon: "error",
         confirmButtonColor: "#eab308",
+        background: "#18181b",
+        color: "#fff",
       });
     } finally {
       setLoading(false);
@@ -138,12 +143,12 @@ const FnbCheckoutPage = () => {
       <Layout>
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-gray-500 mb-4">Không có thông tin đơn hàng</p>
+            <p className="text-gray-500 mb-4">{t("fnb.noOrderInfo")}</p>
             <button
               onClick={() => navigate("/popcorn-drink")}
               className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
             >
-              Quay lại đặt bắp nước
+              {t("fnb.backToOrder")}
             </button>
           </div>
         </div>
@@ -153,144 +158,144 @@ const FnbCheckoutPage = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-extrabold text-yellow-500 mb-4">
-              ĐẶT BẮP NƯỚC
-            </h1>
-            <p className="text-gray-600 text-lg">
-              Hoàn tất đơn hàng và thanh toán
-            </p>
-          </div>
-
-          {/* Steps Progress */}
-          <div className="flex justify-center mb-8">
-            <div className="flex items-center space-x-8">
-              {FNB_STEPS.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                      step.id <= activeStep
-                        ? "bg-yellow-500 border-yellow-500 text-white"
-                        : "bg-white border-gray-300 text-gray-400"
-                    }`}
-                  >
-                    {step.id < activeStep ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <span className="text-sm font-bold">{step.id}</span>
-                    )}
-                  </div>
-                  <span
-                    className={`ml-3 text-sm font-medium ${
-                      step.id <= activeStep
-                        ? "text-yellow-600"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {step.label}
+      <div className="min-h-screen bg-gray-100 flex flex-col pb-10">
+        <main className="container mx-auto px-4 md:px-6 mt-14 flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-16">
+            {/* LEFT COLUMN */}
+            <div className="flex flex-col space-y-8 lg:col-span-2">
+              <div className="text-center lg:text-left">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-500 mb-6 uppercase tracking-tighter">
+                  {t("fnb.checkoutTitle")}{" "}
+                  <span className="text-black">
+                    {t("fnb.checkoutHighlight")}
                   </span>
-                  {index < FNB_STEPS.length - 1 && (
-                    <div
-                      className={`w-16 h-0.5 ml-8 ${
-                        step.id < activeStep ? "bg-yellow-500" : "bg-gray-300"
-                      }`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+                </h1>
 
-          {/* Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Side - Steps */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-lg p-8">
-                <AnimatePresence mode="wait">
-                  {activeStep === 2 && (
-                    <motion.div
-                      key="payment"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="space-y-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                          💳 Thanh toán
-                        </h2>
-
-                        {user && (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                            <h3 className="font-semibold text-gray-900 mb-2">
-                              Thông tin khách hàng:
-                            </h3>
-                            <p className="text-gray-700">👤 {user.username}</p>
-                            <p className="text-gray-700">📧 {user.email}</p>
+                {/* Steps Bar - giống CheckoutPage */}
+                <div className="flex justify-between items-start w-full mt-16">
+                  {FNB_STEPS.map((step, index) => {
+                    const isActive = activeStep === step.id;
+                    const isCompleted = activeStep > step.id;
+                    return (
+                      <React.Fragment key={step.id}>
+                        <div className="flex flex-col items-center z-10 relative flex-1">
+                          <div
+                            className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
+                              isActive || isCompleted
+                                ? "bg-yellow-500 text-black"
+                                : "bg-gray-700 text-gray-400"
+                            }`}
+                          >
+                            <span className="text-xl font-bold">{step.id}</span>
+                          </div>
+                          <span
+                            className={`text-[10px] md:text-xs font-bold uppercase text-center transition-colors ${
+                              isActive || isCompleted
+                                ? "text-yellow-500"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {t(step.labelKey)}
+                          </span>
+                        </div>
+                        {index < FNB_STEPS.length - 1 && (
+                          <div className="flex-1 h-[2px] mt-6 relative">
+                            <div className="absolute top-0 left-0 w-full h-full bg-gray-700"></div>
+                            <motion.div
+                              initial={{ width: "0%" }}
+                              animate={{ width: isCompleted ? "100%" : "0%" }}
+                              transition={{ duration: 0.5 }}
+                              className="absolute top-0 left-0 h-full bg-yellow-500"
+                            />
                           </div>
                         )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
 
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <img
-                              src="/zalopay-logo.png"
-                              alt="ZaloPay"
-                              className="w-12 h-12 object-contain"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iOCIgZmlsbD0iIzAwNTFBNSIvPgo8cGF0aCBkPSJNMTIgMTZIMzZWMzJIMTJWMTZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K";
-                              }}
-                            />
-                            <div>
-                              <p className="font-bold text-gray-900 text-lg">
-                                Thanh toán qua ZaloPay
-                              </p>
-                              <p className="text-gray-600">
-                                Bạn sẽ được chuyển đến ZaloPay để hoàn tất thanh
-                                toán
-                              </p>
-                            </div>
-                            <CreditCard className="w-8 h-8 text-blue-600 ml-auto" />
+              {/* Dynamic Content */}
+              <div className="rounded-xl min-h-[400px]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeStep}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {activeStep === 2 && (
+                      <div className="space-y-6">
+                        {/* FnB Items Display */}
+                        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-400">
+                          <h2 className="text-xl font-bold text-gray-900 mb-4">
+                            {t("fnb.selectedItems")}
+                          </h2>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {cart.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-400"
+                              >
+                                {item.imageUrl && (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.name}
+                                    className="w-20 h-20 object-cover rounded-lg"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <h4 className="font-bold text-gray-900">
+                                    {language === "en" && item.nameEn
+                                      ? item.nameEn
+                                      : item.name}
+                                  </h4>
+                                  <p className="text-sm text-gray-600">
+                                    {item.unitPrice.toLocaleString()}đ x{" "}
+                                    {item.quantity}
+                                  </p>
+                                  <p className="font-semibold text-yellow-600 mt-1">
+                                    {(
+                                      item.unitPrice * item.quantity
+                                    ).toLocaleString()}
+                                    đ
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
 
-                        <div className="flex justify-between mt-8">
+                        {/* Payment Section */}
+                        <div className="flex justify-between items-center w-full mt-8">
+                          {/* Nút Quay lại */}
                           <button
                             onClick={() => navigate("/popcorn-drink")}
                             className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors font-semibold"
                           >
-                            ← Quay lại chọn món
+                            {t("fnb.backToSelect")}
                           </button>
 
+                          {/* Nút Thanh toán */}
                           <button
                             onClick={handlePayment}
                             disabled={loading}
-                            className="px-10 py-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="px-10 py-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {loading ? (
-                              <>
-                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                                Đang xử lý...
-                              </>
-                            ) : (
-                              <>
-                                💳 Thanh toán ngay
-                                <CreditCard className="w-5 h-5" />
-                              </>
-                            )}
+                            {loading
+                              ? t("fnb.processingPayment")
+                              : t("fnb.payNow")}
                           </button>
                         </div>
                       </div>
-                    </motion.div>
-                  )}
+                    )}
+                  </motion.div>
                 </AnimatePresence>
               </div>
             </div>
 
-            {/* Right Side - Summary */}
+            {/* RIGHT COLUMN - Summary */}
             <div className="lg:col-span-1">
               <FnbOrderSummary
                 theater={theater}
@@ -301,7 +306,7 @@ const FnbCheckoutPage = () => {
               />
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </Layout>
   );

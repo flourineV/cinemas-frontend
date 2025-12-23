@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 interface UseAccurateTimerOptions {
   initialTime: number | null;
@@ -14,7 +14,14 @@ export const useAccurateTimer = ({
   const [timeLeft, setTimeLeft] = useState<number | null>(initialTime);
   const startTimeRef = useRef<number | null>(null);
   const initialTimeRef = useRef<number | null>(initialTime);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onExpiredRef = useRef(onExpired);
+  const hasExpiredRef = useRef(false);
+
+  // Keep onExpired ref updated
+  useEffect(() => {
+    onExpiredRef.current = onExpired;
+  }, [onExpired]);
 
   // Update refs when initialTime changes
   useEffect(() => {
@@ -22,13 +29,14 @@ export const useAccurateTimer = ({
       setTimeLeft(initialTime);
       initialTimeRef.current = initialTime;
       startTimeRef.current = Date.now();
+      hasExpiredRef.current = false;
     }
   }, [initialTime]);
 
   // Sync time based on actual elapsed time
-  const syncTime = () => {
+  const syncTime = useCallback(() => {
     if (startTimeRef.current === null || initialTimeRef.current === null)
-      return;
+      return null;
 
     const now = Date.now();
     const elapsed = Math.floor((now - startTimeRef.current) / 1000);
@@ -36,19 +44,20 @@ export const useAccurateTimer = ({
 
     setTimeLeft(remaining);
 
-    if (remaining === 0 && onExpired) {
-      onExpired();
+    if (remaining === 0 && !hasExpiredRef.current) {
+      hasExpiredRef.current = true;
+      if (onExpiredRef.current) {
+        onExpiredRef.current();
+      }
     }
 
     return remaining;
-  };
+  }, []);
 
   // Handle visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && enabled) {
-        // Tab became visible - sync time
-        console.log("🔄 [useAccurateTimer] Tab visible - syncing time");
         syncTime();
       }
     };
@@ -57,24 +66,26 @@ export const useAccurateTimer = ({
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [enabled]);
+  }, [enabled, syncTime]);
 
-  // Main timer logic
+  // Main timer logic - only run once when enabled and initialTime is set
   useEffect(() => {
-    if (!enabled || timeLeft === null || timeLeft <= 0) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+    if (!enabled || initialTime === null || initialTime <= 0) {
       return;
     }
 
-    // Set start time if not set
-    if (startTimeRef.current === null) {
-      startTimeRef.current = Date.now();
-      initialTimeRef.current = timeLeft;
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
 
+    // Set start time
+    startTimeRef.current = Date.now();
+    initialTimeRef.current = initialTime;
+    hasExpiredRef.current = false;
+
+    // Start interval - runs every 1 second
     timerRef.current = setInterval(() => {
       const remaining = syncTime();
       if (remaining === 0) {
@@ -91,7 +102,7 @@ export const useAccurateTimer = ({
         timerRef.current = null;
       }
     };
-  }, [enabled, timeLeft === null]);
+  }, [enabled, initialTime, syncTime]);
 
   return timeLeft;
 };

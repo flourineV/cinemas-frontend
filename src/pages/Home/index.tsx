@@ -410,43 +410,61 @@ const Home = () => {
               {promotions.map((promo) => (
                 <div
                   key={promo.id}
-                  className="relative bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all"
+                  className="relative flex flex-col transition"
                 >
-                  {promo.promoDisplayUrl ? (
-                    <img
-                      src={promo.promoDisplayUrl}
-                      alt={promo.code}
-                      className="w-full h-48 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-48 flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
-                      <div className="text-center p-6">
-                        <p className="text-4xl font-extrabold text-white mb-2">
+                  {/* Image/Banner Section with Hover Overlay - separate group */}
+                  <div className="relative rounded-sm border border-black overflow-hidden shadow-xl group">
+                    {promo.promoDisplayUrl ? (
+                      <img
+                        src={promo.promoDisplayUrl}
+                        alt={promo.code}
+                        className="w-full h-[280px] object-cover transition-transform duration-300 transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-[280px] flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 transition-transform duration-300 transform group-hover:scale-105">
+                        <div className="text-center p-6">
+                          <p className="text-5xl font-extrabold text-white mb-2">
+                            {promo.discountType === "PERCENTAGE"
+                              ? `${promo.discountValue}%`
+                              : `${promo.discountValue.toLocaleString()}đ`}
+                          </p>
+                          <p className="text-lg text-white/90 font-semibold">
+                            {language === "en" ? "DISCOUNT" : "GIẢM GIÁ"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-6">
+                      <div className="text-white">
+                        <p className="text-3xl font-extrabold text-yellow-500 mb-3">
+                          {promo.code}
+                        </p>
+                        <p className="text-4xl font-bold mb-3">
                           {promo.discountType === "PERCENTAGE"
                             ? `${promo.discountValue}%`
                             : `${promo.discountValue.toLocaleString()}đ`}
                         </p>
-                        <p className="text-sm text-white/90">GIẢM GIÁ</p>
+                        {(promo.description || promo.descriptionEn) && (
+                          <p className="text-sm text-gray-300 mb-4 line-clamp-3">
+                            {language === "en"
+                              ? promo.descriptionEn || promo.description
+                              : promo.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          {language === "en" ? "Valid until:" : "HSD:"}{" "}
+                          {new Date(promo.endDate).toLocaleDateString(
+                            language === "en" ? "en-US" : "vi-VN"
+                          )}
+                        </p>
                       </div>
                     </div>
-                  )}
-                  <div className="p-4 bg-white">
-                    <p className="text-lg font-bold text-gray-900 mb-1 text-center mb-3">
-                      {promo.code}
-                    </p>
-                    {(promo.description || promo.descriptionEn) && (
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                        {language === "en"
-                          ? promo.descriptionEn || promo.description
-                          : promo.description}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500 mb-5">
-                      {language === "en" ? "Exp:" : "HSD:"}{" "}
-                      {new Date(promo.endDate).toLocaleDateString(
-                        language === "en" ? "en-US" : "vi-VN"
-                      )}
-                    </p>
+                  </div>
+
+                  {/* Button - separate, no title needed */}
+                  <div className="flex w-full mt-4 justify-center">
                     <AnimatedButton
                       variant="orange-to-f3ea28"
                       className="w-full"

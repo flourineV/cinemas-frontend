@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Swal from "sweetalert2";
 import Layout from "@/components/layout/Layout";
 import { useAccurateTimer } from "@/hooks/useAccurateTimer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 import SelectComboStep from "@/components/checkout/SelectComboStep";
 import CustomerInfoStep from "@/components/checkout/CustomerInfoStep";
@@ -15,15 +16,18 @@ import type { SelectedComboItem } from "@/components/checkout/SelectComboStep";
 import type { PromotionResponse } from "@/types/promotion/promotion.type";
 
 const STEPS = [
-  { id: 1, label: "THÔNG TIN KHÁCH HÀNG" },
-  { id: 2, label: "CHỌN BẮP NƯỚC" },
-  { id: 3, label: "MÃ GIẢM GIÁ" },
-  { id: 4, label: "THANH TOÁN" },
+  { id: 1, labelKey: "checkout.step1" },
+  { id: 2, labelKey: "checkout.step2" },
+  { id: 3, labelKey: "checkout.step3" },
+  { id: 4, labelKey: "checkout.step4" },
 ];
+
+const CHECKOUT_STORAGE_KEY = "cinehub-checkout-state";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   const [booking, setBooking] = useState<any>(null); // Booking chính thức
   const [pendingData, setPendingData] = useState<any>(null); // Draft cho Guest
@@ -42,6 +46,32 @@ export default function CheckoutPage() {
   const [useRankDiscount, setUseRankDiscount] = useState(false);
   const [rankDiscountValue, setRankDiscountValue] = useState(0);
 
+  // Save checkout state to sessionStorage when it changes
+  useEffect(() => {
+    if (booking) {
+      const stateToSave = {
+        activeStep,
+        selectedCombos,
+        customer,
+        paymentMethod,
+        appliedPromo,
+        useRankDiscount,
+        rankDiscountValue,
+        bookingId: booking?.id || booking?.bookingId,
+      };
+      sessionStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(stateToSave));
+    }
+  }, [
+    activeStep,
+    selectedCombos,
+    customer,
+    paymentMethod,
+    appliedPromo,
+    useRankDiscount,
+    rankDiscountValue,
+    booking,
+  ]);
+
   // --- 1. NHẬN DỮ LIỆU ---
   useEffect(() => {
     const stateData = location.state;
@@ -50,12 +80,40 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Try to restore saved state from sessionStorage
+    const savedState = sessionStorage.getItem(CHECKOUT_STORAGE_KEY);
+    let restoredState: any = null;
+    if (savedState) {
+      try {
+        restoredState = JSON.parse(savedState);
+      } catch (e) {
+        console.error("Failed to parse saved checkout state:", e);
+      }
+    }
+
     if (stateData.booking) {
       // === CASE A: User (Đã có booking) ===
       console.log("📦 Booking data from API:", stateData.booking);
       setBooking(stateData.booking);
       setUserLoggedIn(true);
-      setActiveStep(2); // Nhảy Step 2
+
+      // Restore state if same booking
+      const currentBookingId =
+        stateData.booking.id || stateData.booking.bookingId;
+      if (restoredState && restoredState.bookingId === currentBookingId) {
+        console.log("📦 Restoring checkout state from sessionStorage");
+        setActiveStep(restoredState.activeStep || 2);
+        setSelectedCombos(restoredState.selectedCombos || {});
+        setCustomer(
+          restoredState.customer || { name: "", email: "", phone: "" }
+        );
+        setPaymentMethod(restoredState.paymentMethod || "momo");
+        setAppliedPromo(restoredState.appliedPromo || null);
+        setUseRankDiscount(restoredState.useRankDiscount || false);
+        setRankDiscountValue(restoredState.rankDiscountValue || 0);
+      } else {
+        setActiveStep(2); // Nhảy Step 2
+      }
 
       setupTTL(stateData.ttl, stateData.ttlTimestamp);
 
@@ -83,7 +141,7 @@ export default function CheckoutPage() {
       console.log("📦 Guest data from SeatSelection:", stateData);
       setBooking({
         totalPrice: 0, // Will be calculated
-        movieTitle: "Phim đang chọn", // Placeholder
+        movieTitle: t("checkout.movie"), // Placeholder
         showtime: stateData.showtimeDetail,
         seats: stateData.selectedSeats || [],
       });
@@ -94,16 +152,25 @@ export default function CheckoutPage() {
 
       setupTTL(stateData.pendingData.ttl, stateData.pendingData.ttlTimestamp);
 
-      // Mock booking cho Summary hiển thị
+      // Mock booking cho Summary hiển thị - map đầy đủ thông tin từ pendingData
       console.log("📦 Guest pending data:", stateData.pendingData);
+      const pd = stateData.pendingData;
       setBooking({
-        totalPrice: stateData.pendingData.totalPrice,
-        movieTitle: stateData.pendingData.movieTitle,
-        showtime: stateData.pendingData.showtime,
-        seats:
-          stateData.pendingData.selectedSeats ||
-          stateData.pendingData.seats ||
-          [],
+        totalPrice: pd.totalPrice || 0,
+        movieId: pd.movieId,
+        movieTitle: pd.movieTitle,
+        showtime: pd.showtime,
+        // Map seats với seatNumber để hiển thị đúng
+        seats: (pd.seats || pd.selectedSeats || []).map((s: any) => ({
+          ...s,
+          seatNumber: s.seatNumber || s.seatId || s.name,
+        })),
+        // Thêm các field khác từ showtime để BookingSummary có thể hiển thị
+        theaterName: pd.showtime?.theaterName,
+        theaterNameEn: pd.showtime?.theaterNameEn,
+        roomName: pd.showtime?.roomName,
+        roomNameEn: pd.showtime?.roomNameEn,
+        startTime: pd.showtime?.startTime,
       });
     }
   }, []);
@@ -141,9 +208,9 @@ export default function CheckoutPage() {
 
     Swal.fire({
       icon: "error",
-      title: "Hết thời gian giữ ghế",
-      text: "Vui lòng thực hiện đặt vé lại!",
-      confirmButtonText: "Đặt vé lại",
+      title: t("checkout.seatExpired"),
+      text: t("checkout.seatExpiredText"),
+      confirmButtonText: t("checkout.rebookTicket"),
       confirmButtonColor: "#d97706",
       allowOutsideClick: false,
     }).then((result) => {
@@ -212,7 +279,10 @@ export default function CheckoutPage() {
             <div className="flex flex-col space-y-8 lg:col-span-2">
               <div className="text-center lg:text-left">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-500 mb-6 uppercase tracking-tighter">
-                  THANH <span className="text-black">TOÁN</span>
+                  {t("checkout.title")}{" "}
+                  <span className="text-black">
+                    {t("checkout.titleHighlight")}
+                  </span>
                 </h1>
                 {/* Steps Bar */}
                 <div className="flex justify-between items-start w-full mt-16">
@@ -234,7 +304,7 @@ export default function CheckoutPage() {
                           <span
                             className={`text-[10px] md:text-xs font-bold uppercase text-center transition-colors ${isActive || isCompleted ? "text-yellow-500" : "text-gray-500"}`}
                           >
-                            {step.label}
+                            {t(step.labelKey)}
                           </span>
                         </div>
                         {index < STEPS.length - 1 && (
@@ -281,7 +351,8 @@ export default function CheckoutPage() {
                         setSelectedCombos={setSelectedCombos}
                         onNext={handleNextStep}
                         onPrev={handlePrevStep}
-                        movieId={booking.movieId || pendingData?.movieTitle} // Fallback safe
+                        movieId={booking.movieId || pendingData?.movieId || ""}
+                        bookingId={booking?.id || booking?.bookingId}
                       />
                     )}
                     {activeStep === 3 && (
@@ -327,7 +398,6 @@ export default function CheckoutPage() {
                 finalTotal={finalTotal}
                 useRankDiscount={useRankDiscount}
                 rankDiscountValue={rankDiscountValue}
-                goToStep={setActiveStep}
                 ttl={timeLeft}
               />
             </div>

@@ -1,23 +1,34 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Clock, Calendar } from "lucide-react";
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import { formatAgeRating } from "@/utils/formatAgeRating";
 import type { MovieDetail } from "@/types/movie/movie.type";
 import type { MovieShowtimesResponse } from "@/types/showtime/theater.type";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MovieShowtimeCardProps {
   movie: MovieDetail;
   showtimes: MovieShowtimesResponse;
+  theaterName?: string;
+  theaterNameEn?: string;
+  theaterId?: string;
 }
 
 const MovieShowtimeCard: React.FC<MovieShowtimeCardProps> = ({
   movie,
   showtimes,
+  theaterName = "",
+  theaterNameEn = "",
+  theaterId = "",
 }) => {
+  const { language, t } = useLanguage();
+  const navigate = useNavigate();
+
   // Group showtimes by date
   const showtimesByDate = showtimes.showtimes.reduce(
     (acc, showtime) => {
-      const date = new Date(showtime.startTime).toLocaleDateString("vi-VN");
+      const locale = language === "en" ? "en-US" : "vi-VN";
+      const date = new Date(showtime.startTime).toLocaleDateString(locale);
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -51,9 +62,11 @@ const MovieShowtimeCard: React.FC<MovieShowtimeCardProps> = ({
           </Link>
 
           <div className="text-gray-300 text-sm space-y-1 mb-4">
-            <p>⏱️ {movie.time} phút</p>
-            <p>🎬 {movie.genres?.join(", ") || "N/A"}</p>
-            <p>👥 {formatAgeRating(movie.age)}</p>
+            <p>
+              {movie.time} {language === "en" ? "min" : "phút"}
+            </p>
+            <p>{movie.genres?.join(", ") || "N/A"}</p>
+            <p>{formatAgeRating(movie.age, language)}</p>
           </div>
 
           {/* Showtimes by date */}
@@ -70,9 +83,29 @@ const MovieShowtimeCard: React.FC<MovieShowtimeCardProps> = ({
                   {showtimesByDate[date]
                     .slice(0, maxShowtimesToShow)
                     .map((showtime) => (
-                      <Link
+                      <button
                         key={showtime.showtimeId}
-                        to={`/showtime/${showtime.showtimeId}`}
+                        onClick={() =>
+                          navigate(
+                            `/movies/${movie.id}?showtimeId=${showtime.showtimeId}`,
+                            {
+                              state: {
+                                preselectedShowtime: {
+                                  id: showtime.showtimeId,
+                                  movieId: movie.id,
+                                  theaterId: theaterId,
+                                  theaterName: theaterName,
+                                  theaterNameEn: theaterNameEn,
+                                  roomId: showtime.roomId,
+                                  roomName: showtime.roomName || "",
+                                  roomNameEn: "",
+                                  startTime: showtime.startTime,
+                                  endTime: showtime.endTime,
+                                },
+                              },
+                            }
+                          )
+                        }
                         className="border border-purple-400/50 rounded-lg px-3 py-2 hover:border-yellow-400 hover:bg-purple-800/30 transition-all text-center"
                       >
                         <div className="flex items-center justify-center gap-1">
@@ -83,11 +116,12 @@ const MovieShowtimeCard: React.FC<MovieShowtimeCardProps> = ({
                               {
                                 hour: "2-digit",
                                 minute: "2-digit",
+                                hour12: false,
                               }
                             )}
                           </span>
                         </div>
-                      </Link>
+                      </button>
                     ))}
                 </div>
               </div>
@@ -102,7 +136,7 @@ const MovieShowtimeCard: React.FC<MovieShowtimeCardProps> = ({
           to={`/movies/${movie.id}`}
           className="block w-full text-center py-2 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-lg transition-colors"
         >
-          Xem thêm lịch chiếu
+          {t("theater.viewMoreShowtimes")}
         </Link>
       </div>
     </div>

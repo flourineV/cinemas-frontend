@@ -1,18 +1,12 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Swal from "sweetalert2";
 import { showtimeSeatService } from "@/services/showtime/showtimeSeatService";
 import { seatLockService } from "@/services/showtime/seatLockService";
 import { websocketService } from "@/services/websocket/websocketService";
 import { useGuestSessionContext } from "@/contexts/GuestSessionContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
 import type { SeatLockResponse } from "@/types/showtime/seatlock.type";
-import { ArrowRight } from "lucide-react";
 
 interface SelectSeatProps {
   showtimeId: string;
@@ -30,6 +24,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
   onSeatLock,
   shouldUnlockOnUnmount = true, // Default true để giữ behavior cũ
 }) => {
+  const { t } = useLanguage();
   const [seats, setSeats] = useState<ShowtimeSeatResponse[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<ShowtimeSeatResponse[]>(
     []
@@ -125,8 +120,8 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
             try {
               await Swal.fire({
                 icon: "warning",
-                title: "Hết thời gian giữ ghế",
-                text: "Ghế bạn đang giữ đã bị giải phóng. Vui lòng chọn lại ghế!",
+                title: t("seat.holdExpired"),
+                text: t("seat.holdExpiredText"),
                 confirmButtonColor: "#eab308",
                 scrollbarPadding: false,
               });
@@ -338,30 +333,36 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     if (isCoupleSeat) {
       if (ticketCounts.coupleCount === 0)
         return Swal.fire({
-          title: "Chưa chọn vé đôi",
-          text: "Vui lòng chọn vé đôi trước!",
+          title: t("seat.noCoupleTicket"),
+          text: t("seat.noCoupleTicketText"),
           icon: "warning",
           scrollbarPadding: false,
         });
       if (selectedCoupleSeats >= ticketCounts.coupleCount)
         return Swal.fire({
-          title: "Đã đủ ghế đôi",
-          text: `Bạn chỉ mua ${ticketCounts.coupleCount} vé đôi!`,
+          title: t("seat.coupleEnough"),
+          text: t("seat.coupleEnoughText").replace(
+            "{count}",
+            String(ticketCounts.coupleCount)
+          ),
           icon: "warning",
           scrollbarPadding: false,
         });
     } else {
       if (ticketCounts.normalCount === 0)
         return Swal.fire({
-          title: "Chưa chọn vé đơn",
-          text: "Vui lòng chọn vé đơn trước!",
+          title: t("seat.noSingleTicket"),
+          text: t("seat.noSingleTicketText"),
           icon: "warning",
           scrollbarPadding: false,
         });
       if (selectedNormalSeats >= ticketCounts.normalCount)
         return Swal.fire({
-          title: "Đã đủ ghế đơn",
-          text: `Bạn chỉ mua ${ticketCounts.normalCount} vé đơn!`,
+          title: t("seat.singleEnough"),
+          text: t("seat.singleEnoughText").replace(
+            "{count}",
+            String(ticketCounts.normalCount)
+          ),
           icon: "warning",
           scrollbarPadding: false,
         });
@@ -407,8 +408,8 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         onSeatSelect(revertedSeats);
 
         await Swal.fire({
-          title: "Ghế đã được giữ",
-          text: "Ghế này vừa được người khác chọn.",
+          title: t("seat.alreadyLocked"),
+          text: t("seat.alreadyLockedText"),
           icon: "warning",
           scrollbarPadding: false,
         });
@@ -424,8 +425,8 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
 
       console.error("Failed to lock seat:", error);
       await Swal.fire({
-        title: "Lỗi",
-        text: "Không thể chọn ghế. Vui lòng thử lại!",
+        title: t("seat.error"),
+        text: t("seat.errorText"),
         icon: "error",
         scrollbarPadding: false,
       });
@@ -436,13 +437,13 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
   if (loading)
     return (
       <div className="flex justify-center py-10">
-        <p className="text-white text-xl">Đang tải sơ đồ ghế...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-yellow-500"></div>
       </div>
     );
   if (seats.length === 0)
     return (
       <div className="flex justify-center py-10">
-        <p className="text-white text-xl">Không có dữ liệu ghế.</p>
+        <p className="text-white text-xl">{t("seat.noData")}</p>
       </div>
     );
 
@@ -454,7 +455,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         <div className="absolute -left-12 top-2/3 -translate-y-1/2 -translate-x-full hidden lg:flex items-center gap-2 pr-6">
           <div className="flex flex-col items-center gap-1">
             <span className="text-zinc-600 text-xs font-medium uppercase tracking-wider whitespace-nowrap">
-              Lối vào
+              {t("seat.entrance")}
             </span>
             <svg
               className="w-8 h-8 text-yellow-500"
@@ -485,7 +486,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
           />
         </svg>
         <span className="absolute bottom-2 text-zinc-800 text-lg font-extrabold text-center w-full">
-          MÀN HÌNH
+          {t("seat.screen")}
         </span>
       </div>
 
@@ -640,11 +641,11 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
       <div className="flex gap-4 mt-8 text-sm flex-wrap justify-center text-zinc-800 pt-5">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-md bg-white border border-zinc-800" />
-          <span>Ghế thường</span>
+          <span>{t("seat.normal")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-md bg-purple-500 border border-zinc-800" />
-          <span>Ghế VIP</span>
+          <span>{t("seat.vip")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-16 h-10 flex items-center justify-center">
@@ -660,19 +661,19 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
               />
             </svg>
           </div>
-          <span>Ghế đôi</span>
+          <span>{t("seat.coupleSeat")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-md bg-yellow-400 border border-zinc-800" />
-          <span>Ghế chọn</span>
+          <span>{t("seat.selected")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-md bg-orange-500 opacity-70 border border-zinc-800" />
-          <span>Đang giữ chỗ</span>
+          <span>{t("seat.holding")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-md bg-gray-600 border border-zinc-800" />
-          <span>Đã đặt</span>
+          <span>{t("seat.booked")}</span>
         </div>
       </div>
     </div>

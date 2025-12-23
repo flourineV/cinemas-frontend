@@ -14,7 +14,7 @@ import {
   Film,
   Star,
 } from "lucide-react";
-import { useScrollToElement } from "@/hooks/useScrollToTop";
+
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 
@@ -44,9 +44,6 @@ function MovieTable({ status }: MovieTableProps) {
   const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Scroll to table top when page changes
-  const scrollToElement = useScrollToElement();
 
   // search + debounce + filters
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -99,9 +96,13 @@ function MovieTable({ status }: MovieTableProps) {
         sortType: "DESC",
       };
 
+      console.log("📽️ Fetching movies with params:", params);
+
       // movieManagementService.adminList trả PageResponse<MovieSummary>
       const pageResp: PageResponse<MovieSummary> =
         await movieManagementService.adminList(params);
+
+      console.log("📽️ Movies response:", pageResp);
 
       const items = pageResp.data ?? [];
       const pageNum = pageResp.page ?? page;
@@ -124,12 +125,20 @@ function MovieTable({ status }: MovieTableProps) {
   };
 
   useEffect(() => {
-    fetchMovies(1, true);
+    // Wait for token to be available before fetching
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      fetchMovies(1, true);
+    } else {
+      console.warn("No access token found, skipping movie fetch");
+      setLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!loading) {
+    const token = localStorage.getItem("accessToken");
+    if (!loading && token) {
       fetchMovies(paging.page, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,15 +147,29 @@ function MovieTable({ status }: MovieTableProps) {
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page + 1 }));
-      // Scroll to table top when changing page
-      setTimeout(() => scrollToElement(`#movie-table-${status}`), 100);
+      // Scroll to section title when changing page
+      setTimeout(() => {
+        const element = document.getElementById(`movie-table-${status}`);
+        if (element) {
+          const headerHeight = 200; // Account for fixed header + section title
+          const elementTop = element.offsetTop - headerHeight;
+          window.scrollTo({ top: elementTop, behavior: "smooth" });
+        }
+      }, 100);
     }
   };
   const goToPrevPage = () => {
     if (paging.page > 1 && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page - 1 }));
-      // Scroll to table top when changing page
-      setTimeout(() => scrollToElement(`#movie-table-${status}`), 100);
+      // Scroll to section title when changing page
+      setTimeout(() => {
+        const element = document.getElementById(`movie-table-${status}`);
+        if (element) {
+          const headerHeight = 200; // Account for fixed header + section title
+          const elementTop = element.offsetTop - headerHeight;
+          window.scrollTo({ top: elementTop, behavior: "smooth" });
+        }
+      }, 100);
     }
   };
 
@@ -574,7 +597,10 @@ function MovieTable({ status }: MovieTableProps) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto rounded-lg relative border border-gray-400">
+        <div
+          id={`movie-table-${status}`}
+          className="overflow-x-auto rounded-lg relative border border-gray-400"
+        >
           {isRefreshing && (
             <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 rounded-lg">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
@@ -582,7 +608,6 @@ function MovieTable({ status }: MovieTableProps) {
           )}
 
           <table
-            id={`movie-table-${status}`}
             className="min-w-full divide-y divide-yellow-400/80 table-fixed"
             style={{ tableLayout: "fixed", width: "100%" }}
           >

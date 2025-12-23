@@ -13,7 +13,7 @@ import type {
 } from "@/types/userprofile";
 import { useAuthStore } from "../../stores/authStore";
 import { getPosterUrl } from "@/utils/getPosterUrl";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 import { fnbService } from "@/services/fnb/fnbService";
@@ -142,6 +142,7 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
 const Profile = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
@@ -247,7 +248,7 @@ const Profile = () => {
     if (activeTab === "bookings") {
       fetchBookings();
     }
-  }, [user?.id, activeTab]);
+  }, [user?.id, activeTab, location.state?.refresh, language]);
 
   // Fetch favorite movies
   useEffect(() => {
@@ -260,7 +261,7 @@ const Profile = () => {
 
         // Fetch movie details for each favorite using movieId
         const moviePromises = favorites.map((fav) =>
-          movieService.getMovieDetail(fav.movieId)
+          movieService.getMovieDetail(fav.movieId, language)
         );
         const movies = await Promise.all(moviePromises);
         console.log("🎬 Movies fetched:", movies);
@@ -276,7 +277,7 @@ const Profile = () => {
     if (activeTab === "favorites") {
       fetchFavorites();
     }
-  }, [user?.id, activeTab]);
+  }, [user?.id, activeTab, language]);
 
   // Fetch loyalty history
   useEffect(() => {
@@ -289,7 +290,7 @@ const Profile = () => {
           1,
           20
         );
-        setLoyaltyHistory(response.content);
+        setLoyaltyHistory(response.data || []);
       } catch (error) {
         console.error("Lỗi khi lấy lịch sử điểm thưởng:", error);
       } finally {
@@ -310,11 +311,11 @@ const Profile = () => {
       try {
         const orders = await fnbService.getOrdersByUser(user.id);
         console.log("📦 FnB orders:", orders);
-        // Filter only CONFIRMED orders
-        const confirmedOrders = orders.filter(
-          (order) => order.status === "CONFIRMED"
+        // Filter only PAID or CONFIRMED orders (exclude PENDING, CANCELLED)
+        const completedOrders = orders.filter(
+          (order) => order.status === "PAID" || order.status === "CONFIRMED"
         );
-        setFnbOrders(confirmedOrders);
+        setFnbOrders(completedOrders);
       } catch (error) {
         console.error("Lỗi khi lấy lịch sử đặt bắp nước:", error);
       } finally {
@@ -325,7 +326,7 @@ const Profile = () => {
     if (activeTab === "fnb") {
       fetchFnbOrders();
     }
-  }, [user?.id, activeTab]);
+  }, [user?.id, activeTab, location.state?.refresh]);
 
   const loadMoreBookings = () => {
     const currentLength = displayedBookings.length;
@@ -573,7 +574,10 @@ const Profile = () => {
             <div className="flex items-center gap-2 text-gray-900 text-lg">
               <Award className="w-8 h-8 text-yellow-500" />
               <span className="font-semibold">
-                {t("profile.memberRank")} {profile.rankName || "Bronze"}
+                {t("profile.memberRank")}{" "}
+                {language === "en"
+                  ? profile.rankNameEn || profile.rankName || "Bronze"
+                  : profile.rankName || "Bronze"}
               </span>
             </div>
           </div>
@@ -603,13 +607,51 @@ const Profile = () => {
                 {profile.loyaltyPoint}/1000
               </span>
             </div>
+
+            {/* Receive Promo Email Checkbox */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={profile.receivePromoEmail || false}
+                  onChange={async (e) => {
+                    try {
+                      const updated = await userProfileService.updateProfile(
+                        user!.id,
+                        {
+                          receivePromoEmail: e.target.checked,
+                        }
+                      );
+                      setProfile(updated);
+                    } catch (error) {
+                      console.error(
+                        "Failed to update promo email preference:",
+                        error
+                      );
+                    }
+                  }}
+                  className="w-5 h-5 rounded border-2 border-gray-400 bg-white text-yellow-500 focus:ring-yellow-500 focus:ring-offset-0 cursor-pointer appearance-none checked:bg-yellow-500 checked:border-yellow-500"
+                  style={{
+                    backgroundImage: profile.receivePromoEmail
+                      ? "url(\"data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e\")"
+                      : "none",
+                    backgroundSize: "100% 100%",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+                <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
+                  {t("profile.receivePromoEmail")}
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-white border-b border-gray-200 relative">
           <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-5 gap-4 relative">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -617,14 +659,24 @@ const Profile = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center justify-center gap-2 py-4 border-t border-t-2 transition-colors ${
+                    className={`relative flex items-center justify-center gap-2 py-4 border-t-2 transition-all duration-300 overflow-hidden ${
                       isActive
-                        ? "border-gray-900 text-gray-900"
+                        ? "border-yellow-500 text-yellow-600"
                         : "border-transparent text-gray-400 hover:text-gray-600"
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-semibold whitespace-nowrap">
+                    {/* Glow effect - thanh sáng đều chiếu xuống */}
+                    {isActive && (
+                      <div
+                        className="absolute top-0 left-0 right-0 h-12 pointer-events-none"
+                        style={{
+                          background:
+                            "linear-gradient(to bottom, rgba(234, 179, 8, 0.15) 0%, rgba(234, 179, 8, 0.05) 50%, transparent 100%)",
+                        }}
+                      />
+                    )}
+                    <Icon className="w-4 h-4 relative z-10" />
+                    <span className="text-sm font-semibold whitespace-nowrap relative z-10">
                       {tab.label}
                     </span>
                   </button>
@@ -718,21 +770,29 @@ const Profile = () => {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {t("profile.noBookingHistory")}
                   </h3>
-                  <p className="text-gray-500">
+                  <p className="text-gray-500 mb-4">
                     {t("profile.bookingHistoryDesc")}
                   </p>
+                  <button
+                    onClick={() => navigate("/showtime")}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-2 rounded-lg transition-colors"
+                  >
+                    {t("profile.bookNow")}
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {displayedBookings.map((booking) => (
                     <div
                       key={booking.bookingId}
-                      className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-200"
+                      className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-400"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {booking.movieTitle || "Phim"}
+                            {language === "en" && booking.movieTitleEn
+                              ? booking.movieTitleEn
+                              : booking.movieTitle || "Phim"}
                           </h3>
                           <p className="text-sm text-gray-500">
                             {t("profile.bookingCode")}: {booking.bookingCode}
@@ -756,13 +816,17 @@ const Profile = () => {
                           <span className="font-medium">
                             {t("profile.theater")}:
                           </span>{" "}
-                          {booking.theaterName || "N/A"}
+                          {language === "en" && booking.theaterNameEn
+                            ? booking.theaterNameEn
+                            : booking.theaterName || "N/A"}
                         </div>
                         <div className="text-gray-600">
                           <span className="font-medium">
                             {t("profile.room")}:
                           </span>{" "}
-                          {booking.roomName || "N/A"}
+                          {language === "en" && booking.roomNameEn
+                            ? booking.roomNameEn
+                            : booking.roomName || "N/A"}
                         </div>
                         <div className="text-gray-600 col-span-2">
                           <span className="font-medium">
@@ -820,9 +884,15 @@ const Profile = () => {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {t("profile.noFavoriteMovies")}
                   </h3>
-                  <p className="text-gray-500">
+                  <p className="text-gray-500 mb-4">
                     {t("profile.favoriteMoviesDesc")}
                   </p>
+                  <button
+                    onClick={() => navigate("/")}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-2 rounded-lg transition-colors"
+                  >
+                    {t("profile.exploreMovies")}
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -909,7 +979,7 @@ const Profile = () => {
                   </p>
                   <button
                     onClick={() => navigate("/popcorn-drink")}
-                    className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-2 rounded-lg transition-colors"
                   >
                     {t("profile.orderNow")}
                   </button>
@@ -919,7 +989,7 @@ const Profile = () => {
                   {fnbOrders.map((order) => (
                     <div
                       key={order.id}
-                      className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-200"
+                      className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-400"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
@@ -932,14 +1002,16 @@ const Profile = () => {
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            order.status === "CONFIRMED"
+                            order.status === "CONFIRMED" ||
+                            order.status === "PAID"
                               ? "bg-green-100 text-green-700"
                               : order.status === "PENDING"
                                 ? "bg-yellow-100 text-yellow-700"
                                 : "bg-red-100 text-red-700"
                           }`}
                         >
-                          {order.status === "CONFIRMED"
+                          {order.status === "CONFIRMED" ||
+                          order.status === "PAID"
                             ? t("profile.confirmed")
                             : order.status === "PENDING"
                               ? t("profile.pending")
@@ -959,7 +1031,9 @@ const Profile = () => {
                             >
                               <div className="flex-1">
                                 <span className="font-medium text-gray-900">
-                                  {item.name}
+                                  {language === "en" && item.itemNameEn
+                                    ? item.itemNameEn
+                                    : item.itemName || `Item #${index + 1}`}
                                 </span>
                                 <span className="text-gray-500 ml-2">
                                   x{item.quantity}
@@ -967,7 +1041,7 @@ const Profile = () => {
                               </div>
                               <div className="text-right">
                                 <div className="text-gray-900 font-medium">
-                                  {item.subtotal.toLocaleString()} VNĐ
+                                  {item.totalPrice.toLocaleString()} VNĐ
                                 </div>
                                 <div className="text-xs text-gray-500">
                                   {item.unitPrice.toLocaleString()} VNĐ/món
@@ -1001,41 +1075,10 @@ const Profile = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="max-w-3xl mx-auto"
+              className="max-w-5xl mx-auto"
             >
-              {/* Loyalty Card */}
-              <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl p-8 mb-8 text-white shadow-xl">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <p className="text-sm opacity-90 mb-1">
-                      {t("profile.membershipRank")}
-                    </p>
-                    <h2 className="text-3xl font-bold">
-                      {profile.rankName || "Bronze"}
-                    </h2>
-                  </div>
-                  <Award className="w-16 h-16 opacity-30" />
-                </div>
-                <div className="mb-4">
-                  <p className="text-sm opacity-90 mb-2">
-                    {t("profile.currentPoints")}
-                  </p>
-                  <p className="text-4xl font-bold">{profile.loyaltyPoint}</p>
-                </div>
-                <div className="bg-white/20 rounded-full h-2 mb-2">
-                  <div
-                    className="bg-white/40 h-2 rounded-full transition-all"
-                    style={{ width: `${loyaltyPercent}%` }}
-                  />
-                </div>
-                <p className="text-sm opacity-90">
-                  {t("profile.pointsRemaining")} {1000 - profile.loyaltyPoint}{" "}
-                  {t("profile.pointsToNext")}
-                </p>
-              </div>
-
               {/* Loyalty History */}
-              <div className="bg-white rounded-xl p-6 shadow">
+              <div className="bg-white rounded-xl p-6 shadow border border-gray-400">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   {t("profile.loyaltyHistory")}
                 </h3>
@@ -1046,9 +1089,18 @@ const Profile = () => {
                 ) : loyaltyHistory.length === 0 ? (
                   <div className="text-center py-16">
                     <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 mb-2">
                       {t("profile.noLoyaltyHistory")}
                     </p>
+                    <p className="text-gray-400 text-sm mb-4">
+                      {t("profile.loyaltyHistoryDesc")}
+                    </p>
+                    <button
+                      onClick={() => navigate("/showtime")}
+                      className="px-6 py-2 bg-yellow-500 text-black font-semibold rounded-lg hover:bg-black hover:text-yellow-500 transition-colors"
+                    >
+                      {t("profile.bookNow")}
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1061,22 +1113,14 @@ const Profile = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                item.transactionType === "EARNED"
+                                item.pointsChange > 0
                                   ? "bg-green-100 text-green-700"
-                                  : item.transactionType === "REDEEMED"
-                                    ? "bg-red-100 text-red-700"
-                                    : item.transactionType === "BONUS"
-                                      ? "bg-blue-100 text-blue-700"
-                                      : "bg-gray-100 text-gray-700"
+                                  : "bg-red-100 text-red-700"
                               }`}
                             >
-                              {item.transactionType === "EARNED"
+                              {item.pointsChange > 0
                                 ? t("profile.earned")
-                                : item.transactionType === "REDEEMED"
-                                  ? t("profile.redeemed")
-                                  : item.transactionType === "BONUS"
-                                    ? t("profile.bonus")
-                                    : t("profile.expired")}
+                                : t("profile.redeemed")}
                             </span>
                           </div>
                           <p className="text-sm text-gray-900 font-medium">
@@ -1089,17 +1133,13 @@ const Profile = () => {
                         <div className="text-right">
                           <span
                             className={`text-lg font-bold ${
-                              item.transactionType === "EARNED" ||
-                              item.transactionType === "BONUS"
+                              item.pointsChange > 0
                                 ? "text-green-600"
                                 : "text-red-600"
                             }`}
                           >
-                            {item.transactionType === "EARNED" ||
-                            item.transactionType === "BONUS"
-                              ? "+"
-                              : "-"}
-                            {Math.abs(item.points)}
+                            {item.pointsChange > 0 ? "+" : ""}
+                            {item.pointsChange}
                           </span>
                           <p className="text-xs text-gray-500">
                             {t("profile.points")}

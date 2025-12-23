@@ -20,6 +20,7 @@ import PaymentResult from "@/pages/Payment/PaymentResult";
 import TheaterDetail from "@/pages/Theater/TheaterDetail";
 import SearchPage from "@/pages/Search/SearchPage";
 import SeatSelectionPage from "@/pages/Booking/SeatSelectionPage";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
 import { UserRole } from "@/constants/UserRole";
 
@@ -42,6 +43,7 @@ export const publicRoutes = [
   { path: "/forgot-password", element: <ForgotPassword /> },
   { path: "/checkout", element: <CheckoutPage /> },
   { path: "/payment-result", element: <PaymentResult /> },
+  { path: "/privacy-policy", element: <PrivacyPolicy /> },
 ];
 
 export const protectedRoutes = [

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Layout from "../../components/layout/Layout";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 // --- INTERFACES ---
 interface LoginFormData {
@@ -98,6 +99,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
 
 // --- MAIN COMPONENT ---
 function AuthPage() {
+  const { t } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { user, signin, signup, loading, error } = useAuthStore();
@@ -149,9 +151,9 @@ function AuthPage() {
   const validateLogin = () => {
     const newErrors: Partial<LoginFormData> = {};
     if (!loginData.usernameOrEmailOrPhone.trim())
-      newErrors.usernameOrEmailOrPhone = "Vui lòng nhập tài khoản";
+      newErrors.usernameOrEmailOrPhone = t("auth.error.accountRequired");
     if (!loginData.password.trim())
-      newErrors.password = "Vui lòng nhập mật khẩu";
+      newErrors.password = t("auth.error.passwordRequired");
     setLoginErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -172,20 +174,20 @@ function AuthPage() {
   const validateSignup = () => {
     const newErrors: Partial<SignupFormData> = {};
     if (!signupData.email || !/\S+@\S+\.\S+/.test(signupData.email))
-      newErrors.email = "Email không hợp lệ";
+      newErrors.email = t("auth.error.emailInvalid");
     if (!signupData.username || signupData.username.length < 3)
-      newErrors.username = "Tên đăng nhập tối thiểu 3 ký tự";
+      newErrors.username = t("auth.error.usernameMin");
     if (
       !signupData.phoneNumber ||
       !/^[0-9]{10,11}$/.test(signupData.phoneNumber)
     )
-      newErrors.phoneNumber = "SĐT không hợp lệ";
+      newErrors.phoneNumber = t("auth.error.phoneInvalid");
     if (!signupData.nationalId || !/^[0-9]{9,12}$/.test(signupData.nationalId))
-      newErrors.nationalId = "CMND/CCCD không hợp lệ";
+      newErrors.nationalId = t("auth.error.nationalIdInvalid");
     if (!signupData.password || signupData.password.length < 6)
-      newErrors.password = "Mật khẩu tối thiểu 6 ký tự";
+      newErrors.password = t("auth.error.passwordMin");
     if (signupData.password !== signupData.confirmPassword)
-      newErrors.confirmPassword = "Mật khẩu không khớp";
+      newErrors.confirmPassword = t("auth.error.passwordMismatch");
 
     setSignupErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -227,7 +229,7 @@ function AuthPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative w-full max-w-4xl min-h-[700px] bg-white rounded-2xl shadow-2xl overflow-hidden z-10 flex"
+          className="relative w-full max-w-5xl min-h-[700px] bg-white rounded-2xl shadow-2xl overflow-hidden z-10 flex"
         >
           {/* === FORM SIGN IN (LOGIN) === */}
           <div
@@ -239,30 +241,30 @@ function AuthPage() {
           >
             <div className="w-full px-12">
               <h2 className="text-3xl font-bold text-zinc-900 mb-2 text-center tracking-tight">
-                Đăng Nhập
+                {t("auth.login")}
               </h2>
               <p className="text-gray-400 text-sm text-center mb-8">
-                Chào mừng bạn quay trở lại CineHub!
+                {t("auth.loginWelcome")}
               </p>
 
               <form onSubmit={handleLoginSubmit} className="space-y-5">
                 <CustomInput
-                  label="Tài khoản / Email / Số điện thoại"
+                  label={t("auth.accountLabel")}
                   icon={User}
                   type="text"
                   name="usernameOrEmailOrPhone"
-                  placeholder="nguyenvana"
+                  placeholder={t("auth.accountPlaceholder")}
                   value={loginData.usernameOrEmailOrPhone}
                   onChange={handleLoginChange}
                   error={loginErrors.usernameOrEmailOrPhone}
                 />
 
                 <CustomInput
-                  label="Mật khẩu"
+                  label={t("auth.passwordLabel")}
                   icon={Lock}
                   type="password"
                   name="password"
-                  placeholder="••••••••"
+                  placeholder={t("auth.passwordPlaceholder")}
                   value={loginData.password}
                   onChange={handleLoginChange}
                   error={loginErrors.password}
@@ -280,14 +282,14 @@ function AuthPage() {
                       className="custom-checkbox"
                     />
                     <span className="text-sm text-gray-600 group-hover:text-zinc-900 transition-colors">
-                      Ghi nhớ đăng nhập
+                      {t("auth.rememberMe")}
                     </span>
                   </label>
                   <a
                     href="/forgot-password"
                     className="text-gray-500 text-sm hover:text-zinc-900 transition-colors font-medium hover:underline"
                   >
-                    Quên mật khẩu?
+                    {t("auth.forgotPassword")}
                   </a>
                 </div>
 
@@ -302,7 +304,7 @@ function AuthPage() {
                       size={20}
                     />
                   ) : (
-                    "ĐĂNG NHẬP"
+                    t("auth.loginButton")
                   )}
                 </button>
 
@@ -325,30 +327,30 @@ function AuthPage() {
           >
             <div className="w-full px-12 h-full overflow-y-auto py-8 custom-scrollbar">
               <h2 className="text-3xl font-bold text-zinc-900 mb-3 text-center tracking-tight">
-                Tạo Tài Khoản
+                {t("auth.createAccount")}
               </h2>
 
               <p className="text-gray-400 text-sm text-center mb-6">
-                Cùng chiêm ngưỡng những bộ phim bom tấn
+                {t("auth.registerWelcome")}
               </p>
 
               <form onSubmit={handleSignupSubmit} className="space-y-4">
                 <CustomInput
-                  label="Tên đăng nhập"
+                  label={t("auth.usernameLabel")}
                   icon={User}
                   name="username"
-                  placeholder="nguyenvana"
+                  placeholder={t("auth.usernamePlaceholder")}
                   value={signupData.username}
                   onChange={handleSignupChange}
                   error={signupErrors.username}
                 />
 
                 <CustomInput
-                  label="Email"
+                  label={t("auth.emailLabel")}
                   icon={Mail}
                   name="email"
                   type="email"
-                  placeholder="example@gmail.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   value={signupData.email}
                   onChange={handleSignupChange}
                   error={signupErrors.email}
@@ -356,19 +358,19 @@ function AuthPage() {
 
                 <div className="flex gap-3">
                   <CustomInput
-                    label="Số điện thoại"
+                    label={t("auth.phoneLabel")}
                     icon={Phone}
                     name="phoneNumber"
-                    placeholder="0912345678"
+                    placeholder={t("auth.phonePlaceholder")}
                     value={signupData.phoneNumber}
                     onChange={handleSignupChange}
                     error={signupErrors.phoneNumber}
                   />
                   <CustomInput
-                    label="CMND/CCCD"
+                    label={t("auth.nationalIdLabel")}
                     icon={CreditCard}
                     name="nationalId"
-                    placeholder="0791..."
+                    placeholder={t("auth.nationalIdPlaceholder")}
                     value={signupData.nationalId}
                     onChange={handleSignupChange}
                     error={signupErrors.nationalId}
@@ -376,24 +378,24 @@ function AuthPage() {
                 </div>
 
                 <CustomInput
-                  label="Mật khẩu"
+                  label={t("auth.passwordLabel")}
                   icon={Lock}
                   isPassword
                   showPassword={showSignupPass}
                   onTogglePassword={() => setShowSignupPass(!showSignupPass)}
                   name="password"
-                  placeholder="Tối thiểu 6 ký tự"
+                  placeholder={t("auth.minChars")}
                   value={signupData.password}
                   onChange={handleSignupChange}
                   error={signupErrors.password}
                 />
 
                 <CustomInput
-                  label="Xác nhận mật khẩu"
+                  label={t("auth.confirmPasswordLabel")}
                   icon={KeyRound}
                   type="password"
                   name="confirmPassword"
-                  placeholder="Nhập lại mật khẩu"
+                  placeholder={t("auth.confirmPasswordPlaceholder")}
                   value={signupData.confirmPassword}
                   onChange={handleSignupChange}
                   error={signupErrors.confirmPassword}
@@ -410,7 +412,7 @@ function AuthPage() {
                       size={20}
                     />
                   ) : (
-                    "ĐĂNG KÝ"
+                    t("auth.registerButton")
                   )}
                 </button>
 
@@ -444,34 +446,32 @@ function AuthPage() {
               {isSignUp ? (
                 <>
                   <h1 className="text-4xl font-bold mb-4 text-white">
-                    Chào mừng trở lại!
+                    {t("auth.welcomeBack")}
                   </h1>
                   <p className="mb-8 text-gray-400">
-                    Để duy trì kết nối với CineHub, vui lòng đăng nhập bằng
-                    thông tin cá nhân của bạn
+                    {t("auth.welcomeBackDesc")}
                   </p>
                   <button
                     onClick={() => setIsSignUp(false)}
                     className="border border-white/30 text-white bg-transparent px-10 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-all duration-300 uppercase tracking-wider"
                   >
-                    Đăng Nhập
+                    {t("auth.login")}
                   </button>
                 </>
               ) : (
                 <>
                   <h1 className="text-4xl font-bold mb-4 text-white">
-                    Xin chào, Bạn mới!
+                    {t("auth.helloNew")}
                   </h1>
                   <p className="mb-8 text-gray-400">
-                    Nhập thông tin cá nhân của bạn và bắt đầu hành trình tuyệt
-                    vời cùng{" "}
+                    {t("auth.helloNewDesc")}{" "}
                     <span className="text-yellow-400 font-bold">CineHub</span>
                   </p>
                   <button
                     onClick={() => setIsSignUp(true)}
                     className="border border-white/30 text-white bg-transparent px-10 py-3 rounded-full font-bold hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-all duration-300 uppercase tracking-wider"
                   >
-                    Đăng Ký
+                    {t("auth.register")}
                   </button>
                 </>
               )}

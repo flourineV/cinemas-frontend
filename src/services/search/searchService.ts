@@ -10,9 +10,13 @@ export interface SearchResponse {
 }
 
 export const searchService = {
-  search: async (keyword: string): Promise<SearchResponse> => {
+  search: async (
+    keyword: string,
+    language: string = "vi"
+  ): Promise<SearchResponse> => {
     const res = await apiClient.get<SearchResponse>("/search", {
       params: { keyword },
+      headers: { "Accept-Language": language },
     });
     return res.data;
   },

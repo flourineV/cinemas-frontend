@@ -1,4 +1,9 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import { User, ChevronDown, Search, Settings } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "../../stores/authStore";
@@ -9,11 +14,20 @@ const Header = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams] = useSearchParams();
 
   const { user, signout } = useAuthStore();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Sync searchTerm with URL keyword
+  useEffect(() => {
+    const keyword = searchParams.get("keyword") || "";
+    if (location.pathname === "/search" && keyword) {
+      setSearchTerm(keyword);
+    }
+  }, [searchParams, location.pathname]);
 
   // Debug log
   console.log("Header - Current language:", language);
@@ -157,7 +171,7 @@ const Header = () => {
 
                     {hasAdminAccess && (
                       <Link
-                        to={`/dashboard/${user.role}`}
+                        to={`/${user.role}/dashboard`}
                         onClick={() => setIsUserMenuOpen(false)}
                         className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 flex items-center gap-2.5 text-gray-700"
                       >

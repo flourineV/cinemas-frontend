@@ -2,6 +2,7 @@ import { fnbClient } from "../apiClient";
 import { theaterService } from "../showtime/theaterService";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 import type {
+  FnbItemRequest,
   FnbItemResponse,
   FnbOrderRequest,
   FnbOrderResponse,
@@ -15,6 +16,28 @@ export const fnbService = {
   getAllFnbItems: async (): Promise<FnbItemResponse[]> => {
     const response = await fnbClient.get<FnbItemResponse[]>("");
     return response.data;
+  },
+
+  getFnbItemById: async (id: string): Promise<FnbItemResponse> => {
+    const response = await fnbClient.get<FnbItemResponse>(`/items/${id}`);
+    return response.data;
+  },
+
+  createFnbItem: async (data: FnbItemRequest): Promise<FnbItemResponse> => {
+    const response = await fnbClient.post<FnbItemResponse>("", data);
+    return response.data;
+  },
+
+  updateFnbItem: async (
+    id: string,
+    data: FnbItemRequest
+  ): Promise<FnbItemResponse> => {
+    const response = await fnbClient.put<FnbItemResponse>(`/${id}`, data);
+    return response.data;
+  },
+
+  deleteFnbItem: async (id: string): Promise<void> => {
+    await fnbClient.delete(`/${id}`);
   },
 
   createOrder: async (

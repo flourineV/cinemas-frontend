@@ -6,7 +6,27 @@ import type {
   BookingResponse,
 } from "@/types/booking/booking.type";
 
+interface BookingStatsResponse {
+  totalBookings: number;
+  confirmedBookings: number;
+  cancelledBookings: number;
+  pendingBookings: number;
+  totalRevenue: number;
+}
+
 export const bookingService = {
+  // GET /api/bookings/stats/overview
+  getStatsOverview: async (
+    theaterId?: string
+  ): Promise<BookingStatsResponse> => {
+    const params = theaterId ? { theaterId } : {};
+    const res = await bookingClient.get<BookingStatsResponse>(
+      "/stats/overview",
+      { params }
+    );
+    return res.data;
+  },
+
   // POST /api/bookings
   createBooking: async (
     data: CreateBookingRequest
