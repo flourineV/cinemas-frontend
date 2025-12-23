@@ -20,6 +20,9 @@ export const applyInterceptors = (client: AxiosInstance): AxiosInstance => {
       config.headers = config.headers || {};
       config.headers["Accept-Language"] = language;
 
+      // Add ngrok skip browser warning header
+      config.headers["ngrok-skip-browser-warning"] = "true";
+
       return config;
     },
     (error: AxiosError) => Promise.reject(error)
