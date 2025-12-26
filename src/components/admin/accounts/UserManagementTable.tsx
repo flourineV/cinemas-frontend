@@ -51,6 +51,53 @@ const STATUS_LABELS: Record<string, string> = {
 
 const ITEMS_PER_PAGE = 10;
 
+// Helper function to safely format date
+const formatDate = (
+  dateInput: string | number[] | null | undefined
+): string => {
+  if (!dateInput) return "N/A";
+
+  try {
+    let date: Date;
+
+    // Handle array format from Java LocalDateTime [year, month, day, hour, minute, second, nanosecond]
+    if (Array.isArray(dateInput)) {
+      const [
+        year,
+        month,
+        day,
+        hour = 0,
+        minute = 0,
+        second = 0,
+        nanosecond = 0,
+      ] = dateInput;
+      // Note: JavaScript months are 0-indexed, but Java months are 1-indexed
+      date = new Date(
+        year,
+        month - 1,
+        day,
+        hour,
+        minute,
+        second,
+        Math.floor(nanosecond / 1000000)
+      );
+    } else {
+      // Handle string format
+      date = new Date(dateInput);
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn("Invalid date:", dateInput);
+      return "Invalid Date";
+    }
+    return date.toLocaleDateString("vi-VN");
+  } catch (error) {
+    console.warn("Error parsing date:", dateInput, error);
+    return "Invalid Date";
+  }
+};
+
 export default function UserManagementTable(): React.JSX.Element {
   const { user: currentUser } = useAuthStore();
   const [users, setUsers] = useState<UserListResponse[]>([]);
@@ -553,7 +600,7 @@ export default function UserManagementTable(): React.JSX.Element {
         u.phoneNumber || "",
         ROLE_LABELS[u.role ?? ""] || u.role || "",
         STATUS_LABELS[u.status] || u.status || "",
-        u.createdAt ? new Date(u.createdAt).toLocaleDateString("vi-VN") : "N/A",
+        u.createdAt ? formatDate(u.createdAt) : "N/A",
       ]);
 
       // Tạo CSV với BOM để Excel hiển thị đúng tiếng Việt
@@ -620,9 +667,7 @@ export default function UserManagementTable(): React.JSX.Element {
           u.phoneNumber || "",
           ROLE_LABELS[u.role ?? ""] || u.role || "",
           STATUS_LABELS[u.status] || u.status || "",
-          u.createdAt
-            ? new Date(u.createdAt).toLocaleDateString("vi-VN")
-            : "N/A",
+          u.createdAt ? formatDate(u.createdAt) : "N/A",
         ]),
       ];
 
@@ -905,9 +950,7 @@ export default function UserManagementTable(): React.JSX.Element {
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-900 text-center">
-                      {u.createdAt
-                        ? new Date(u.createdAt).toLocaleDateString("vi-VN")
-                        : "N/A"}
+                      {formatDate(u.createdAt)}
                     </td>
 
                     <td className="px-6 py-3 text-center text-base font-medium">
@@ -917,7 +960,7 @@ export default function UserManagementTable(): React.JSX.Element {
                           className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                           title="Xem profile"
                         >
-                          <Eye size={16} />
+                          <Eye size={20} />
                         </button>
 
                         <button
@@ -925,7 +968,7 @@ export default function UserManagementTable(): React.JSX.Element {
                           className="p-2 rounded-lg text-yellow-600 hover:bg-yellow-50 transition-colors"
                           title="Sửa role"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={20} />
                         </button>
 
                         <button
@@ -933,7 +976,7 @@ export default function UserManagementTable(): React.JSX.Element {
                           className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
                           title="Xóa tài khoản"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </td>
@@ -1133,11 +1176,7 @@ export default function UserManagementTable(): React.JSX.Element {
                         />
                       ) : (
                         <p className="mt-1 text-sm text-gray-900">
-                          {userProfile.dateOfBirth
-                            ? new Date(
-                                userProfile.dateOfBirth
-                              ).toLocaleDateString("vi-VN")
-                            : "Chưa cập nhật"}
+                          {formatDate(userProfile.dateOfBirth)}
                         </p>
                       )}
                     </div>
@@ -1242,11 +1281,7 @@ export default function UserManagementTable(): React.JSX.Element {
                         Ngày tạo
                       </label>
                       <p className="mt-1 text-sm text-gray-900">
-                        {userProfile.createdAt
-                          ? new Date(userProfile.createdAt).toLocaleDateString(
-                              "vi-VN"
-                            )
-                          : "N/A"}
+                        {formatDate(userProfile.createdAt)}
                       </p>
                     </div>
                     <div>
@@ -1254,11 +1289,7 @@ export default function UserManagementTable(): React.JSX.Element {
                         Cập nhật lần cuối
                       </label>
                       <p className="mt-1 text-sm text-gray-900">
-                        {userProfile.updatedAt
-                          ? new Date(userProfile.updatedAt).toLocaleDateString(
-                              "vi-VN"
-                            )
-                          : "N/A"}
+                        {formatDate(userProfile.updatedAt)}
                       </p>
                     </div>
                   </div>
@@ -1286,9 +1317,7 @@ export default function UserManagementTable(): React.JSX.Element {
                               Ngày vào làm
                             </label>
                             <p className="mt-1 text-sm text-gray-900">
-                              {new Date(staffInfo.hireDate).toLocaleDateString(
-                                "vi-VN"
-                              )}
+                              {formatDate(staffInfo.hireDate)}
                             </p>
                           </div>
                         </div>
@@ -1308,9 +1337,7 @@ export default function UserManagementTable(): React.JSX.Element {
                               Ngày nhận chức
                             </label>
                             <p className="mt-1 text-sm text-gray-900">
-                              {new Date(
-                                managerInfo.hireDate
-                              ).toLocaleDateString("vi-VN")}
+                              {formatDate(managerInfo.hireDate)}
                             </p>
                           </div>
                         </div>

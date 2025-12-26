@@ -53,6 +53,16 @@ export const paymentService = {
     return res.data;
   },
 
+  // GET /api/payments/admin/{id} - For admin to view any payment
+  getPaymentByIdForAdmin: async (
+    id: string
+  ): Promise<PaymentTransactionResponse> => {
+    const res = await paymentClient.get<PaymentTransactionResponse>(
+      `/admin/${id}`
+    );
+    return res.data;
+  },
+
   createZaloPayUrl: async (
     bookingId: string
   ): Promise<ZaloPayCreateOrderResponse> => {
@@ -97,5 +107,14 @@ export const paymentService = {
     data: PaymentConfirmationRequest
   ): Promise<void> => {
     await paymentClient.post("/confirm", data);
+  },
+  // Cancel pending payment when user returns from payment gateway
+  cancelPendingPayment: async (
+    bookingId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const res = await paymentClient.post<{ success: boolean; message: string }>(
+      `/cancel?bookingId=${bookingId}`
+    );
+    return res.data;
   },
 };

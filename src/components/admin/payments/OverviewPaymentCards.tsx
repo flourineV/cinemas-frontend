@@ -52,19 +52,17 @@ export default function OverviewPaymentCards(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {Array.from({ length: 5 }).map((_, idx) => (
           <div
             key={idx}
-            className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm animate-pulse"
+            className="bg-white border border-gray-400 rounded-lg p-6 animate-pulse"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-12"></div>
-              </div>
-              <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+              <div className="h-5 w-5 bg-gray-200 rounded"></div>
             </div>
+            <div className="h-8 bg-gray-200 rounded w-16"></div>
           </div>
         ))}
       </div>
@@ -72,75 +70,59 @@ export default function OverviewPaymentCards(): React.JSX.Element {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-      <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Tổng giao dịch</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {stats.totalPayments}
-            </p>
-          </div>
-          <div className="p-3 bg-blue-100 rounded-full">
-            <CreditCard className="w-6 h-6 text-blue-600" />
-          </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="bg-white border border-gray-400 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-sm font-medium text-gray-700">
+            Tổng giao dịch
+          </span>
+          <CreditCard size={20} className="text-gray-600" />
         </div>
+        <p className="text-3xl font-bold text-yellow-500">
+          {stats.totalPayments.toLocaleString("vi-VN")}
+        </p>
       </div>
 
-      <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Thành công</p>
-            <p className="text-2xl font-bold text-green-600">
-              {stats.successfulPayments}
-            </p>
-          </div>
-          <div className="p-3 bg-green-100 rounded-full">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-          </div>
+      <div className="bg-white border border-gray-400 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-sm font-medium text-gray-700">Thành công</span>
+          <CheckCircle size={20} className="text-gray-600" />
         </div>
+        <p className="text-3xl font-bold text-yellow-500">
+          {stats.successfulPayments.toLocaleString("vi-VN")}
+        </p>
       </div>
 
-      <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Đang chờ</p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {stats.pendingPayments}
-            </p>
-          </div>
-          <div className="p-3 bg-yellow-100 rounded-full">
-            <Clock className="w-6 h-6 text-yellow-600" />
-          </div>
+      <div className="bg-white border border-gray-400 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-sm font-medium text-gray-700">Đang chờ</span>
+          <Clock size={20} className="text-gray-600" />
         </div>
+        <p className="text-3xl font-bold text-yellow-500">
+          {stats.pendingPayments.toLocaleString("vi-VN")}
+        </p>
       </div>
 
-      <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Thất bại</p>
-            <p className="text-2xl font-bold text-red-600">
-              {stats.failedPayments}
-            </p>
-          </div>
-          <div className="p-3 bg-red-100 rounded-full">
-            <XCircle className="w-6 h-6 text-red-600" />
-          </div>
+      <div className="bg-white border border-gray-400 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-sm font-medium text-gray-700">Thất bại</span>
+          <XCircle size={20} className="text-gray-600" />
         </div>
+        <p className="text-3xl font-bold text-yellow-500">
+          {stats.failedPayments.toLocaleString("vi-VN")}
+        </p>
       </div>
 
-      <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Tổng doanh thu</p>
-            <p className="text-xl font-bold text-emerald-600">
-              {formatCurrency(stats.totalRevenue)}
-            </p>
-          </div>
-          <div className="p-3 bg-emerald-100 rounded-full">
-            <DollarSign className="w-6 h-6 text-emerald-600" />
-          </div>
+      <div className="bg-white border border-gray-400 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-sm font-medium text-gray-700">
+            Tổng doanh thu
+          </span>
+          <DollarSign size={20} className="text-gray-600" />
         </div>
+        <p className="text-3xl font-bold text-yellow-500">
+          {formatCurrency(stats.totalRevenue)}
+        </p>
       </div>
     </div>
   );

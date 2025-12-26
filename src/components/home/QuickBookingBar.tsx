@@ -164,11 +164,14 @@ function CustomSelect({
                 onMouseEnter={() => setHighlight(idx)}
                 onMouseLeave={() => setHighlight(-1)}
                 onClick={() => {
+                  // Don't allow selection of empty state options
+                  if (opt.value === "") return;
                   onChange(opt.value);
                   handleClose();
                 }}
-                className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors text-white
-                  ${isHighlighted ? "bg-white/20" : ""} ${isSelected ? "font-semibold" : ""}`}
+                className={`px-4 py-3 flex items-center justify-between transition-colors text-white
+                  ${isHighlighted ? "bg-white/20" : ""} ${isSelected ? "font-semibold" : ""}
+                  ${opt.value === "" ? "cursor-default opacity-60 italic" : "cursor-pointer"}`}
               >
                 <span className="truncate">{opt.label}</span>
                 {isSelected && <Check size={16} className="text-white" />}
@@ -218,23 +221,48 @@ const QuickBookingBar: React.FC = () => {
   const [loadingShowtimes, setLoadingShowtimes] = useState(false);
 
   // Convert API data to options
-  const movieOptions: Option[] = movies.map((movie) => ({
-    value: movie.id,
-    label: movie.title,
-  }));
+  const movieOptions: Option[] =
+    movies.length > 0
+      ? movies.map((movie) => ({
+          value: movie.id,
+          label: movie.title,
+        }))
+      : loadingMovies
+        ? []
+        : [
+            {
+              value: "",
+              label:
+                language === "en" ? "No movies available" : "Không có phim",
+            },
+          ];
 
-  const theaterOptions: Option[] = theaters.map((theater) => ({
-    value: theater.id,
-    label: language === "en" ? theater.nameEn || theater.name : theater.name,
-  }));
+  const theaterOptions: Option[] =
+    theaters.length > 0
+      ? theaters.map((theater) => ({
+          value: theater.id,
+          label:
+            language === "en" ? theater.nameEn || theater.name : theater.name,
+        }))
+      : selectedMovie
+        ? [
+            {
+              value: "",
+              label:
+                language === "en"
+                  ? "No theaters available"
+                  : "Không có rạp chiếu",
+            },
+          ]
+        : [];
 
-  // Generate next 7 days for date selection with language support
+  // Generate next 5 days for date selection with language support (like movie detail)
   const generateDateOptions = useMemo((): Option[] => {
     const dates: Option[] = [];
     const today = new Date();
     const locale = language === "en" ? "en-US" : "vi-VN";
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
 
@@ -287,9 +315,17 @@ const QuickBookingBar: React.FC = () => {
       try {
         setLoadingTheaters(true);
         const allTheaters = await theaterService.getAllTheaters();
-        setTheaters(allTheaters);
+
+        // Check if any theaters have the selected movie
+        // For now, we'll show all theaters, but you could filter based on movie availability
+        if (allTheaters.length === 0) {
+          setTheaters([]);
+        } else {
+          setTheaters(allTheaters);
+        }
       } catch (error) {
         console.error("Error loading theaters:", error);
+        setTheaters([]);
       } finally {
         setLoadingTheaters(false);
       }
@@ -354,6 +390,17 @@ const QuickBookingBar: React.FC = () => {
             }
           });
         });
+
+        // Add empty state message if no showtimes found
+        if (showtimeOptions.length === 0) {
+          showtimeOptions.push({
+            value: "",
+            label:
+              language === "en"
+                ? "No showtimes available"
+                : "Không có lịch chiếu",
+          });
+        }
 
         setShowtimes(showtimeOptions);
         setShowtimeDataMap(dataMap);

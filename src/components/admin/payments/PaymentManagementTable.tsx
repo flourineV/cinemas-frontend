@@ -141,11 +141,23 @@ export default function PaymentManagementTable(): React.JSX.Element {
     setIsModalOpen(true);
     setIsDetailLoading(true);
     try {
-      const detail = await paymentService.getPaymentById(id);
+      const detail = await paymentService.getPaymentByIdForAdmin(id);
       setModalPayment(detail);
-    } catch (err) {
-      console.error(err);
-      Swal.fire({ icon: "error", title: "Không thể tải chi tiết thanh toán" });
+    } catch (err: any) {
+      console.error("Payment detail error:", err);
+
+      let errorMessage = "Không thể tải chi tiết thanh toán";
+      if (err?.response?.status === 403) {
+        errorMessage = "Bạn không có quyền xem chi tiết thanh toán này";
+      } else if (err?.response?.status === 404) {
+        errorMessage = "Không tìm thấy thông tin thanh toán";
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: errorMessage,
+      });
       setIsModalOpen(false);
     } finally {
       setIsDetailLoading(false);
@@ -425,13 +437,13 @@ export default function PaymentManagementTable(): React.JSX.Element {
           >
             <thead className="sticky top-0 z-10 border-b border-gray-400 bg-gray-50">
               <tr>
-                <th className="w-[180px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-[150px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Mã giao dịch
                 </th>
-                <th className="w-[140px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-[100px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Booking ID
                 </th>
-                <th className="w-[120px] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-[70px] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Số tiền
                 </th>
                 <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -502,7 +514,7 @@ export default function PaymentManagementTable(): React.JSX.Element {
                           className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                           title="Xem chi tiết"
                         >
-                          <Eye size={16} />
+                          <Eye size={20} />
                         </button>
                       </div>
                     </td>

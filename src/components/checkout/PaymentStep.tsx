@@ -23,6 +23,7 @@ interface Props {
   bookingId: string;
   selectedCombos: Record<string, SelectedComboItem>;
   userId?: string;
+  movieId?: string;
   useRankDiscount: boolean;
   onToggleRankDiscount: (value: boolean) => void;
   onRankDiscountValueChange: (value: number) => void;
@@ -38,6 +39,7 @@ const PaymentStep: React.FC<Props> = ({
   bookingId,
   selectedCombos,
   userId,
+  movieId,
   useRankDiscount,
   onToggleRankDiscount,
   onRankDiscountValueChange,
@@ -151,6 +153,17 @@ const PaymentStep: React.FC<Props> = ({
       const response = await paymentService.createZaloPayUrl(bookingId);
 
       if (response.return_code === 1 && response.order_url) {
+        // Save pending payment state before redirecting to ZaloPay
+        const pendingPayment = {
+          bookingId,
+          movieId: movieId || "",
+          timestamp: Date.now(),
+        };
+        sessionStorage.setItem(
+          "cinehub-payment-pending",
+          JSON.stringify(pendingPayment)
+        );
+
         // Chuyển hướng đến trang thanh toán ZaloPay
         // Không set isProcessing = false vì sẽ chuyển trang ngay
         window.location.href = response.order_url;

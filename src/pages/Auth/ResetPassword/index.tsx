@@ -17,8 +17,8 @@ const ResetPassword: React.FC = () => {
     setError("");
     setSuccess("");
 
-    if (!newPassword || newPassword.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+    if (!newPassword || newPassword.length < 8) {
+      setError("Mật khẩu phải có ít nhất 8 ký tự.");
       return;
     }
 

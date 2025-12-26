@@ -1,6 +1,6 @@
 export interface ProvinceRequest {
   name: string;
-  nameEn?: string;
+  nameEn: string;
 }
 
 export interface ProvinceResponse {

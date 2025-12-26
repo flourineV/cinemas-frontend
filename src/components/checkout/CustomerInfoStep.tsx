@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { bookingService } from "@/services/booking/booking.service";
 import type { CreateBookingRequest } from "@/types/booking/booking.type";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AlertTriangle } from "lucide-react";
 
 interface Props {
   customer: { name: string; email: string; phone: string };
@@ -105,6 +106,19 @@ const CustomerInfoStep: React.FC<Props> = ({
       transition={{ duration: 0.35 }}
       className="bg-white rounded-2xl p-8 border border-gray-400 space-y-6"
     >
+      {/* Guest Warning Banner */}
+      <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
+        <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
+        <div>
+          <h4 className="font-semibold text-amber-800 mb-1">
+            {t("checkout.guestWarningTitle")}
+          </h4>
+          <p className="text-sm text-amber-700">
+            {t("checkout.guestWarningText")}
+          </p>
+        </div>
+      </div>
+
       <div className="space-y-4">
         <div>
           <label className="text-md font-bold text-gray-800 block">

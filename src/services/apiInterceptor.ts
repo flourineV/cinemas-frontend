@@ -4,12 +4,19 @@ import type {
   AxiosError,
   InternalAxiosRequestConfig,
 } from "axios";
+import { getCookie } from "@/utils/cookieHelper";
 
 export const applyInterceptors = (client: AxiosInstance): AxiosInstance => {
   client.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
       // Add Authorization header
-      const token = localStorage.getItem("accessToken");
+      let token = localStorage.getItem("accessToken");
+
+      // If not in localStorage, check cookies (remember me)
+      if (!token) {
+        token = getCookie("accessToken");
+      }
+
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;

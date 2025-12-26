@@ -2,6 +2,7 @@ export interface FnbItemRequest {
   name: string;
   description?: string;
   unitPrice: number;
+  imageUrl: string;
 }
 
 export interface FnbItemResponse {

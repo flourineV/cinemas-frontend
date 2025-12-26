@@ -63,3 +63,14 @@ export interface UserPromotionsResponse {
   applicable: ApplicablePromotionResponse[];
   notApplicable: NotApplicablePromotionResponse[];
 }
+
+// Refund Voucher Response
+export interface RefundVoucherResponse {
+  id: string;
+  code: string;
+  userId: string;
+  value: number;
+  isUsed: boolean;
+  createdAt: string;
+  expiredAt: string;
+}

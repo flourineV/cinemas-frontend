@@ -161,7 +161,7 @@ function AuthPage() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateLogin()) return;
-    await signin(loginData);
+    await signin(loginData, rememberMe);
   };
 
   const handleSignupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,7 +184,7 @@ function AuthPage() {
       newErrors.phoneNumber = t("auth.error.phoneInvalid");
     if (!signupData.nationalId || !/^[0-9]{9,12}$/.test(signupData.nationalId))
       newErrors.nationalId = t("auth.error.nationalIdInvalid");
-    if (!signupData.password || signupData.password.length < 6)
+    if (!signupData.password || signupData.password.length < 8)
       newErrors.password = t("auth.error.passwordMin");
     if (signupData.password !== signupData.confirmPassword)
       newErrors.confirmPassword = t("auth.error.passwordMismatch");

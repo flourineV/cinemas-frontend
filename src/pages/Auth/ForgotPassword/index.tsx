@@ -52,8 +52,8 @@ const ForgotPassword: React.FC = () => {
       return;
     }
 
-    if (!newPassword || newPassword.length < 6) {
-      setError("Mật khẩu mới phải có ít nhất 6 ký tự.");
+    if (!newPassword || newPassword.length < 8) {
+      setError("Mật khẩu mới phải có ít nhất 8 ký tự.");
       return;
     }
 

@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from "react";
-import { Plus, Calendar, Film, Minus, ArrowUpFromLine } from "lucide-react";
+import { Plus, Film, Minus, ArrowUpFromLine } from "lucide-react";
 import Swal from "sweetalert2";
 import { movieManagementService } from "@/services/movie/movieManagementService";
+import DateInput from "@/components/ui/DateInput";
 
 interface MovieRow {
   id: string;
@@ -111,9 +112,13 @@ export default function AddMovieForm({
       for (const row of validRows) {
         try {
           const result = await movieManagementService.bulkFromTmdb({
-            tmdbIds: [parseInt(row.tmdbId.trim())],
-            startDate: row.startDate,
-            endDate: row.endDate,
+            movies: [
+              {
+                tmdbId: parseInt(row.tmdbId.trim()),
+                startDate: row.startDate,
+                endDate: row.endDate,
+              },
+            ],
           });
 
           results.push({
@@ -124,12 +129,22 @@ export default function AddMovieForm({
 
           if (result.successCount > 0) successCount++;
           else failedCount++;
-        } catch (error) {
+        } catch (error: any) {
+          let errorMessage = "Lỗi không xác định";
+
+          // Extract error message from API response
+          if (error?.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error?.response?.data?.error) {
+            errorMessage = error.response.data.error;
+          } else if (error?.message) {
+            errorMessage = error.message;
+          }
+
           results.push({
             tmdbId: parseInt(row.tmdbId.trim()),
             success: false,
-            message:
-              error instanceof Error ? error.message : "Lỗi không xác định",
+            message: errorMessage,
           });
           failedCount++;
         }
@@ -170,12 +185,19 @@ export default function AddMovieForm({
       if (failedCount > 0) {
         const failedResults = results
           .filter((r) => !r.success)
-          .map((r) => `TMDB ID ${r.tmdbId}: ${r.message}`)
+          .map((r) => {
+            const statusClass =
+              r.message.includes("đang được chiếu") ||
+              r.message.includes("sắp được chiếu")
+                ? "text-orange-600"
+                : "text-red-600";
+            return `<span class="${statusClass}">TMDB ID ${r.tmdbId}: ${r.message}</span>`;
+          })
           .join("<br>");
 
         await Swal.fire({
           icon: "info",
-          title: "Chi tiết lỗi",
+          title: "Chi tiết kết quả",
           html: `<div class="text-left text-sm">${failedResults}</div>`,
           confirmButtonText: "OK",
         });
@@ -196,15 +218,7 @@ export default function AddMovieForm({
   };
 
   return (
-    <div className="bg-white border border-gray-400 rounded-lg p-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <Plus className="w-5 h-5 text-yellow-600" />
-        <h3 className="text-lg font-semibold text-gray-800">
-          Thêm phim từ TMDB
-        </h3>
-      </div>
-
+    <div className="bg-white border border-gray-400 rounded-lg p-3">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Movie Rows */}
         <div className="space-y-0">
@@ -242,48 +256,26 @@ export default function AddMovieForm({
 
               {/* Start Date - Giữ nguyên 3/12 cột */}
               <div className="md:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ngày bắt đầu <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="date"
-                    value={row.startDate}
-                    onChange={(e) =>
-                      updateMovieRow(row.id, "startDate", e.target.value)
-                    }
-                    className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
-              bg-white border border-gray-400
-              text-gray-700
-              focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
-              transition"
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <DateInput
+                  label="Ngày bắt đầu"
+                  value={row.startDate}
+                  onChange={(value) =>
+                    updateMovieRow(row.id, "startDate", value)
+                  }
+                  disabled={isSubmitting}
+                  required
+                />
               </div>
 
               {/* End Date - Giữ nguyên 3/12 cột */}
               <div className="md:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ngày kết thúc <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="date"
-                    value={row.endDate}
-                    onChange={(e) =>
-                      updateMovieRow(row.id, "endDate", e.target.value)
-                    }
-                    className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
-              bg-white border border-gray-400
-              text-gray-700
-              focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
-              transition"
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <DateInput
+                  label="Ngày kết thúc"
+                  value={row.endDate}
+                  onChange={(value) => updateMovieRow(row.id, "endDate", value)}
+                  disabled={isSubmitting}
+                  required
+                />
               </div>
 
               {/* Remove Button - 1/12 cột, căn giữa nút tròn */}

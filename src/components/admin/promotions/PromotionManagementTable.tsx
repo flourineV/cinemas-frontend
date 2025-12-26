@@ -5,8 +5,6 @@ import {
   Trash2,
   Edit2,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   Download,
   Tag,
   Percent,
@@ -55,14 +53,11 @@ const STATUS_LABELS: Record<string, string> = {
   INACTIVE: "Không hoạt động",
 };
 
-const ITEMS_PER_PAGE = 10;
-
 export default function PromotionManagementTable(): React.JSX.Element {
   const [promotions, setPromotions] = useState<PromotionResponse[]>([]);
   const [filteredPromotions, setFilteredPromotions] = useState<
     PromotionResponse[]
   >([]);
-  const [paging, setPaging] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -135,29 +130,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
     }
 
     setFilteredPromotions(filtered);
-    setPaging({
-      page: 1,
-      totalPages: Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1,
-      total: filtered.length,
-    });
   }, [promotions, selectedStatus, selectedType, debouncedSearch]);
-
-  const paginatedPromotions = filteredPromotions.slice(
-    (paging.page - 1) * ITEMS_PER_PAGE,
-    paging.page * ITEMS_PER_PAGE
-  );
-
-  const goToNextPage = () => {
-    if (paging.page < paging.totalPages) {
-      setPaging((p) => ({ ...p, page: p.page + 1 }));
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (paging.page > 1) {
-      setPaging((p) => ({ ...p, page: p.page - 1 }));
-    }
-  };
 
   const openModal = (promo?: PromotionResponse) => {
     if (promo) {
@@ -516,8 +489,11 @@ export default function PromotionManagementTable(): React.JSX.Element {
                 <th className="w-[120px] px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Giảm giá
                 </th>
-                <th className="w-[180px] px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thời gian
+                <th className="w-[140px] px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Thời gian bắt đầu
+                </th>
+                <th className="w-[140px] px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Thời gian kết thúc
                 </th>
                 <th className="w-[130px] px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
@@ -529,17 +505,17 @@ export default function PromotionManagementTable(): React.JSX.Element {
             </thead>
 
             <tbody className="divide-y divide-gray-400 bg-white">
-              {paginatedPromotions.length === 0 ? (
+              {filteredPromotions.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center py-10 text-gray-500 italic text-sm"
                   >
                     Không có dữ liệu
                   </td>
                 </tr>
               ) : (
-                paginatedPromotions.map((promo) => (
+                filteredPromotions.map((promo) => (
                   <tr
                     key={promo.id}
                     className="hover:bg-gray-50 transition duration-150"
@@ -567,20 +543,20 @@ export default function PromotionManagementTable(): React.JSX.Element {
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center text-sm text-gray-700">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} className="text-gray-400" />
-                          {dayjs(promo.startDate).format("DD/MM/YYYY")}
-                        </span>
-                        <span className="text-gray-400">→</span>
-                        <span
-                          className={
-                            isExpired(promo.endDate) ? "text-red-500" : ""
-                          }
-                        >
-                          {dayjs(promo.endDate).format("DD/MM/YYYY")}
-                        </span>
-                      </div>
+                      <span className="flex items-center justify-center gap-1">
+                        <Calendar size={14} className="text-gray-400" />
+                        {dayjs(promo.startDate).format("DD/MM/YYYY")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center text-sm text-gray-700">
+                      <span
+                        className={`flex items-center justify-center gap-1 ${
+                          isExpired(promo.endDate) ? "text-red-500" : ""
+                        }`}
+                      >
+                        <Calendar size={14} className="text-gray-400" />
+                        {dayjs(promo.endDate).format("DD/MM/YYYY")}
+                      </span>
                     </td>
                     <td className="px-4 py-4 text-center">
                       {promo.isActive && !isExpired(promo.endDate) ? (
@@ -627,52 +603,37 @@ export default function PromotionManagementTable(): React.JSX.Element {
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="flex justify-between items-center pt-4">
+        {/* Summary */}
+        <div className="pt-4">
           <span className="text-sm text-gray-600">
-            Hiển thị {paginatedPromotions.length} / {paging.total} mã giảm giá
+            Hiển thị {filteredPromotions.length} mã giảm giá
           </span>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={goToPrevPage}
-              disabled={paging.page === 1}
-              className="p-2 rounded-lg border border-gray-400 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <span className="text-sm text-gray-700">
-              Trang {paging.page} / {paging.totalPages}
-            </span>
-            <button
-              onClick={goToNextPage}
-              disabled={paging.page === paging.totalPages}
-              className="p-2 rounded-lg border border-gray-400 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Modal Add/Edit */}
       {isModalOpen && modalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeModal}
+          />
+          <div className="relative w-full max-w-2xl bg-white border border-gray-400 rounded-2xl shadow-2xl z-10 overflow-hidden max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-xl font-bold text-gray-800">
                 {editingId ? "Chỉnh sửa mã giảm giá" : "Thêm mã giảm giá mới"}
               </h3>
               <button
                 onClick={closeModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-200"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {/* Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -687,7 +648,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                       code: e.target.value.toUpperCase(),
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                   placeholder="VD: SUMMER2024"
                 />
               </div>
@@ -705,7 +666,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                       promotionType: e.target.value as PromotionType,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                 >
                   {Object.entries(PROMOTION_TYPE_LABELS).map(([key, label]) => (
                     <option key={key} value={key}>
@@ -729,7 +690,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                         discountType: e.target.value as DiscountType,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                   >
                     {Object.entries(DISCOUNT_TYPE_LABELS).map(
                       ([key, label]) => (
@@ -754,7 +715,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                           discountValue: Number(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                       min={0}
                       max={
                         modalData.discountType === "PERCENTAGE"
@@ -781,7 +742,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                     onChange={(e) =>
                       setModalData({ ...modalData, startDate: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                   />
                 </div>
                 <div>
@@ -794,7 +755,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                     onChange={(e) =>
                       setModalData({ ...modalData, endDate: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                   />
                 </div>
               </div>
@@ -813,7 +774,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                         .value as UsageTimeRestriction,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                 >
                   {Object.entries(USAGE_TIME_LABELS).map(([key, label]) => (
                     <option key={key} value={key}>
@@ -833,7 +794,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                   onChange={(e) =>
                     setModalData({ ...modalData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
+                  className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 resize-none"
                   rows={3}
                   placeholder="Mô tả khuyến mãi..."
                 />
@@ -853,7 +814,7 @@ export default function PromotionManagementTable(): React.JSX.Element {
                       promoDisplayUrl: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-400 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                   placeholder="https://..."
                 />
               </div>
@@ -879,20 +840,20 @@ export default function PromotionManagementTable(): React.JSX.Element {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                className="px-4 py-2 text-sm text-gray-700 border border-gray-400 rounded-lg hover:bg-gray-50"
               >
                 Hủy
               </button>
               <button
                 onClick={savePromotion}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black font-medium rounded-lg hover:bg-black hover:text-yellow-500 transition disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-yellow-500 text-black font-medium rounded-lg hover:bg-yellow-600 disabled:opacity-50"
               >
                 {saving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent"></div>
                 ) : (
                   <Send size={16} />
                 )}

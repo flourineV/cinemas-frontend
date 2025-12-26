@@ -13,7 +13,7 @@ export interface UserListResponse {
   phoneNumber: string;
   role: string | null;
   status: string;
-  createdAt: string;
+  createdAt: string | number[]; // Can be string or array format from Java LocalDateTime
 }
 
 export interface UserRegistrationStatsResponse {

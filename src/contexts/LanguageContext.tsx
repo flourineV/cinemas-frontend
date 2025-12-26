@@ -416,6 +416,9 @@ const translations = {
     "checkout.seatExpired": "Hết thời gian giữ ghế",
     "checkout.seatExpiredText": "Vui lòng thực hiện đặt vé lại!",
     "checkout.rebookTicket": "Đặt vé lại",
+    "checkout.paymentCancelled": "Thanh toán bị hủy",
+    "checkout.paymentCancelledText":
+      "Bạn đã quay lại mà không hoàn thành thanh toán. Đơn đặt vé sẽ được hủy và ghế sẽ được mở khóa.",
     // Checkout - BookingSummary
     "checkout.orderSummary": "Tóm tắt đơn hàng",
     "checkout.holdTime": "Thời gian giữ vé",
@@ -520,6 +523,24 @@ const translations = {
     "auth.error.nationalIdInvalid": "CMND/CCCD không hợp lệ",
     "auth.error.passwordMin": "Mật khẩu tối thiểu 6 ký tự",
     "auth.error.passwordMismatch": "Mật khẩu không khớp",
+    // Profile - Vouchers
+    "profile.vouchers": "Voucher",
+    "profile.noVouchers": "Chưa có voucher nào",
+    "profile.vouchersDesc":
+      "Voucher hoàn tiền sẽ hiển thị ở đây khi có lịch chiếu bị hủy",
+    "profile.refundVoucher": "Voucher hoàn tiền",
+    "profile.voucherCode": "Mã voucher",
+    "profile.voucherValue": "Giá trị",
+    "profile.voucherExpiry": "Hạn sử dụng",
+    "profile.voucherCreated": "Ngày tạo",
+    "profile.voucherUsed": "Đã sử dụng",
+    "profile.voucherExpired": "Hết hạn",
+    "profile.voucherActive": "Còn hiệu lực",
+    "profile.voucherReadyToUse": "Sẵn sàng sử dụng",
+    // Checkout - Guest Warning
+    "checkout.guestWarningTitle": "Lưu ý khi đặt vé không đăng nhập",
+    "checkout.guestWarningText":
+      "Nếu bạn đặt vé mà không đăng nhập, trong trường hợp lịch chiếu bị hủy, bạn sẽ không được hoàn tiền tự động qua voucher. Vui lòng đến quầy rạp để được hỗ trợ.",
   },
   en: {
     // Header
@@ -917,6 +938,9 @@ const translations = {
     "checkout.seatExpired": "Seat hold time expired",
     "checkout.seatExpiredText": "Please book tickets again!",
     "checkout.rebookTicket": "Book Again",
+    "checkout.paymentCancelled": "Payment Cancelled",
+    "checkout.paymentCancelledText":
+      "You returned without completing the payment. Your booking will be cancelled and seats will be unlocked.",
     // Checkout - BookingSummary
     "checkout.orderSummary": "Order Summary",
     "checkout.holdTime": "Hold Time",
@@ -1021,6 +1045,24 @@ const translations = {
     "auth.error.nationalIdInvalid": "Invalid National ID",
     "auth.error.passwordMin": "Password must be at least 6 characters",
     "auth.error.passwordMismatch": "Passwords do not match",
+    // Profile - Vouchers
+    "profile.vouchers": "Vouchers",
+    "profile.noVouchers": "No vouchers yet",
+    "profile.vouchersDesc":
+      "Refund vouchers will appear here when showtimes are cancelled",
+    "profile.refundVoucher": "Refund Voucher",
+    "profile.voucherCode": "Voucher code",
+    "profile.voucherValue": "Value",
+    "profile.voucherExpiry": "Expiry date",
+    "profile.voucherCreated": "Created date",
+    "profile.voucherUsed": "Used",
+    "profile.voucherExpired": "Expired",
+    "profile.voucherActive": "Active",
+    "profile.voucherReadyToUse": "Ready to use",
+    // Checkout - Guest Warning
+    "checkout.guestWarningTitle": "Notice for guest checkout",
+    "checkout.guestWarningText":
+      "If you book tickets without logging in, in case the showtime is cancelled, you will not receive automatic refund via voucher. Please visit the theater counter for assistance.",
   },
 };
 

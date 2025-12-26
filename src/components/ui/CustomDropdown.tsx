@@ -45,6 +45,7 @@ export function CustomDropdown({
       ref={dropdownRef}
     >
       <button
+        type="button"
         onClick={() => !disabled && setIsOpen((s) => !s)}
         disabled={disabled}
         className={`flex items-center justify-between space-x-2 px-3 py-2 text-sm font-medium bg-white border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${fullWidth ? "w-full" : "whitespace-nowrap"}`}
@@ -65,6 +66,7 @@ export function CustomDropdown({
             {options.map((option) => (
               <button
                 key={option.value}
+                type="button"
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);

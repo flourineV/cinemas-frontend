@@ -234,7 +234,7 @@ export default function StaffTable(): React.JSX.Element {
                           className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                           title="Xem thông tin"
                         >
-                          <Eye size={16} />
+                          <Eye size={20} />
                         </button>
 
                         <button
@@ -248,7 +248,7 @@ export default function StaffTable(): React.JSX.Element {
                           className="p-2 rounded-lg text-yellow-600 hover:bg-yellow-50 transition-colors"
                           title="Chỉnh sửa"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={20} />
                         </button>
 
                         <button
@@ -283,7 +283,7 @@ export default function StaffTable(): React.JSX.Element {
                           className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
                           title="Xóa nhân viên"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </td>

@@ -3,7 +3,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Trash2,
   Film,
   Building2,
@@ -20,6 +19,7 @@ import { movieManagementService } from "@/services/movie/movieManagementService"
 import type { ShowtimeDetailResponse } from "@/types/showtime/showtime.type";
 import { useDebounce } from "@/hooks/useDebounce";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
+import DateInput from "@/components/ui/DateInput";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -189,12 +189,16 @@ export default function ShowtimeTable({
   const goToNextPage = () => {
     if (paging.page < paging.totalPages && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page + 1 }));
+      // Scroll to top when changing page
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const goToPrevPage = () => {
     if (paging.page > 1 && !isRefreshing) {
       setPaging((p) => ({ ...p, page: p.page - 1 }));
+      // Scroll to top when changing page
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -450,7 +454,7 @@ export default function ShowtimeTable({
 
   return (
     <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-md">
-      {/* Filters Row 1: Search, Province, Theater, Room */}
+      {/* Filters Row 1: Search + Export buttons */}
       <div className="flex flex-col md:flex-row gap-3 mb-3">
         <div className="flex items-center flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -471,6 +475,7 @@ export default function ShowtimeTable({
         </div>
 
         <button
+          type="button"
           onClick={() => exportAllCSV()}
           className="flex items-center gap-2 px-3 py-2 text-sm 
                     border border-gray-400 rounded-lg 
@@ -481,6 +486,7 @@ export default function ShowtimeTable({
         </button>
 
         <button
+          type="button"
           onClick={() => exportAllExcel()}
           className="flex items-center gap-2 px-3 py-2 text-sm 
                     border border-gray-400 rounded-lg 
@@ -491,157 +497,138 @@ export default function ShowtimeTable({
         </button>
       </div>
 
-      {/* Filters Row 2: Province, Theater, Room */}
-      <div className="flex flex-col md:flex-row gap-3 mb-3">
-        <CustomDropdown
-          options={[
-            { value: "", label: "Tất cả tỉnh/thành" },
-            ...provinces.map((p) => ({ value: p.id, label: p.name })),
-          ]}
-          value={provinceFilter}
-          onChange={(value) => {
-            setProvinceFilter(value);
-            setTheaterFilter("");
-            setRoomFilter("");
-            setPaging((p) => ({ ...p, page: 1 }));
-          }}
-          placeholder="Tất cả tỉnh/thành"
-        />
+      {/* Filters Row 2: Dropdowns */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+        <div>
+          <CustomDropdown
+            options={[
+              { value: "", label: "Tất cả phim" },
+              ...filterMovies.map((m: any) => ({
+                value: m.id,
+                label: m.title,
+              })),
+            ]}
+            value={movieFilter}
+            onChange={(value) => {
+              setMovieFilter(value);
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Tất cả phim"
+            fullWidth
+          />
+        </div>
 
-        <CustomDropdown
-          options={[
-            { value: "", label: "Tất cả rạp" },
-            ...filterTheaters.map((t) => ({ value: t.id, label: t.name })),
-          ]}
-          value={theaterFilter}
-          onChange={(value) => {
-            setTheaterFilter(value);
-            setRoomFilter("");
-            setPaging((p) => ({ ...p, page: 1 }));
-          }}
-          placeholder="Tất cả rạp"
-          disabled={!provinceFilter}
-        />
+        <div>
+          <CustomDropdown
+            options={[
+              { value: "", label: "Tất cả tỉnh/thành" },
+              ...provinces.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            value={provinceFilter}
+            onChange={(value) => {
+              setProvinceFilter(value);
+              setTheaterFilter("");
+              setRoomFilter("");
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Tất cả tỉnh/thành"
+            fullWidth
+          />
+        </div>
 
-        <CustomDropdown
-          options={[
-            { value: "", label: "Tất cả phòng" },
-            ...filterRooms.map((r) => ({ value: r.id, label: r.name })),
-          ]}
-          value={roomFilter}
-          onChange={(value) => {
-            setRoomFilter(value);
-            setPaging((p) => ({ ...p, page: 1 }));
-          }}
-          placeholder="Tất cả phòng"
-          disabled={!theaterFilter}
-        />
+        <div>
+          <CustomDropdown
+            options={[
+              { value: "", label: "Tất cả rạp" },
+              ...filterTheaters.map((t) => ({ value: t.id, label: t.name })),
+            ]}
+            value={theaterFilter}
+            onChange={(value) => {
+              setTheaterFilter(value);
+              setRoomFilter("");
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Tất cả rạp"
+            disabled={!provinceFilter}
+            fullWidth
+          />
+        </div>
+
+        <div>
+          <CustomDropdown
+            options={[
+              { value: "", label: "Tất cả phòng" },
+              ...filterRooms.map((r) => ({ value: r.id, label: r.name })),
+            ]}
+            value={roomFilter}
+            onChange={(value) => {
+              setRoomFilter(value);
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Tất cả phòng"
+            disabled={!theaterFilter}
+            fullWidth
+          />
+        </div>
       </div>
 
-      {/* Filters Row 2: Movie, Date, Time */}
-      <div className="flex flex-col md:flex-row gap-3 mb-4">
-        <CustomDropdown
-          options={[
-            { value: "", label: "Tất cả phim" },
-            ...filterMovies.map((m: any) => ({ value: m.id, label: m.title })),
-          ]}
-          value={movieFilter}
-          onChange={(value) => {
-            setMovieFilter(value);
-            setPaging((p) => ({ ...p, page: 1 }));
-          }}
-          placeholder="Tất cả phim"
-        />
-
-        {/* Start of Day */}
-        <div className="flex items-center relative flex-1">
-          <label className="sr-only">Start of Day</label>
-          <input
-            type="date"
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+      {/* Filters Row 3: Date and Time inputs */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Từ ngày
+          </label>
+          <DateInput
             value={startOfDayFilter}
-            onChange={(e) => {
-              setStartOfDayFilter(e.target.value); // YYYY-MM-DD
+            onChange={(value) => {
+              setStartOfDayFilter(value);
               setPaging((p) => ({ ...p, page: 1 }));
             }}
-            placeholder="Ngày giờ bắt đầu"
+            placeholder="Từ ngày"
           />
         </div>
 
-        {/* End of Day */}
-        <div className="flex items-center relative flex-1">
-          <label className="sr-only">End of Day</label>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Từ giờ
+          </label>
           <input
-            type="date"
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
-            value={endOfDayFilter}
-            onChange={(e) => {
-              setEndOfDayFilter(e.target.value); // YYYY-MM-DD
-              setPaging((p) => ({ ...p, page: 1 }));
-            }}
-            placeholder="Ngày giờ kết thúc"
-          />
-        </div>
-
-        {/* From Time - Text input */}
-        <div className="flex items-center relative flex-1">
-          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+            type="time"
             value={fromTimeFilter}
             onChange={(e) => {
-              const value = e.target.value;
-              // Allow typing, validate on blur
-              setFromTimeFilter(value);
+              setFromTimeFilter(e.target.value);
+              setPaging((p) => ({ ...p, page: 1 }));
             }}
-            onBlur={(e) => {
-              const value = e.target.value.trim();
-              if (value && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value)) {
-                Swal.fire({
-                  icon: "warning",
-                  title: "Giờ không hợp lệ",
-                  text: "Vui lòng nhập theo định dạng HH:MM (ví dụ: 09:30)",
-                  timer: 2000,
-                  showConfirmButton: false,
-                });
-                setFromTimeFilter("");
-              } else {
-                setPaging((p) => ({ ...p, page: 1 }));
-              }
-            }}
-            placeholder="HH:MM"
+            className="w-full px-2 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
           />
         </div>
 
-        {/* To Time - Text input */}
-        <div className="flex items-center relative flex-1">
-          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Đến ngày
+          </label>
+          <DateInput
+            value={endOfDayFilter}
+            onChange={(value) => {
+              setEndOfDayFilter(value);
+              setPaging((p) => ({ ...p, page: 1 }));
+            }}
+            placeholder="Đến ngày"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Đến giờ
+          </label>
           <input
-            type="text"
-            className="w-full pl-10 pr-3 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+            type="time"
             value={toTimeFilter}
             onChange={(e) => {
-              const value = e.target.value;
-              // Allow typing, validate on blur
-              setToTimeFilter(value);
+              setToTimeFilter(e.target.value);
+              setPaging((p) => ({ ...p, page: 1 }));
             }}
-            onBlur={(e) => {
-              const value = e.target.value.trim();
-              if (value && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value)) {
-                Swal.fire({
-                  icon: "warning",
-                  title: "Giờ không hợp lệ",
-                  text: "Vui lòng nhập theo định dạng HH:MM (ví dụ: 21:00)",
-                  timer: 2000,
-                  showConfirmButton: false,
-                });
-                setToTimeFilter("");
-              } else {
-                setPaging((p) => ({ ...p, page: 1 }));
-              }
-            }}
-            placeholder="HH:MM"
+            className="w-full px-2 py-2 text-sm rounded-lg bg-white border border-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
           />
         </div>
       </div>
@@ -668,11 +655,11 @@ export default function ShowtimeTable({
               <th className="w-[100px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Phòng
               </th>
-              <th className="w-[140px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thời gian bắt đầu
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Bắt đầu
               </th>
-              <th className="w-[140px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thời gian kết thúc
+              <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Kết thúc
               </th>
               <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ghế
@@ -724,19 +711,23 @@ export default function ShowtimeTable({
                   <td className="px-6 py-4 text-sm text-gray-900 text-left">
                     {st.roomName}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 text-left">
-                    <div className="flex items-center gap-1">
-                      <Clock size={14} className="text-gray-500" />
-                      <span className="text-xs">
-                        {dayjs(st.startTime).format("DD/MM/YYYY HH:mm")}
+                  <td className="px-6 py-4 text-sm text-gray-900 text-center">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium">
+                        {dayjs(st.startTime).format("DD/MM/YYYY")}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {dayjs(st.startTime).format("HH:mm")}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 text-left">
-                    <div className="flex items-center gap-1">
-                      <Clock size={14} className="text-gray-500" />
-                      <span className="text-xs">
-                        {dayjs(st.endTime).format("DD/MM/YYYY HH:mm")}
+                  <td className="px-6 py-4 text-sm text-gray-900 text-center">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium">
+                        {dayjs(st.endTime).format("DD/MM/YYYY")}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {dayjs(st.endTime).format("HH:mm")}
                       </span>
                     </div>
                   </td>

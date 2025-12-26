@@ -7,10 +7,12 @@ import {
 } from "@/services/userprofile";
 import { bookingService } from "@/services/booking/booking.service";
 import { movieService } from "@/services/movie/movieService";
+import { promotionService } from "@/services/promotion/promotionService";
 import type {
   UserProfileResponse,
   LoyaltyHistoryItem,
 } from "@/types/userprofile";
+import type { RefundVoucherResponse } from "@/types/promotion/promotion.type";
 import { useAuthStore } from "../../stores/authStore";
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
@@ -36,9 +38,16 @@ import {
   Phone,
   MapPin,
   Users,
+  Gift,
 } from "lucide-react";
 
-type TabType = "info" | "bookings" | "favorites" | "loyalty" | "fnb";
+type TabType =
+  | "info"
+  | "bookings"
+  | "favorites"
+  | "loyalty"
+  | "fnb"
+  | "vouchers";
 
 // Custom Input Component (giống Auth modal)
 interface CustomInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -166,6 +175,8 @@ const Profile = () => {
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
   const [fnbOrders, setFnbOrders] = useState<FnbOrderResponse[]>([]);
   const [fnbLoading, setFnbLoading] = useState(false);
+  const [vouchers, setVouchers] = useState<RefundVoucherResponse[]>([]);
+  const [vouchersLoading, setVouchersLoading] = useState(false);
   const [userStats, setUserStats] = useState({
     totalBookings: 0,
     totalFavoriteMovies: 0,
@@ -196,7 +207,9 @@ const Profile = () => {
     const tabParam = searchParams.get("tab");
     if (
       tabParam &&
-      ["info", "bookings", "favorites", "loyalty", "fnb"].includes(tabParam)
+      ["info", "bookings", "favorites", "loyalty", "fnb", "vouchers"].includes(
+        tabParam
+      )
     ) {
       setActiveTab(tabParam as TabType);
     }
@@ -327,6 +340,27 @@ const Profile = () => {
       fetchFnbOrders();
     }
   }, [user?.id, activeTab, location.state?.refresh]);
+
+  // Fetch vouchers
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      if (!user?.id) return;
+      setVouchersLoading(true);
+      try {
+        const data = await promotionService.getRefundVouchersByUser(user.id);
+        console.log("📦 Vouchers:", data);
+        setVouchers(data);
+      } catch (error) {
+        console.error("Lỗi khi lấy vouchers:", error);
+      } finally {
+        setVouchersLoading(false);
+      }
+    };
+
+    if (activeTab === "vouchers") {
+      fetchVouchers();
+    }
+  }, [user?.id, activeTab]);
 
   const loadMoreBookings = () => {
     const currentLength = displayedBookings.length;
@@ -486,6 +520,7 @@ const Profile = () => {
     { id: "info" as TabType, label: t("profile.info"), icon: User },
     { id: "bookings" as TabType, label: t("profile.bookings"), icon: Ticket },
     { id: "fnb" as TabType, label: t("profile.fnb"), icon: Coffee },
+    { id: "vouchers" as TabType, label: t("profile.vouchers"), icon: Gift },
     { id: "favorites" as TabType, label: t("profile.favorites"), icon: Heart },
     { id: "loyalty" as TabType, label: t("profile.loyalty"), icon: TrendingUp },
   ];
@@ -651,7 +686,7 @@ const Profile = () => {
         {/* Tabs */}
         <div className="bg-white border-b border-gray-200 relative">
           <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-5 gap-4 relative">
+            <div className="grid grid-cols-6 gap-4 relative">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -1066,6 +1101,110 @@ const Profile = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === "vouchers" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {vouchersLoading ? (
+                <div className="text-center py-16">
+                  <div className="text-gray-500">{t("profile.loading")}</div>
+                </div>
+              ) : vouchers.length === 0 ? (
+                <div className="text-center py-16">
+                  <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {t("profile.noVouchers")}
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    {t("profile.vouchersDesc")}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {vouchers.map((voucher) => {
+                    const isExpired = new Date(voucher.expiredAt) < new Date();
+                    const isUsed = voucher.isUsed;
+                    return (
+                      <div
+                        key={voucher.id}
+                        className={`bg-white rounded-xl p-6 shadow hover:shadow-md transition border ${
+                          isUsed || isExpired
+                            ? "border-gray-300 opacity-60"
+                            : "border-yellow-400"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                              {t("profile.refundVoucher")}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {t("profile.voucherCode")}:{" "}
+                              <span className="font-mono font-semibold text-yellow-600">
+                                {voucher.code}
+                              </span>
+                            </p>
+                          </div>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              isUsed
+                                ? "bg-gray-100 text-gray-600"
+                                : isExpired
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {isUsed
+                              ? t("profile.voucherUsed")
+                              : isExpired
+                                ? t("profile.voucherExpired")
+                                : t("profile.voucherActive")}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                          <div className="text-gray-600">
+                            <span className="font-medium">
+                              {t("profile.voucherValue")}:
+                            </span>{" "}
+                            <span className="text-yellow-600 font-bold text-lg">
+                              {voucher.value.toLocaleString()} VNĐ
+                            </span>
+                          </div>
+                          <div className="text-gray-600">
+                            <span className="font-medium">
+                              {t("profile.voucherExpiry")}:
+                            </span>{" "}
+                            {new Date(voucher.expiredAt).toLocaleDateString(
+                              language === "en" ? "en-US" : "vi-VN"
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">
+                              {t("profile.voucherCreated")}:
+                            </span>{" "}
+                            {new Date(voucher.createdAt).toLocaleDateString(
+                              language === "en" ? "en-US" : "vi-VN"
+                            )}
+                          </div>
+                          {!isUsed && !isExpired && (
+                            <div className="text-sm text-green-600 font-medium">
+                              {t("profile.voucherReadyToUse")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>

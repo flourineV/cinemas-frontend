@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Clock, Minus, ArrowUpFromLine } from "lucide-react";
+import { Plus, Minus, ArrowUpFromLine } from "lucide-react";
 import Swal from "sweetalert2";
 import { showtimeService } from "@/services/showtime/showtimeService";
 import { movieManagementService } from "@/services/movie/movieManagementService";
 import { theaterService } from "@/services/showtime/theaterService";
 import { roomService } from "@/services/showtime/roomService";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
+import DateInput from "@/components/ui/DateInput";
 
 interface ShowtimeRow {
   id: string;
   movieId: string;
   theaterId: string;
   roomId: string;
-  startTime: string;
-  endTime: string;
+  date: string;
+  startHour: string;
+  startMinute: string;
+  endHour: string;
+  endMinute: string;
 }
 
 interface AddShowtimeFormProps {
@@ -29,8 +33,11 @@ export default function AddShowtimeForm({
       movieId: "",
       theaterId: "",
       roomId: "",
-      startTime: "",
-      endTime: "",
+      date: "",
+      startHour: "",
+      startMinute: "",
+      endHour: "",
+      endMinute: "",
     },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,8 +85,11 @@ export default function AddShowtimeForm({
         movieId: "",
         theaterId: "",
         roomId: "",
-        startTime: "",
-        endTime: "",
+        date: "",
+        startHour: "",
+        startMinute: "",
+        endHour: "",
+        endMinute: "",
       },
     ]);
   };
@@ -124,8 +134,11 @@ export default function AddShowtimeForm({
         row.movieId &&
         row.theaterId &&
         row.roomId &&
-        row.startTime &&
-        row.endTime
+        row.date &&
+        row.startHour &&
+        row.startMinute &&
+        row.endHour &&
+        row.endMinute
     );
 
     if (validRows.length === 0) {
@@ -138,7 +151,14 @@ export default function AddShowtimeForm({
 
     // Validate each row
     for (const row of validRows) {
-      if (new Date(row.startTime) >= new Date(row.endTime)) {
+      // Construct datetime strings
+      const startDateTime = `${row.date}T${row.startHour.padStart(2, "0")}:${row.startMinute.padStart(2, "0")}:00`;
+      const endDateTime = `${row.date}T${row.endHour.padStart(2, "0")}:${row.endMinute.padStart(2, "0")}:00`;
+
+      const startTime = new Date(startDateTime);
+      const endTime = new Date(endDateTime);
+
+      if (startTime >= endTime) {
         Swal.fire({
           icon: "warning",
           title: "Thời gian không hợp lệ",
@@ -147,11 +167,23 @@ export default function AddShowtimeForm({
         return;
       }
 
-      if (new Date(row.startTime) <= new Date()) {
+      if (startTime <= new Date()) {
         Swal.fire({
           icon: "warning",
           title: "Thời gian không hợp lệ",
           text: "Thời gian bắt đầu phải sau thời điểm hiện tại",
+        });
+        return;
+      }
+
+      // Validate minimum duration (e.g., 30 minutes)
+      const durationMinutes =
+        (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+      if (durationMinutes < 30) {
+        Swal.fire({
+          icon: "warning",
+          title: "Thời gian không hợp lệ",
+          text: "Thời lượng lịch chiếu phải ít nhất 30 phút",
         });
         return;
       }
@@ -160,13 +192,18 @@ export default function AddShowtimeForm({
     setIsSubmitting(true);
     try {
       // Prepare batch request
-      const showtimes = validRows.map((row) => ({
-        movieId: row.movieId,
-        theaterId: row.theaterId,
-        roomId: row.roomId,
-        startTime: row.startTime,
-        endTime: row.endTime,
-      }));
+      const showtimes = validRows.map((row) => {
+        const startDateTime = `${row.date}T${row.startHour.padStart(2, "0")}:${row.startMinute.padStart(2, "0")}:00`;
+        const endDateTime = `${row.date}T${row.endHour.padStart(2, "0")}:${row.endMinute.padStart(2, "0")}:00`;
+
+        return {
+          movieId: row.movieId,
+          theaterId: row.theaterId,
+          roomId: row.roomId,
+          startTime: startDateTime,
+          endTime: endDateTime,
+        };
+      });
 
       const result = await showtimeService.batchCreate({
         showtimes,
@@ -178,13 +215,35 @@ export default function AddShowtimeForm({
       const totalRequests = validRows.length;
 
       // Show success message with details
-      const successMessage = `
+      let successMessage = `
         <div class="text-left">
           <p><strong>Tổng số yêu cầu:</strong> ${totalRequests}</p>
           <p><strong>Thành công:</strong> ${successCount}</p>
           <p><strong>Thất bại:</strong> ${failedCount}</p>
         </div>
       `;
+
+      // Show detailed errors if there are failures
+      if (failedCount > 0 && result.errors) {
+        const conflictErrors = result.errors.filter(
+          (error: string) =>
+            error.includes("conflict") ||
+            error.includes("overlap") ||
+            error.includes("trùng")
+        );
+
+        if (conflictErrors.length > 0) {
+          successMessage += `<br><div class="text-left text-sm mt-2 text-red-600">
+            <strong>Lỗi trùng lịch:</strong><br>
+            ${conflictErrors
+              .map(
+                (error: string, index: number) =>
+                  `• Lịch chiếu ${index + 1}: ${error}`
+              )
+              .join("<br>")}
+          </div>`;
+        }
+      }
 
       await Swal.fire({
         icon: successCount > 0 ? "success" : "warning",
@@ -201,27 +260,14 @@ export default function AddShowtimeForm({
             movieId: "",
             theaterId: "",
             roomId: "",
-            startTime: "",
-            endTime: "",
+            date: "",
+            startHour: "",
+            startMinute: "",
+            endHour: "",
+            endMinute: "",
           },
         ]);
         onSuccess?.();
-      }
-
-      // Show detailed errors if there are failures
-      if (failedCount > 0 && result.errors) {
-        const errorMessages = result.errors
-          .map(
-            (error: any, index: number) => `Lịch chiếu ${index + 1}: ${error}`
-          )
-          .join("<br>");
-
-        await Swal.fire({
-          icon: "info",
-          title: "Chi tiết lỗi",
-          html: `<div class="text-left text-sm">${errorMessages}</div>`,
-          confirmButtonText: "OK",
-        });
       }
     } catch (error) {
       console.error("Error creating showtimes:", error);
@@ -241,11 +287,6 @@ export default function AddShowtimeForm({
   return (
     <div className="bg-white border border-gray-400 rounded-lg p-6">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <Plus className="w-5 h-5 text-yellow-600" />
-        <h3 className="text-lg font-semibold text-gray-800">Tạo lịch chiếu</h3>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Showtime Rows */}
         <div className="space-y-0">
@@ -321,62 +362,70 @@ export default function AddShowtimeForm({
                 />
               </div>
 
-              {/* Start Time - 2/12 cột */}
+              {/* Date - 2/12 cột */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thời gian bắt đầu <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="datetime-local"
-                    value={row.startTime}
-                    onChange={(e) =>
-                      updateShowtimeRow(row.id, "startTime", e.target.value)
-                    }
-                    className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
-                      bg-white border border-gray-300
-                      text-gray-700
-                      focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
-                      transition"
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <DateInput
+                  label="Ngày chiếu"
+                  value={row.date}
+                  onChange={(value) => updateShowtimeRow(row.id, "date", value)}
+                  required
+                />
               </div>
 
-              {/* End Time - 2/12 cột */}
-              <div className="md:col-span-2">
+              {/* Start Time - 1/12 cột */}
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thời gian kết thúc <span className="text-red-500">*</span>
+                  Bắt đầu <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="datetime-local"
-                    value={row.endTime}
-                    onChange={(e) =>
-                      updateShowtimeRow(row.id, "endTime", e.target.value)
-                    }
-                    className="w-full pl-10 pr-4 py-2 text-sm rounded-lg
-                      bg-white border border-gray-300
-                      text-gray-700
-                      focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500
-                      transition"
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <input
+                  type="time"
+                  value={
+                    row.startHour && row.startMinute
+                      ? `${row.startHour.padStart(2, "0")}:${row.startMinute.padStart(2, "0")}`
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const [hour, minute] = e.target.value.split(":");
+                    updateShowtimeRow(row.id, "startHour", hour || "");
+                    updateShowtimeRow(row.id, "startMinute", minute || "");
+                  }}
+                  className="w-full px-2 py-2 text-sm rounded-lg bg-white border border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* End Time - 1/12 cột */}
+              <div className="md:col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kết thúc <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={
+                    row.endHour && row.endMinute
+                      ? `${row.endHour.padStart(2, "0")}:${row.endMinute.padStart(2, "0")}`
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const [hour, minute] = e.target.value.split(":");
+                    updateShowtimeRow(row.id, "endHour", hour || "");
+                    updateShowtimeRow(row.id, "endMinute", minute || "");
+                  }}
+                  className="w-full px-2 py-2 text-sm rounded-lg bg-white border border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+                  disabled={isSubmitting}
+                />
               </div>
 
               {/* Remove Button - 1/12 cột */}
-              <div className="md:col-span-1 flex items-end">
+              <div className="md:col-span-1 flex items-end justify-center pb-[2px]">
                 <button
                   type="button"
                   onClick={() => removeShowtimeRow(row.id)}
                   disabled={showtimeRows.length <= 1 || isSubmitting}
-                  className="w-full px-3 py-2 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1 border border-red-200"
+                  className="w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 rounded-full hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-red-200"
                   title="Xóa dòng này"
                 >
-                  <Minus size={18} />
+                  <Minus size={20} />
                 </button>
               </div>
             </div>

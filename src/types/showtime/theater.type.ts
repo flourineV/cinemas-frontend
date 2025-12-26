@@ -1,8 +1,12 @@
 export interface TheaterRequest {
   provinceId: string;
   name: string;
+  nameEn: string;
   address: string;
+  addressEn: string;
   description: string;
+  descriptionEn: string;
+  imageUrl: string;
 }
 
 export interface TheaterResponse {

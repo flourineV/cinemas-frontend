@@ -13,6 +13,10 @@ import {
   X,
   Film,
   Star,
+  Plus,
+  Play,
+  Clock,
+  FolderArchive,
 } from "lucide-react";
 
 import Swal from "sweetalert2";
@@ -74,6 +78,7 @@ function MovieTable({ status }: MovieTableProps) {
   const [editMovie, setEditMovie] = useState<MovieDetail | null>(null);
   const [isSavingMovie, setIsSavingMovie] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "comments">("info");
+  const [archivingId, setArchivingId] = useState<string | null>(null);
 
   // Apply scroll lock when modal is open
   useBodyScrollLock(isModalOpen);
@@ -299,7 +304,7 @@ function MovieTable({ status }: MovieTableProps) {
 
     const warningText =
       targetStatus === "ARCHIVED"
-        ? "\n⚠️ Lưu ý: Nếu đổi sang ARCHIVED, các lịch chiếu hiện có sẽ bị xóa!"
+        ? "\n⚠️ Lưu ý: Nếu đổi sang ARCHIVED, các lịch chiếu hiện có sẽ bị tạm ngưng và hoàn voucher cho khách đã đặt!"
         : "";
 
     const confirm = await Swal.fire({
@@ -311,6 +316,8 @@ function MovieTable({ status }: MovieTableProps) {
     });
 
     if (!confirm.isConfirmed) return;
+
+    setArchivingId(id);
 
     try {
       // đổi trạng thái
@@ -340,6 +347,8 @@ function MovieTable({ status }: MovieTableProps) {
         icon: "error",
         title: "Đổi trạng thái thất bại",
       });
+    } finally {
+      setArchivingId(null);
     }
   }
 
@@ -704,7 +713,7 @@ function MovieTable({ status }: MovieTableProps) {
                           className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                           title="Xem chi tiết"
                         >
-                          <Eye size={16} />
+                          <Eye size={20} />
                         </button>
 
                         {status !== "ARCHIVED" && (
@@ -713,10 +722,19 @@ function MovieTable({ status }: MovieTableProps) {
                               const currentStatus = (m as any).status;
                               changeStatus(String(m.id), currentStatus);
                             }}
-                            className="p-2 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
+                            disabled={archivingId === String(m.id)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              archivingId === String(m.id)
+                                ? "text-orange-400 cursor-not-allowed"
+                                : "text-orange-600 hover:bg-orange-50"
+                            }`}
                             title="Chuyển sang lưu trữ"
                           >
-                            <Archive size={16} />
+                            {archivingId === String(m.id) ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-600 border-t-transparent"></div>
+                            ) : (
+                              <Archive size={16} />
+                            )}
                           </button>
                         )}
 
@@ -1298,7 +1316,8 @@ export default function MovieManagementTable(): React.JSX.Element {
       {/* Movie Stats Overview */}
       <OverviewMovieCards />
 
-      <h3 className="text-2xl font-semibold text-gray-800">
+      <h3 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+        <Plus className="w-6 h-6 text-yellow-600" />
         Thêm phim từ TMDB
       </h3>
       {/* Add Movie Form */}
@@ -1306,7 +1325,8 @@ export default function MovieManagementTable(): React.JSX.Element {
 
       {/* Bảng 1: Now Playing */}
       <div>
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">
+        <h3 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
+          <Play className="w-6 h-6 text-green-600" />
           Phim Đang Chiếu
         </h3>
         <MovieTable
@@ -1317,7 +1337,8 @@ export default function MovieManagementTable(): React.JSX.Element {
 
       {/* Bảng 2: Upcoming */}
       <div>
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">
+        <h3 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
+          <Clock className="w-6 h-6 text-blue-600" />
           Phim Sắp Chiếu
         </h3>
         <MovieTable status="UPCOMING" key={`upcoming-${refreshTrigger}`} />
@@ -1325,7 +1346,8 @@ export default function MovieManagementTable(): React.JSX.Element {
 
       {/* Bảng 3: Archived */}
       <div>
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">
+        <h3 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
+          <FolderArchive className="w-6 h-6 text-gray-600" />
           Phim Lưu Trữ
         </h3>
         <MovieTable status="ARCHIVED" key={`archived-${refreshTrigger}`} />

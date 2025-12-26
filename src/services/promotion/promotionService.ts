@@ -4,6 +4,7 @@ import type {
   PromotionResponse,
   PromotionValidationResponse,
   UserPromotionsResponse,
+  RefundVoucherResponse,
 } from "@/types/promotion/promotion.type";
 
 export const promotionService = {
@@ -78,6 +79,16 @@ export const promotionService = {
     const url = queryString ? `/admin/all?${queryString}` : "/admin/all";
 
     const res = await promotionClient.get<PromotionResponse[]>(url);
+    return res.data;
+  },
+
+  // Lấy refund vouchers của user
+  getRefundVouchersByUser: async (
+    userId: string
+  ): Promise<RefundVoucherResponse[]> => {
+    const res = await promotionClient.get<RefundVoucherResponse[]>(
+      `/refund-vouchers/user/${userId}`
+    );
     return res.data;
   },
 };

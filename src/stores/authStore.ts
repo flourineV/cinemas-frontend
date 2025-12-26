@@ -7,6 +7,11 @@ import type {
   JwtResponse,
 } from "@/types/auth/auth.type";
 import { decodeToken, getUserRole, isTokenExpired } from "@/utils/authHelper";
+import {
+  setCookie,
+  getCookie,
+  deleteAllAuthCookies,
+} from "@/utils/cookieHelper";
 
 export interface AuthUser {
   id: string;
@@ -25,7 +30,7 @@ interface AuthState {
 
 interface AuthActions {
   signup: (data: SignUpRequest) => Promise<void>;
-  signin: (data: SignInRequest) => Promise<void>;
+  signin: (data: SignInRequest, rememberMe?: boolean) => Promise<void>;
   signout: () => void;
   refreshAccessToken: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -58,6 +63,24 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             refreshToken: jwt.refreshToken,
             loading: false,
           });
+
+          // Create user profile after successful signup
+          try {
+            const { userProfileService } = await import(
+              "@/services/userprofile/userProfileService"
+            );
+            await userProfileService.createProfile({
+              userId: jwt.user.id,
+              email: jwt.user.email,
+              username: jwt.user.username,
+              fullName: jwt.user.username, // Use username as default fullName
+              phoneNumber: data.phoneNumber,
+              nationalId: data.nationalId,
+            });
+          } catch (profileError) {
+            console.error("Failed to create profile:", profileError);
+            // Don't fail the signup process if profile creation fails
+          }
         } catch (err: any) {
           set({
             error: err.response?.data?.message || "Sign up failed",
@@ -66,14 +89,25 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      signin: async (data) => {
+      signin: async (data, rememberMe = false) => {
         set({ loading: true, error: null });
         try {
           const res = await authService.signin(data);
           const jwt: JwtResponse = res.data;
 
+          // Always save to localStorage for immediate use
           localStorage.setItem("accessToken", jwt.accessToken ?? "");
           localStorage.setItem("refreshToken", jwt.refreshToken ?? "");
+
+          if (rememberMe) {
+            // Also save to cookies for persistence across browser sessions (30 days)
+            setCookie("accessToken", jwt.accessToken ?? "", 30);
+            setCookie("refreshToken", jwt.refreshToken ?? "", 30);
+            setCookie("rememberMe", "true", 30);
+          } else {
+            // Clear any existing remember me cookies
+            deleteAllAuthCookies();
+          }
 
           // Clear guest session when user logs in
           localStorage.removeItem("guest_session_id");
@@ -98,6 +132,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
 
+        // Also clear cookies
+        deleteAllAuthCookies();
+
         // Trigger guest session creation by dispatching storage event
         window.dispatchEvent(
           new StorageEvent("storage", {
@@ -118,7 +155,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       refreshAccessToken: async () => {
-        const refreshToken = localStorage.getItem("refreshToken");
+        let refreshToken = localStorage.getItem("refreshToken");
+
+        // If not in localStorage, check cookies
+        if (!refreshToken) {
+          refreshToken = getCookie("refreshToken");
+        }
+
         if (!refreshToken) {
           set({ user: null, accessToken: null });
           return;
@@ -128,19 +171,39 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           const res = await authService.refreshToken({ refreshToken });
           const jwt: JwtResponse = res.data;
 
+          // Always save to localStorage for immediate use
           localStorage.setItem("accessToken", jwt.accessToken ?? "");
+
+          // Check if we should also save to cookies (remember me was enabled)
+          const isRemembered = getCookie("rememberMe") === "true";
+          if (isRemembered) {
+            setCookie("accessToken", jwt.accessToken ?? "", 30);
+          }
+
           set({
             accessToken: jwt.accessToken,
             user: jwt.user,
           });
         } catch {
           set({ user: null, accessToken: null });
+          // Clear invalid tokens
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          deleteAllAuthCookies();
         }
       },
 
       checkAuth: async () => {
-        const accessToken = localStorage.getItem("accessToken");
-        const refreshToken = localStorage.getItem("refreshToken");
+        let accessToken = localStorage.getItem("accessToken");
+        let refreshToken = localStorage.getItem("refreshToken");
+
+        // If not in localStorage, check cookies (remember me)
+        if (!accessToken) {
+          accessToken = getCookie("accessToken");
+        }
+        if (!refreshToken) {
+          refreshToken = getCookie("refreshToken");
+        }
 
         if (!accessToken) {
           if (refreshToken) await get().refreshAccessToken();
@@ -150,7 +213,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
         if (isTokenExpired(accessToken)) {
           if (refreshToken) await get().refreshAccessToken();
-          else set({ user: null });
+          else {
+            set({ user: null });
+            // Clear expired tokens
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            deleteAllAuthCookies();
+          }
           return;
         }
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Swal from "sweetalert2";
 import Layout from "@/components/layout/Layout";
 import { useAccurateTimer } from "@/hooks/useAccurateTimer";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { paymentService } from "@/services/payment/payment.service";
 
 import SelectComboStep from "@/components/checkout/SelectComboStep";
 import CustomerInfoStep from "@/components/checkout/CustomerInfoStep";
@@ -23,6 +24,7 @@ const STEPS = [
 ];
 
 const CHECKOUT_STORAGE_KEY = "cinehub-checkout-state";
+const PAYMENT_PENDING_KEY = "cinehub-payment-pending";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -45,6 +47,66 @@ export default function CheckoutPage() {
   const [initialTTL, setInitialTTL] = useState<number | null>(null);
   const [useRankDiscount, setUseRankDiscount] = useState(false);
   const [rankDiscountValue, setRankDiscountValue] = useState(0);
+
+  // Rollback function to cancel payment and redirect to movie detail
+  const rollbackBooking = useCallback(
+    async (bookingId: string, movieId: string) => {
+      try {
+        console.log("🔄 Cancelling payment for booking:", bookingId);
+        await paymentService.cancelPendingPayment(bookingId);
+        console.log(
+          "✅ Payment cancelled successfully - booking will be cancelled via event"
+        );
+      } catch (error) {
+        console.error("❌ Failed to cancel payment:", error);
+      } finally {
+        // Clear all checkout state
+        sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
+        sessionStorage.removeItem(PAYMENT_PENDING_KEY);
+
+        // Redirect to movie detail page
+        const redirectPath = movieId ? `/movies/${movieId}` : "/";
+        navigate(redirectPath, { replace: true });
+      }
+    },
+    [navigate]
+  );
+
+  // Check if user returned from payment gateway without completing payment
+  useEffect(() => {
+    const pendingPayment = sessionStorage.getItem(PAYMENT_PENDING_KEY);
+    if (pendingPayment) {
+      try {
+        const { bookingId, movieId, timestamp } = JSON.parse(pendingPayment);
+        const now = Date.now();
+        const elapsed = now - timestamp;
+
+        // If user returns within 30 minutes (payment session timeout)
+        if (elapsed < 30 * 60 * 1000) {
+          console.log(
+            "🔙 User returned from payment gateway without completing"
+          );
+
+          Swal.fire({
+            icon: "warning",
+            title: t("checkout.paymentCancelled"),
+            text: t("checkout.paymentCancelledText"),
+            confirmButtonText: t("common.confirm"),
+            confirmButtonColor: "#d97706",
+            allowOutsideClick: false,
+          }).then(() => {
+            rollbackBooking(bookingId, movieId);
+          });
+        } else {
+          // Payment session expired, clear the pending state
+          sessionStorage.removeItem(PAYMENT_PENDING_KEY);
+        }
+      } catch (e) {
+        console.error("Failed to parse pending payment:", e);
+        sessionStorage.removeItem(PAYMENT_PENDING_KEY);
+      }
+    }
+  }, [rollbackBooking, t]);
 
   // Save checkout state to sessionStorage when it changes
   useEffect(() => {
@@ -364,6 +426,7 @@ export default function CheckoutPage() {
                         bookingId={booking?.id || booking?.bookingId || ""}
                         selectedCombos={selectedCombos}
                         userId={booking?.userId}
+                        movieId={booking?.movieId || pendingData?.movieId || ""}
                         useRankDiscount={useRankDiscount}
                         onToggleRankDiscount={setUseRankDiscount}
                         onRankDiscountValueChange={setRankDiscountValue}

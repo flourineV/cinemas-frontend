@@ -1,57 +1,43 @@
-// src/services/pricing/pricingService.ts
-import { pricingClient } from "../apiClient";
+import { apiClient } from "../apiClient";
 import type {
   SeatPriceRequest,
   SeatPriceResponse,
-} from "@/types/pricing/seatprice.type";
+} from "@/types/pricing/pricing.type";
 
 export const pricingService = {
-  // --- GET /api/pricing/seat-price?seatType=&ticketType= (tra cứu giá ghế) ---
+  // Get seat price for booking
   getSeatPrice: async (
     seatType: string,
     ticketType: string
   ): Promise<SeatPriceResponse> => {
-    try {
-      const res = await pricingClient.get<SeatPriceResponse>("/seat-price", {
-        params: { seatType, ticketType },
-      });
-      return res.data;
-    } catch (err) {
-      console.warn("Lỗi fetch ghế bạn ơi", err);
-      throw err;
-    }
-  },
-
-  // --- GET /api/pricing (lấy tất cả seat prices) ---
-  getAllSeatPrices: async (): Promise<SeatPriceResponse[]> => {
-    try {
-      const res = await pricingClient.get<SeatPriceResponse[]>("");
-      return res.data;
-    } catch (err) {
-      console.warn("Lỗi fetch ghế bạn ơi", err);
-      throw err;
-    }
-  },
-
-  // --- POST /api/pricing (tạo mới) ---
-  createSeatPrice: async (
-    payload: SeatPriceRequest
-  ): Promise<SeatPriceResponse> => {
-    const res = await pricingClient.post<SeatPriceResponse>("", payload);
+    const res = await apiClient.get<SeatPriceResponse>(`/pricing/seat-price`, {
+      params: { seatType, ticketType },
+    });
     return res.data;
   },
 
-  // --- PUT /api/pricing/{id} (cập nhật) ---
+  // Admin APIs
+  getAllSeatPrices: async (): Promise<SeatPriceResponse[]> => {
+    const res = await apiClient.get<SeatPriceResponse[]>("/pricing");
+    return res.data;
+  },
+
+  createSeatPrice: async (
+    data: SeatPriceRequest
+  ): Promise<SeatPriceResponse> => {
+    const res = await apiClient.post<SeatPriceResponse>("/pricing", data);
+    return res.data;
+  },
+
   updateSeatPrice: async (
     id: string,
-    payload: SeatPriceRequest
+    data: SeatPriceRequest
   ): Promise<SeatPriceResponse> => {
-    const res = await pricingClient.put<SeatPriceResponse>(`/${id}`, payload);
+    const res = await apiClient.put<SeatPriceResponse>(`/pricing/${id}`, data);
     return res.data;
   },
 
-  // --- DELETE /api/pricing/{id} ---
   deleteSeatPrice: async (id: string): Promise<void> => {
-    await pricingClient.delete(`/${id}`);
+    await apiClient.delete(`/pricing/${id}`);
   },
 };

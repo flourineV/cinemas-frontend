@@ -18,7 +18,6 @@ interface ShowtimeStats {
   activeShowtimes: number;
   suspendedShowtimes: number;
   upcomingShowtimes: number;
-  weeklyShowtimes: number;
 }
 
 interface TheaterStats {
@@ -34,7 +33,6 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
     activeShowtimes: 0,
     suspendedShowtimes: 0,
     upcomingShowtimes: 0,
-    weeklyShowtimes: 0,
   });
   const [theaterStats, setTheaterStats] = useState<TheaterStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +49,6 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
           activeShowtimes: overallStats.activeShowtimes || 0,
           suspendedShowtimes: (overallStats as any).suspendedShowtimes || 0,
           upcomingShowtimes: overallStats.upcomingShowtimes || 0,
-          weeklyShowtimes: overallStats.weeklyShowtimes || 0,
         });
 
         // Fetch all theaters and their stats
@@ -97,24 +94,19 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
     return (
       <div className="space-y-6">
         {/* Overall Stats Skeleton */}
-        <div>
-          <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm animate-pulse"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                    <div className="h-8 bg-gray-200 rounded w-12"></div>
-                  </div>
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="bg-white border border-gray-400 rounded-lg p-6 animate-pulse"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div className="h-4 bg-gray-200 rounded w-20"></div>
+                <div className="h-5 w-5 bg-gray-200 rounded"></div>
               </div>
-            ))}
-          </div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+            </div>
+          ))}
         </div>
 
         {/* Theater Stats Skeleton */}
@@ -138,64 +130,57 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
   return (
     <div className="space-y-6">
       {/* Overall Stats */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Thống kê tổng quan
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Tổng lịch chiếu
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.totalShowtimes}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white border border-gray-400 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-gray-700">
+              Tổng lịch chiếu
+            </span>
+            <Calendar size={20} className="text-gray-600" />
           </div>
+          <p className="text-3xl font-bold text-yellow-500">
+            {stats.totalShowtimes.toLocaleString("vi-VN")}
+          </p>
+        </div>
 
-          <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Đang hoạt động
-                </p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.activeShowtimes}
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <Clock className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
+        <div className="bg-white border border-gray-400 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-gray-700">
+              Đang chiếu
+            </span>
+            <Clock size={20} className="text-gray-600" />
           </div>
+          <p className="text-3xl font-bold text-yellow-500">
+            {stats.activeShowtimes.toLocaleString("vi-VN")}
+          </p>
+        </div>
 
-          <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Đã tạm ngưng
-                </p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {stats.suspendedShowtimes || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-orange-100 rounded-full">
-                <AlertTriangle className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
+        <div className="bg-white border border-gray-400 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-gray-700">Sắp chiếu</span>
+            <Calendar size={20} className="text-gray-600" />
           </div>
+          <p className="text-3xl font-bold text-yellow-500">
+            {stats.upcomingShowtimes.toLocaleString("vi-VN")}
+          </p>
+        </div>
+
+        <div className="bg-white border border-gray-400 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-gray-700">
+              Đã tạm ngưng
+            </span>
+            <AlertTriangle size={20} className="text-gray-600" />
+          </div>
+          <p className="text-3xl font-bold text-yellow-500">
+            {(stats.suspendedShowtimes || 0).toLocaleString("vi-VN")}
+          </p>
         </div>
       </div>
 
       {/* Theater Stats - Bar Chart using Recharts */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <h3 className="text-2xl font-semibold text-gray-800 mb-4">
           Thống kê theo rạp
         </h3>
         <div className="bg-white border border-gray-400 rounded-lg p-6 shadow-sm">

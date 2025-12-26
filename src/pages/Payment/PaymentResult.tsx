@@ -34,6 +34,10 @@ const PaymentResult = () => {
           setStatus("success");
           setMessage(t("payment.success"));
 
+          // Clear pending payment state on success
+          sessionStorage.removeItem("cinehub-payment-pending");
+          sessionStorage.removeItem("cinehub-checkout-state");
+
           // Phân biệt loại payment để redirect đúng tab
           // Check nếu có type parameter hoặc appTransId có pattern FnB
           const paymentType = searchParams.get("type");
@@ -55,6 +59,9 @@ const PaymentResult = () => {
         } else {
           setStatus("failed");
           setMessage(response.returnMessage || t("payment.notCompleted"));
+          // Clear pending payment state on failure too
+          sessionStorage.removeItem("cinehub-payment-pending");
+          sessionStorage.removeItem("cinehub-checkout-state");
           // Backend đã tự động xử lý cancel booking và unlock ghế qua PaymentBookingFailedEvent
         }
       } catch (error: any) {

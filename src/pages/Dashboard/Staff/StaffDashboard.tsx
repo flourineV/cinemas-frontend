@@ -59,12 +59,12 @@ const StaffDashboard: React.FC = () => {
       <Header />
       <div className="flex">
         {/* SIDEBAR - Fixed */}
-        <div className="w-64 bg-white border-r border-gray-400 shadow-lg fixed h-full top-0 z-10 pt-16">
+        <div className="w-64 bg-black border-r border-gray-600 shadow-lg fixed h-full top-0 z-10 pt-16">
           <div className="p-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            <h1 className="text-2xl font-bold text-white mb-2">
               Bảng Điều Khiển Nhân Viên
             </h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-gray-300 mb-6">
               Chào mừng {user?.username ?? "Nhân viên"}
             </p>
 
@@ -83,7 +83,7 @@ const StaffDashboard: React.FC = () => {
                     className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-yellow-500 text-white shadow-md"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
                     }`}
                   >
                     {tab.label}
