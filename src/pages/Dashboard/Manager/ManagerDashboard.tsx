@@ -2,7 +2,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Header from "../../../components/layout/Header";
-import { useAuthStore } from "@/stores/authStore";
 import { useScrollToTop } from "@/hooks/useScrollToTop";
 
 import ManagerMovieTable from "@/components/manager/movies/ManagerMovieTable";
@@ -25,8 +24,6 @@ const TABS: Tab[] = [
 const STORAGE_KEY = "manager_dashboard_tab";
 
 const ManagerDashboard: React.FC = () => {
-  const { user } = useAuthStore();
-
   // Initialize from localStorage or default to "movies"
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);

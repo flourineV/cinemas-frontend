@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { pricingService } from "@/services/pricing/pricingService";
-import type { SeatPriceResponse } from "@/types/pricing/seatprice.type";
+import type { SeatPriceResponse } from "@/types/pricing/pricing.type";
 import { Ticket } from "lucide-react";
 import Swal from "sweetalert2";
 import { useLanguage } from "@/contexts/LanguageContext";

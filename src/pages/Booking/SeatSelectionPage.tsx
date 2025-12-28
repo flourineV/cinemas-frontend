@@ -8,7 +8,7 @@ import { showtimeService } from "@/services/showtime/showtimeService";
 import { pricingService } from "@/services/pricing/pricingService";
 import type { ShowtimeDetailResponse } from "@/types/showtime/showtime.type";
 import type { ShowtimeSeatResponse } from "@/types/showtime/showtimeSeat.type";
-import type { SeatPriceResponse } from "@/types/pricing/seatprice.type";
+import type { SeatPriceResponse } from "@/types/pricing/pricing.type";
 import Swal from "sweetalert2";
 
 const SeatSelectionPage: React.FC = () => {

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Users, UserCheck, Briefcase, Shield, Crown } from "lucide-react";
+import { Users, UserCheck, Shield, Crown } from "lucide-react";
 import type { StatsOverviewResponse } from "@/types/auth/stats.type";
 import { userAdminService } from "@/services/auth/userService";
 import { motion, useReducedMotion } from "framer-motion";
