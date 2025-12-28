@@ -10,7 +10,6 @@ import {
   X,
   Film,
   Star,
-  Edit2,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
@@ -25,7 +24,7 @@ import { useOutsideClick } from "@/hooks/useOutsideClick";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { Badge } from "@/components/ui/Badge";
 import { getPosterUrl } from "@/utils/getPosterUrl";
-import OverviewMovieCards from "@/components/admin/movies/OverviewMovieCards";
+import ManagerOverviewMovieCards from "./ManagerOverviewMovieCards";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -67,10 +66,7 @@ export default function ManagerMovieTable(): React.JSX.Element {
 
   // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [modalMovie, setModalMovie] = useState<MovieDetail | null>(null);
-  const [editMovie, setEditMovie] = useState<MovieDetail | null>(null);
-  const [isSavingMovie, setIsSavingMovie] = useState(false);
 
   useBodyScrollLock(isModalOpen);
 
@@ -139,13 +135,11 @@ export default function ManagerMovieTable(): React.JSX.Element {
     }
   };
 
-  // open modal
   async function openModal(id: string) {
     setIsModalOpen(true);
     try {
       const detail = await movieService.getMovieDetail(id);
       setModalMovie(detail);
-      setEditMovie(detail);
     } catch (err) {
       console.error(
         "Failed with movieService, trying movieManagementService:",
@@ -154,7 +148,6 @@ export default function ManagerMovieTable(): React.JSX.Element {
       try {
         const detail = await movieManagementService.getByUuid(id);
         setModalMovie(detail);
-        setEditMovie(detail);
       } catch (err2) {
         console.error(err2);
         Swal.fire({ icon: "error", title: "Không thể tải chi tiết phim" });
@@ -165,57 +158,7 @@ export default function ManagerMovieTable(): React.JSX.Element {
 
   function closeModal() {
     setIsModalOpen(false);
-    setIsEditMode(false);
     setModalMovie(null);
-    setEditMovie(null);
-    setIsSavingMovie(false);
-  }
-
-  function toggleEditMode() {
-    if (isEditMode) {
-      setEditMovie(modalMovie);
-    }
-    setIsEditMode(!isEditMode);
-  }
-
-  function updateEditMovie<K extends keyof MovieDetail>(
-    key: K,
-    value: MovieDetail[K]
-  ) {
-    setEditMovie((prev) => (prev ? { ...prev, [key]: value } : null));
-  }
-
-  async function submitMovieUpdate() {
-    if (!editMovie) return;
-
-    setIsSavingMovie(true);
-    try {
-      const updatedMovie = await movieManagementService.updateMovie(
-        editMovie.id,
-        editMovie
-      );
-      setModalMovie(updatedMovie);
-      setEditMovie(updatedMovie);
-      setIsEditMode(false);
-
-      Swal.fire({
-        icon: "success",
-        title: "Cập nhật phim thành công",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-
-      fetchMovies(paging.page);
-    } catch (err) {
-      console.error(err);
-      Swal.fire({
-        icon: "error",
-        title: "Cập nhật thất bại",
-        text: "Không thể cập nhật thông tin phim.",
-      });
-    } finally {
-      setIsSavingMovie(false);
-    }
   }
 
   function exportCurrentCSV() {
@@ -345,7 +288,7 @@ export default function ManagerMovieTable(): React.JSX.Element {
     <>
       <div className="space-y-6">
         {/* Overview Cards */}
-        <OverviewMovieCards />
+        <ManagerOverviewMovieCards />
 
         <div className="bg-white border border-gray-400 rounded-lg p-6">
           {/* Header */}
@@ -463,7 +406,10 @@ export default function ManagerMovieTable(): React.JSX.Element {
               </div>
             )}
 
-            <table className="min-w-full divide-y divide-gray-400 table-fixed">
+            <table
+              className="min-w-full divide-y divide-gray-400 table-fixed"
+              style={{ tableLayout: "fixed", width: "100%" }}
+            >
               <thead className="sticky top-0 z-10 border-b border-gray-400 bg-gray-50">
                 <tr>
                   <th className="w-[220px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -472,7 +418,7 @@ export default function ManagerMovieTable(): React.JSX.Element {
                   <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     TMDB ID
                   </th>
-                  <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[120px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Thời lượng
                   </th>
                   <th className="w-[140px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -481,10 +427,10 @@ export default function ManagerMovieTable(): React.JSX.Element {
                   <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Popularity
                   </th>
-                  <th className="w-[120px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[140px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Trạng thái
                   </th>
-                  <th className="w-[100px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-[180px] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Thao tác
                   </th>
                 </tr>
@@ -664,17 +610,6 @@ export default function ManagerMovieTable(): React.JSX.Element {
                   <h5 className="text-lg font-semibold text-gray-800">
                     Thông tin phim
                   </h5>
-                  <button
-                    onClick={toggleEditMode}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      isEditMode
-                        ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                        : "bg-yellow-500 text-black hover:bg-black hover:text-yellow-500"
-                    }`}
-                  >
-                    <Edit2 size={14} />
-                    {isEditMode ? "Hủy chỉnh sửa" : "Chỉnh sửa"}
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -682,40 +617,18 @@ export default function ManagerMovieTable(): React.JSX.Element {
                     <label className="block text-sm font-medium text-gray-700">
                       Tên phim
                     </label>
-                    {isEditMode ? (
-                      <input
-                        type="text"
-                        value={editMovie?.title || ""}
-                        onChange={(e) =>
-                          updateEditMovie("title", e.target.value)
-                        }
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm text-gray-900">
-                        {modalMovie.title || "Chưa cập nhật"}
-                      </p>
-                    )}
+                    <p className="mt-1 text-sm text-gray-900">
+                      {modalMovie.title || "Chưa cập nhật"}
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Thời lượng (phút)
                     </label>
-                    {isEditMode ? (
-                      <input
-                        type="number"
-                        value={editMovie?.time || ""}
-                        onChange={(e) =>
-                          updateEditMovie("time", Number(e.target.value))
-                        }
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm text-gray-900">
-                        {modalMovie.time || "Chưa cập nhật"}
-                      </p>
-                    )}
+                    <p className="mt-1 text-sm text-gray-900">
+                      {modalMovie.time || "Chưa cập nhật"}
+                    </p>
                   </div>
 
                   <div>
@@ -744,20 +657,9 @@ export default function ManagerMovieTable(): React.JSX.Element {
                     <label className="block text-sm font-medium text-gray-700">
                       Mô tả
                     </label>
-                    {isEditMode ? (
-                      <textarea
-                        value={editMovie?.overview || ""}
-                        onChange={(e) =>
-                          updateEditMovie("overview", e.target.value)
-                        }
-                        rows={4}
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
-                        {modalMovie.overview || "Chưa cập nhật"}
-                      </p>
-                    )}
+                    <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
+                      {modalMovie.overview || "Chưa cập nhật"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -771,18 +673,6 @@ export default function ManagerMovieTable(): React.JSX.Element {
               >
                 Đóng
               </button>
-              {isEditMode && (
-                <button
-                  onClick={submitMovieUpdate}
-                  disabled={isSavingMovie}
-                  className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black font-medium rounded-lg hover:bg-black hover:text-yellow-500 transition disabled:opacity-50"
-                >
-                  {isSavingMovie && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                  )}
-                  Lưu thay đổi
-                </button>
-              )}
             </div>
           </div>
         </div>

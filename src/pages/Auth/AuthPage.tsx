@@ -132,9 +132,6 @@ function AuthPage() {
         case "manager":
           navigate("/manager/dashboard");
           break;
-        case "staff":
-          navigate("/staff/dashboard");
-          break;
         default:
           navigate("/");
       }

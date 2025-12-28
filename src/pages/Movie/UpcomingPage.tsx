@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/seo/SEO";
 import { movieService } from "@/services/movie/movieService";
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import { Link, useNavigate } from "react-router-dom";
@@ -42,6 +43,11 @@ const UpcomingPage = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Phim sắp chiếu"
+        description="Danh sách phim sắp chiếu tại CineHub. Cập nhật phim mới nhất sắp ra mắt tại các rạp trên toàn quốc."
+        keywords="phim sắp chiếu, phim mới, phim sắp ra mắt, trailer phim, cinehub"
+      />
       <div className="w-full min-h-screen pb-16 bg-gray-100 mt-1">
         <section className="w-full max-w-5xl mx-auto pt-8 px-4">
           <div className="relative flex justify-center mb-8">

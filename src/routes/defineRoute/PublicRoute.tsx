@@ -17,7 +17,7 @@ interface PublicRouteProps {
   blockedRoles?: UserRole[]; // default admin-like
 }
 
-const DEFAULT_BLOCKED: UserRole[] = ["STAFF", "MANAGER", "ADMIN"];
+const DEFAULT_BLOCKED: UserRole[] = ["MANAGER", "ADMIN"];
 
 const roleToDashboard = (role: string) => {
   const r = role?.toUpperCase?.();
@@ -26,8 +26,6 @@ const roleToDashboard = (role: string) => {
       return "/admin/dashboard";
     case "MANAGER":
       return "/manager/dashboard";
-    case "STAFF":
-      return "/staff/dashboard";
     case "CUSTOMER":
       return "/profile";
     default:
@@ -103,7 +101,7 @@ const PublicRoute: React.FC<PublicRouteProps> = ({
       if (raw) {
         const parsed = JSON.parse(raw);
         const maybe = normalizeRole(parsed?.role);
-        if (maybe && ["ADMIN", "MANAGER", "STAFF"].includes(maybe)) {
+        if (maybe && ["ADMIN", "MANAGER"].includes(maybe)) {
           return <Navigate to={roleToDashboard(maybe)} replace />;
         }
       }

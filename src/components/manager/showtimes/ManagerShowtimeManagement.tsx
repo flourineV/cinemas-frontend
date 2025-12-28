@@ -23,7 +23,7 @@ import type { ShowtimeDetailResponse } from "@/types/showtime/showtime.type";
 import { useDebounce } from "@/hooks/useDebounce";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
 import { useAuthStore } from "@/stores/authStore";
-import OverviewShowtimeCards from "@/components/admin/showtimes/OverviewShowtimeCards";
+import ManagerOverviewShowtimeCards from "./ManagerOverviewShowtimeCards";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -341,7 +341,7 @@ export default function ManagerShowtimeManagement(): React.JSX.Element {
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
-      <OverviewShowtimeCards />
+      <ManagerOverviewShowtimeCards />
 
       <div className="bg-white border border-gray-400 rounded-lg p-6">
         {/* Header */}

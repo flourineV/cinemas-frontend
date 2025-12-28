@@ -1,0 +1,23 @@
+# CineHub Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://cinehub.vercel.app/sitemap.xml
+
+# Disallow admin and private routes
+Disallow: /admin/*
+Disallow: /manager/*
+Disallow: /profile/*
+Disallow: /checkout/*
+Disallow: /payment-result/*
+
+# Allow search engines to crawl public pages
+Allow: /
+Allow: /movies/*
+Allow: /theaters/*
+Allow: /showtimes/*
+Allow: /about
+Allow: /contact
+Allow: /privacy-policy
+Allow: /search

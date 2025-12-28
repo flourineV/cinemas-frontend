@@ -16,30 +16,21 @@ import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 
 import { userAdminService } from "@/services/auth/userService";
-import {
-  userProfileService,
-  staffService,
-  managerService,
-} from "@/services/userprofile";
+import { userProfileService, managerService } from "@/services/userprofile";
 import { theaterService } from "@/services/showtime/theaterService";
 import type { UserListResponse, GetUsersParams } from "@/types/auth/stats.type";
-import type {
-  StaffProfileResponse,
-  ManagerProfileResponse,
-} from "@/types/userprofile";
+import type { ManagerProfileResponse } from "@/types/userprofile";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useAuthStore } from "@/stores/authStore";
 import { Badge } from "@/components/ui/Badge";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
-import StaffTable from "./StaffTable";
 import ManagerTable from "./ManagerTable";
 
 /* Local label maps — purely UI text */
 const ROLE_LABELS: Record<string, string> = {
   customer: "Khách hàng",
-  staff: "Nhân viên",
   manager: "Quản lý",
   admin: "Admin",
 };
@@ -125,7 +116,6 @@ export default function UserManagementTable(): React.JSX.Element {
   const [modalRole, setModalRole] = useState<string>("");
   const [userProfile, setUserProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [staffInfo, setStaffInfo] = useState<StaffProfileResponse | null>(null);
   const [managerInfo, setManagerInfo] = useState<ManagerProfileResponse | null>(
     null
   );
@@ -298,7 +288,6 @@ export default function UserManagementTable(): React.JSX.Element {
     setModalUser(user);
     setIsProfileModalOpen(true);
     setProfileLoading(true);
-    setStaffInfo(null);
     setManagerInfo(null);
 
     try {
@@ -306,18 +295,6 @@ export default function UserManagementTable(): React.JSX.Element {
       const profileData = await userProfileService.getProfileByUserId(user.id);
       setUserProfile(profileData);
       setEditProfile(profileData); // Khởi tạo dữ liệu cho edit form
-
-      // Nếu là staff, lấy thông tin staff
-      if (user.role === "staff") {
-        try {
-          const staffData = await staffService.getStaffByUserProfile(
-            profileData.id
-          );
-          setStaffInfo(staffData);
-        } catch (error) {
-          console.log("Không tìm thấy thông tin staff");
-        }
-      }
 
       // Nếu là manager, lấy thông tin manager
       if (user.role === "manager") {
@@ -349,7 +326,6 @@ export default function UserManagementTable(): React.JSX.Element {
     setIsEditMode(false);
     setModalUser(null);
     setUserProfile(null);
-    setStaffInfo(null);
     setManagerInfo(null);
     setEditProfile({});
     setIsSavingProfile(false);
@@ -472,12 +448,12 @@ export default function UserManagementTable(): React.JSX.Element {
       return;
     }
 
-    // Validate additional fields for staff/manager
-    if ((modalRole === "staff" || modalRole === "manager") && !cinemaName) {
+    // Validate additional fields for manager
+    if (modalRole === "manager" && !cinemaName) {
       Swal.fire({ icon: "warning", title: "Vui lòng nhập tên rạp" });
       return;
     }
-    if ((modalRole === "staff" || modalRole === "manager") && !hireDate) {
+    if (modalRole === "manager" && !hireDate) {
       Swal.fire({ icon: "warning", title: "Vui lòng chọn ngày vào làm" });
       return;
     }
@@ -516,15 +492,8 @@ export default function UserManagementTable(): React.JSX.Element {
         );
       }
 
-      // 3. Handle staff/manager profile creation/deletion
-      if (modalRole === "staff") {
-        // Create staff profile
-        await staffService.createStaff({
-          userProfileId: userProfileId,
-          cinemaName: cinemaName,
-          hireDate: hireDate,
-        });
-      } else if (modalRole === "manager") {
+      // 3. Handle manager profile creation/deletion
+      if (modalRole === "manager") {
         // Create manager profile
         await managerService.createManager({
           userProfileId: userProfileId,
@@ -533,16 +502,7 @@ export default function UserManagementTable(): React.JSX.Element {
         });
       }
 
-      // 4. Delete old staff/manager profile if downgrading
-      if (oldRole === "staff" && modalRole !== "staff") {
-        try {
-          const oldStaffInfo =
-            await staffService.getStaffByUserProfile(userProfileId);
-          await staffService.deleteStaff(oldStaffInfo.id);
-        } catch (error) {
-          console.log("No staff profile to delete");
-        }
-      }
+      // 4. Delete old manager profile if downgrading
       if (oldRole === "manager" && modalRole !== "manager") {
         try {
           const oldManagerInfo =
@@ -1088,9 +1048,7 @@ export default function UserManagementTable(): React.JSX.Element {
                             ? "bg-red-100 text-red-700"
                             : modalUser.role === "manager"
                               ? "bg-yellow-100 text-yellow-700"
-                              : modalUser.role === "staff"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-green-100 text-green-700"
+                              : "bg-green-100 text-green-700"
                         }`}
                       >
                         {ROLE_LABELS[modalUser.role || ""] || modalUser.role}
@@ -1295,53 +1253,31 @@ export default function UserManagementTable(): React.JSX.Element {
                   </div>
                 </div>
 
-                {/* Thông tin công việc (Staff/Manager) */}
-                {(staffInfo || managerInfo) && (
+                {/* Thông tin công việc (Manager) */}
+                {managerInfo && (
                   <div>
                     <h5 className="text-lg font-semibold text-gray-800 mb-3">
                       Thông tin công việc
                     </h5>
                     <div className="p-6 bg-blue-50 rounded-lg border border-blue-200">
-                      {staffInfo && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                              Rạp làm việc
-                            </label>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {staffInfo.cinemaName}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                              Ngày vào làm
-                            </label>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(staffInfo.hireDate)}
-                            </p>
-                          </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Rạp quản lý
+                          </label>
+                          <p className="mt-1 text-sm text-gray-900">
+                            {managerInfo.managedCinemaName}
+                          </p>
                         </div>
-                      )}
-                      {managerInfo && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                              Rạp quản lý
-                            </label>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {managerInfo.managedCinemaName}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                              Ngày nhận chức
-                            </label>
-                            <p className="mt-1 text-sm text-gray-900">
-                              {formatDate(managerInfo.hireDate)}
-                            </p>
-                          </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Ngày nhận chức
+                          </label>
+                          <p className="mt-1 text-sm text-gray-900">
+                            {formatDate(managerInfo.hireDate)}
+                          </p>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1482,8 +1418,8 @@ export default function UserManagementTable(): React.JSX.Element {
                 </select>
               </div>
 
-              {/* Additional fields for staff/manager */}
-              {(modalRole === "staff" || modalRole === "manager") && (
+              {/* Additional fields for manager */}
+              {modalRole === "manager" && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1546,9 +1482,8 @@ export default function UserManagementTable(): React.JSX.Element {
         </div>
       )}
 
-      {/* Staff and Manager Tables */}
-      <div className="mt-8 space-y-6">
-        <StaffTable />
+      {/* Manager Table */}
+      <div className="mt-8">
         <ManagerTable />
       </div>
     </>

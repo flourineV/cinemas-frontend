@@ -27,7 +27,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
 import { useAuthStore } from "@/stores/authStore";
-import OverviewBookingCards from "@/components/admin/bookings/OverviewBookingCards";
+import ManagerOverviewBookingCards from "./ManagerOverviewBookingCards";
 
 const STATUS_LABELS: Record<string, string> = {
   ALL: "Tất cả",
@@ -419,7 +419,7 @@ export default function ManagerBookingTable(): React.JSX.Element {
     <>
       <div className="space-y-6">
         {/* Overview Cards */}
-        <OverviewBookingCards />
+        <ManagerOverviewBookingCards />
 
         <div className="bg-white border border-gray-400 rounded-lg p-6">
           {/* Header */}

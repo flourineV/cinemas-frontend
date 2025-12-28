@@ -1,9 +1,8 @@
 // Main user profile service
 export { userProfileService } from "./userProfileService";
 
-// Staff and Manager services
+// Manager service
 export { managerService } from "./managerService";
-export { staffService } from "./staffService";
 
 // Loyalty and Stats services
 export { loyaltyHistoryService } from "./loyaltyHistoryService";

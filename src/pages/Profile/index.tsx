@@ -4,6 +4,7 @@ import Layout from "../../components/layout/Layout";
 import {
   userProfileService,
   loyaltyHistoryService,
+  managerService,
 } from "@/services/userprofile";
 import { bookingService } from "@/services/booking/booking.service";
 import { movieService } from "@/services/movie/movieService";
@@ -11,6 +12,7 @@ import { promotionService } from "@/services/promotion/promotionService";
 import type {
   UserProfileResponse,
   LoyaltyHistoryItem,
+  ManagerProfileResponse,
 } from "@/types/userprofile";
 import type { RefundVoucherResponse } from "@/types/promotion/promotion.type";
 import { useAuthStore } from "../../stores/authStore";
@@ -39,6 +41,7 @@ import {
   MapPin,
   Users,
   Gift,
+  Building2,
 } from "lucide-react";
 
 type TabType =
@@ -155,6 +158,8 @@ const Profile = () => {
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [managerProfile, setManagerProfile] =
+    useState<ManagerProfileResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -226,6 +231,22 @@ const Profile = () => {
         // Fetch user stats
         const stats = await userProfileService.getUserStats(user.id);
         setUserStats(stats);
+
+        // Fetch manager profile based on role
+        console.log("User role:", user.role);
+        console.log("User profile ID:", data.id);
+
+        if (user.role === "MANAGER" || user.role === "manager") {
+          try {
+            console.log("Fetching manager profile...");
+            const managerData = await managerService.getManagerByUser(data.id);
+            console.log("Manager profile found:", managerData);
+            setManagerProfile(managerData);
+          } catch (error) {
+            console.error("Error fetching manager profile:", error);
+            console.log("No manager profile found for this user:", error);
+          }
+        }
       } catch (err) {
         console.error("Lỗi khi lấy profile:", err);
       } finally {
@@ -233,7 +254,7 @@ const Profile = () => {
       }
     };
     fetchProfile();
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   // Fetch bookings
   useEffect(() => {
@@ -727,66 +748,101 @@ const Profile = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+              className="space-y-8"
             >
-              <InfoItem
-                label={t("profile.fullName")}
-                value={profile.fullName || t("profile.notUpdated")}
-              />
-              <InfoItem label={t("profile.email")} value={profile.email} />
-              <InfoItem
-                label={t("profile.phone")}
-                value={profile.phoneNumber || t("profile.notUpdated")}
-              />
-              <InfoItem
-                label={t("profile.gender")}
-                value={
-                  profile.gender === "MALE"
-                    ? t("profile.male")
-                    : profile.gender === "FEMALE"
-                      ? t("profile.female")
-                      : profile.gender === "OTHER"
-                        ? t("profile.other")
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  Thông tin cá nhân
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                  <InfoItem
+                    label={t("profile.fullName")}
+                    value={profile.fullName || t("profile.notUpdated")}
+                  />
+                  <InfoItem label={t("profile.email")} value={profile.email} />
+                  <InfoItem
+                    label={t("profile.phone")}
+                    value={profile.phoneNumber || t("profile.notUpdated")}
+                  />
+                  <InfoItem
+                    label={t("profile.gender")}
+                    value={
+                      profile.gender === "MALE"
+                        ? t("profile.male")
+                        : profile.gender === "FEMALE"
+                          ? t("profile.female")
+                          : profile.gender === "OTHER"
+                            ? t("profile.other")
+                            : t("profile.notUpdated")
+                    }
+                  />
+                  <InfoItem
+                    label={t("profile.dateOfBirth")}
+                    value={
+                      profile.dateOfBirth
+                        ? new Date(profile.dateOfBirth).toLocaleDateString(
+                            language === "en" ? "en-US" : "vi-VN"
+                          )
                         : t("profile.notUpdated")
-                }
-              />
-              <InfoItem
-                label={t("profile.dateOfBirth")}
-                value={
-                  profile.dateOfBirth
-                    ? new Date(profile.dateOfBirth).toLocaleDateString(
-                        language === "en" ? "en-US" : "vi-VN"
-                      )
-                    : t("profile.notUpdated")
-                }
-              />
-              <InfoItem
-                label={t("profile.nationalId")}
-                value={profile.nationalId || t("profile.notUpdated")}
-              />
-              <InfoItem
-                label={t("profile.address")}
-                value={profile.address || t("profile.notUpdated")}
-              />
+                    }
+                  />
+                  <InfoItem
+                    label={t("profile.nationalId")}
+                    value={profile.nationalId || t("profile.notUpdated")}
+                  />
+                  <InfoItem
+                    label={t("profile.address")}
+                    value={profile.address || t("profile.notUpdated")}
+                  />
+                  <InfoItem
+                    label={t("profile.status")}
+                    value={
+                      profile.status === "ACTIVE"
+                        ? t("profile.active")
+                        : t("profile.blocked")
+                    }
+                  />
+                  <InfoItem
+                    label={t("profile.createdDate")}
+                    value={
+                      profile.createdAt
+                        ? new Date(profile.createdAt).toLocaleDateString(
+                            language === "en" ? "en-US" : "vi-VN"
+                          )
+                        : "N/A"
+                    }
+                  />
+                </div>
+              </div>
 
-              <InfoItem
-                label={t("profile.status")}
-                value={
-                  profile.status === "ACTIVE"
-                    ? t("profile.active")
-                    : t("profile.blocked")
-                }
-              />
-              <InfoItem
-                label={t("profile.createdDate")}
-                value={
-                  profile.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString(
-                        language === "en" ? "en-US" : "vi-VN"
-                      )
-                    : "N/A"
-                }
-              />
+              {/* Work Information - Only show for MANAGER */}
+              {managerProfile && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-yellow-600" />
+                    Thông tin công việc
+                  </h3>
+                  <div className="bg-gray-300 rounded-lg p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <InfoItem label="Chức vụ" value="Quản lý rạp" />
+                      <InfoItem
+                        label="Rạp quản lý"
+                        value={managerProfile.managedCinemaName}
+                      />
+                      <InfoItem
+                        label="Ngày nhận chức"
+                        value={new Date(
+                          managerProfile.hireDate
+                        ).toLocaleDateString(
+                          language === "en" ? "en-US" : "vi-VN"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 

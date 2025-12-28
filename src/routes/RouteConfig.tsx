@@ -14,7 +14,6 @@ import NowPlayingPage from "@/pages/Movie/NowPlayingPage";
 import UpcomingPage from "@/pages/Movie/UpcomingPage";
 import AdminDashboard from "@/pages/Dashboard/Admin/AdminDashboard";
 import ManagerDashboard from "@/pages/Dashboard/Manager/ManagerDashboard";
-import StaffDashboard from "@/pages/Dashboard/Staff/StaffDashboard";
 import CheckoutPage from "@/pages/Checkout/CheckoutPage";
 import PaymentResult from "@/pages/Payment/PaymentResult";
 import TheaterDetail from "@/pages/Theater/TheaterDetail";
@@ -57,10 +56,5 @@ export const protectedRoutes = [
     path: "/manager/dashboard",
     element: <ManagerDashboard />,
     role: UserRole.MANAGER,
-  },
-  {
-    path: "/staff/dashboard",
-    element: <StaffDashboard />,
-    role: UserRole.STAFF,
   },
 ];
