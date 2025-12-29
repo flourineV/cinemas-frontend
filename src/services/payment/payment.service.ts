@@ -43,13 +43,13 @@ export const paymentService = {
   ): Promise<PageResponse<PaymentTransactionResponse>> => {
     const res = await paymentClient.get<
       PageResponse<PaymentTransactionResponse>
-    >("/admin/search", { params });
+    >("/payments/admin/search", { params });
     return res.data;
   },
 
   // GET /api/payments/{id}
   getPaymentById: async (id: string): Promise<PaymentTransactionResponse> => {
-    const res = await paymentClient.get<PaymentTransactionResponse>(`/${id}`);
+    const res = await paymentClient.get<PaymentTransactionResponse>(`/payments/${id}`);
     return res.data;
   },
 
@@ -58,7 +58,7 @@ export const paymentService = {
     id: string
   ): Promise<PaymentTransactionResponse> => {
     const res = await paymentClient.get<PaymentTransactionResponse>(
-      `/admin/${id}`
+      `/payments/admin/${id}`
     );
     return res.data;
   },
@@ -67,7 +67,7 @@ export const paymentService = {
     bookingId: string
   ): Promise<ZaloPayCreateOrderResponse> => {
     const res = await paymentClient.post<ZaloPayCreateOrderResponse>(
-      `/create-zalopay-url?bookingId=${bookingId}`
+      `/payments/create-zalopay-url?bookingId=${bookingId}`
     );
     return res.data;
   },
@@ -76,7 +76,7 @@ export const paymentService = {
     fnbOrderId: string
   ): Promise<ZaloPayCreateOrderResponse> => {
     const res = await paymentClient.post<ZaloPayCreateOrderResponse>(
-      `/create-zalopay-url-fnb?fnbOrderId=${fnbOrderId}`
+      `/payments/create-zalopay-url-fnb?fnbOrderId=${fnbOrderId}`
     );
     return res.data;
   },
@@ -87,7 +87,7 @@ export const paymentService = {
     const res = await paymentClient.post<{
       return_code: number;
       return_message: string;
-    }>("/callback", callbackData);
+    }>("/payments/callback", callbackData);
     return res.data;
   },
 
@@ -95,7 +95,7 @@ export const paymentService = {
     appTransId: string
   ): Promise<ZaloPayCheckStatusResponse> => {
     const res = await paymentClient.get<ZaloPayCheckStatusResponse>(
-      "/check-status",
+      "/payments/check-status",
       {
         params: { appTransId },
       }
@@ -106,14 +106,14 @@ export const paymentService = {
   confirmPaymentSuccess: async (
     data: PaymentConfirmationRequest
   ): Promise<void> => {
-    await paymentClient.post("/confirm", data);
+    await paymentClient.post("/payments/confirm", data);
   },
   // Cancel pending payment when user returns from payment gateway
   cancelPendingPayment: async (
     bookingId: string
   ): Promise<{ success: boolean; message: string }> => {
     const res = await paymentClient.post<{ success: boolean; message: string }>(
-      `/cancel?bookingId=${bookingId}`
+      `/payments/cancel?bookingId=${bookingId}`
     );
     return res.data;
   },

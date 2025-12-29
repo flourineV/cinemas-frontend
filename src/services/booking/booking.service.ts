@@ -31,25 +31,25 @@ export const bookingService = {
   createBooking: async (
     data: CreateBookingRequest
   ): Promise<BookingResponse> => {
-    const res = await bookingClient.post<BookingResponse>("", data);
+    const res = await bookingClient.post<BookingResponse>("/bookings", data);
     return res.data;
   },
 
   // GET /api/bookings/admin/search
   getBookings: async (params: any): Promise<PageResponse<BookingResponse>> => {
-    const res = await bookingClient.get("/admin/search", { params });
+    const res = await bookingClient.get("/bookings/admin/search", { params });
     return res.data;
   },
 
   // GET /api/bookings/{id}
   getBookingById: async (id: string): Promise<BookingResponse> => {
-    const res = await bookingClient.get<BookingResponse>(`/${id}`);
+    const res = await bookingClient.get<BookingResponse>(`/bookings/${id}`);
     return res.data;
   },
 
   // GET /api/bookings/user/{userId}
   getBookingsByUser: async (userId: string): Promise<BookingResponse[]> => {
-    const res = await bookingClient.get<BookingResponse[]>(`/user/${userId}`);
+    const res = await bookingClient.get<BookingResponse[]>(`/bookings/user/${userId}`);
     return res.data;
   },
 
@@ -59,7 +59,7 @@ export const bookingService = {
     data: FinalizeBookingRequest
   ): Promise<BookingResponse> => {
     const res = await bookingClient.patch<BookingResponse>(
-      `/${id}/finalize`,
+      `/bookings/${id}/finalize`,
       data
     );
     return res.data;
@@ -67,13 +67,13 @@ export const bookingService = {
 
   // POST /api/bookings/{id}/cancel
   cancelBooking: async (id: string): Promise<BookingResponse> => {
-    const res = await bookingClient.post<BookingResponse>(`/${id}/cancel`);
+    const res = await bookingClient.post<BookingResponse>(`/bookings/${id}/cancel`);
     return res.data;
   },
 
   // DELETE /api/bookings/{id} (Admin)
   deleteBooking: async (id: string): Promise<void> => {
-    await bookingClient.delete(`/${id}`);
+    await bookingClient.delete(`/bookings/${id}`);
   },
 
   // GET /api/bookings/check?userId={userId}&movieId={movieId}
@@ -81,7 +81,7 @@ export const bookingService = {
     userId: string,
     movieId: string
   ): Promise<boolean> => {
-    const res = await bookingClient.get<boolean>(`/check`, {
+    const res = await bookingClient.get<boolean>(`/bookings/check`, {
       params: { userId, movieId },
     });
     return res.data;

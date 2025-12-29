@@ -32,7 +32,7 @@ export const showtimeService = {
     provinceId: string,
     date: string
   ): Promise<TheaterShowtimesResponse[]> {
-    const res = await showtimeClient.get(`/by-province-and-date`, {
+    const res = await showtimeClient.get(`/showtimes/by-province-and-date`, {
       params: { provinceId, date },
     });
     return res.data;
@@ -85,7 +85,7 @@ export const showtimeService = {
   async batchCreate(
     payload: BatchShowtimeRequest
   ): Promise<BatchShowtimeResponse> {
-    const res = await showtimeClient.post("/batch", payload);
+    const res = await showtimeClient.post("/showtimes/batch", payload);
     return res.data;
   },
 
@@ -96,7 +96,7 @@ export const showtimeService = {
     weeklyShowtimes: number;
   }> {
     const params = theaterId ? { theaterId } : {};
-    const res = await showtimeClient.get("/stats/overview", { params });
+    const res = await showtimeClient.get("/showtimes/stats/overview", { params });
     return res.data;
   },
 
@@ -134,7 +134,7 @@ export const showtimeService = {
     };
 
     const res = await showtimeClient.get<PageResponse<ShowtimeDetailResponse>>(
-      "/admin/search",
+      "/showtimes/admin/search",
       { params }
     );
 
@@ -162,7 +162,7 @@ export const showtimeService = {
     const params: Record<string, any> = { page, size, ...filters };
     if (sortBy) params.sortBy = sortBy;
     if (sortType) params.sortType = sortType;
-    const res = await showtimeClient.get("/admin/available", { params });
+    const res = await showtimeClient.get("/showtimes/admin/available", { params });
     return res.data;
   },
 
@@ -172,7 +172,7 @@ export const showtimeService = {
   async validateShowtime(
     payload: unknown /* ValidateShowtimeRequest type if exists */
   ): Promise<ShowtimeConflictResponse> {
-    const res = await showtimeClient.post("/validate", payload);
+    const res = await showtimeClient.post("/showtimes/validate", payload);
     return res.data;
   },
 };

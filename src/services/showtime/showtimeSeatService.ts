@@ -11,7 +11,7 @@ export const showtimeSeatService = {
     showtimeId: string
   ): Promise<ShowtimeSeatsLayoutResponse> => {
     const res = await showtimeClient.get<ShowtimeSeatsLayoutResponse>(
-      `/${showtimeId}/seats`
+      `/showtimeseats/${showtimeId}/seats`
     );
     return res.data;
   },
@@ -22,7 +22,7 @@ export const showtimeSeatService = {
     status: SeatStatus
   ): Promise<ShowtimeSeatResponse> => {
     const res = await showtimeClient.patch<ShowtimeSeatResponse>(
-      `/${showtimeId}/seats/${seatId}/status`,
+      `/showtimeseats/${showtimeId}/seats/${seatId}/status`,
       { showtimeId, seatId, status }
     );
     return res.data;
@@ -30,7 +30,7 @@ export const showtimeSeatService = {
 
   initializeSeatsForShowtime: async (showtimeId: string): Promise<string> => {
     const res = await showtimeClient.post<string>(
-      `/${showtimeId}/initialize-seats`
+      `/showtimeseats/${showtimeId}/initialize-seats`
     );
     return res.data;
   },

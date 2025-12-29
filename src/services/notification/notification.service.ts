@@ -17,7 +17,7 @@ export interface NotificationResponse {
 export const notificationService = {
   // GET /api/notifications
   getAllNotifications: async (): Promise<NotificationResponse[]> => {
-    const res = await notificationClient.get<NotificationResponse[]>("");
+    const res = await notificationClient.get<NotificationResponse[]>("/notifications");
     return res.data;
   },
 
@@ -26,7 +26,7 @@ export const notificationService = {
     userId: string
   ): Promise<NotificationResponse[]> => {
     const res = await notificationClient.get<NotificationResponse[]>(
-      `/user/${userId}`
+      `/notifications/user/${userId}`
     );
     return res.data;
   },
