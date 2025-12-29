@@ -71,7 +71,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             );
             await userProfileService.createProfile({
               userId: jwt.user.id,
-              email: jwt.user.email,
+              email: jwt.user.email || data.email, // Use jwt.user.email if available, fallback to data.email
               username: jwt.user.username,
               fullName: jwt.user.username, // Use username as default fullName
               phoneNumber: data.phoneNumber,
