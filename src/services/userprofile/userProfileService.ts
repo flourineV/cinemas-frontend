@@ -38,56 +38,37 @@ export const userProfileService = {
     return res.data;
   },
 
-  // Upload avatar using presigned URL
+  // Upload avatar to Cloudinary
   uploadAvatar: async (file: File): Promise<string> => {
     try {
-      // Generate unique filename
-      const timestamp = Date.now();
-      const fileExtension = file.name.split(".").pop();
-      const fileName = `avatar_${timestamp}.${fileExtension}`;
-
-      console.log("🔄 Getting presigned URL for:", {
-        fileName,
-        contentType: file.type,
+      console.log("🔄 Uploading avatar to Cloudinary...", {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
       });
 
-      // 1. Get presigned URL
-      const res = await profileClient.get<string>(`/s3/presigned-url`, {
-        params: {
-          fileName,
-          contentType: file.type,
-        },
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "up_load_avatar"); // preset đã tạo
 
-      const presignedUrl = res.data;
-      console.log("✅ Got presigned URL:", presignedUrl);
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/dqes1ugpb/image/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
-      // 2. Upload file to S3 using presigned URL
-      console.log("🔄 Uploading to S3...");
-
-      // Try simple PUT without any headers to avoid CORS preflight
-      const uploadResponse = await fetch(presignedUrl, {
-        method: "PUT",
-        body: file,
-      });
-
-      console.log("📤 Upload response:", {
-        status: uploadResponse.status,
-        statusText: uploadResponse.statusText,
-        ok: uploadResponse.ok,
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
+      if (!res.ok) {
+        const errorText = await res.text();
         throw new Error(
-          `Failed to upload avatar to S3: ${uploadResponse.status} ${errorText}`
+          `Failed to upload avatar to Cloudinary: ${res.status} ${errorText}`
         );
       }
 
-      // 3. Return fileUrl (presigned URL without query params)
-      const fileUrl = presignedUrl.split("?")[0];
-      console.log("✅ Upload successful, fileUrl:", fileUrl);
-      return fileUrl;
+      const data = await res.json();
+      console.log("✅ Upload successful, secure_url:", data.secure_url);
+      return data.secure_url;
     } catch (error) {
       console.error("❌ Avatar upload error:", error);
       throw new Error(
