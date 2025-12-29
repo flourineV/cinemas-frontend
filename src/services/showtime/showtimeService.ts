@@ -14,17 +14,17 @@ import type { PageResponse } from "@/types/PageResponse"; // nếu bạn dùng t
 
 export const showtimeService = {
   async getAllShowtimes(): Promise<ShowtimeResponse[]> {
-    const res = await showtimeClient.get("");
+    const res = await showtimeClient.get(`/showtimes`);
     return res.data;
   },
 
   async getShowtimeById(id: string): Promise<ShowtimeResponse> {
-    const res = await showtimeClient.get(`/${id}`);
+    const res = await showtimeClient.get(`/showtimes/${id}`);
     return res.data;
   },
 
   async getShowtimesByMovie(movieId: string): Promise<MovieShowtimeResponse> {
-    const res = await showtimeClient.get(`/by-movie/${movieId}`);
+    const res = await showtimeClient.get(`/showtimes/by-movie/${movieId}`);
     return res.data;
   },
 
@@ -42,7 +42,7 @@ export const showtimeService = {
     movieId: string,
     provinceId: string
   ): Promise<TheaterShowtimesResponse[]> {
-    const res = await showtimeClient.get(`/by-movie-and-province`, {
+    const res = await showtimeClient.get(`/showtimes/by-movie-and-province`, {
       params: { movieId, provinceId },
     });
     return res.data;
@@ -53,7 +53,7 @@ export const showtimeService = {
     startDate: string,
     endDate: string
   ): Promise<ShowtimeResponse[]> {
-    const res = await showtimeClient.get(`/by-theater`, {
+    const res = await showtimeClient.get(`/showtimes/by-theater`, {
       params: { theaterId, startDate, endDate },
     });
     return res.data;
@@ -64,21 +64,21 @@ export const showtimeService = {
     start: string,
     end: string
   ): Promise<ShowtimeResponse[]> {
-    const res = await showtimeClient.get(`/by-room`, {
+    const res = await showtimeClient.get(`/showtimes/by-room`, {
       params: { roomId, start, end },
     });
     return res.data;
   },
 
   async createShowtime(payload: ShowtimeRequest): Promise<ShowtimeResponse> {
-    const res = await showtimeClient.post("", payload);
+    const res = await showtimeClient.post(`/showtimes`, payload);
     return res.data;
   },
 
   async createShowtimesBatch(
     payload: BatchShowtimeRequest
   ): Promise<BatchShowtimeResponse> {
-    const res = await showtimeClient.post("/batch", payload);
+    const res = await showtimeClient.post("/showtimes/batch", payload);
     return res.data;
   },
 
@@ -104,12 +104,12 @@ export const showtimeService = {
     id: string,
     payload: ShowtimeRequest
   ): Promise<ShowtimeResponse> {
-    const res = await showtimeClient.put(`/${id}`, payload);
+    const res = await showtimeClient.put(`/showtimes/${id}`, payload);
     return res.data;
   },
 
   async deleteShowtime(id: string): Promise<void> {
-    await showtimeClient.delete(`/${id}`);
+    await showtimeClient.delete(`/showtimes/${id}`);
   },
 
   /**

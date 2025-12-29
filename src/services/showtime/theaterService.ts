@@ -72,7 +72,7 @@ export const theaterService = {
     if (theaterId) params.theaterId = theaterId;
 
     const res = await showtimeClient.get<MoviesWithTheatersResponse[]>(
-      "/movies-with-theaters",
+      "/showtimes/movies-with-theaters",
       { params }
     );
     return res.data;
