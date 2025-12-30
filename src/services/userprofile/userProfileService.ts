@@ -13,7 +13,10 @@ export const userProfileService = {
   createProfile: async (
     data: UserProfileRequest
   ): Promise<UserProfileResponse> => {
-    const res = await profileClient.post<UserProfileResponse>("/", data);
+    const res = await profileClient.post<UserProfileResponse>(
+      "/profiles",
+      data
+    );
     return res.data;
   },
 

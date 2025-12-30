@@ -16,6 +16,7 @@ import {
 import { motion } from "framer-motion";
 import Layout from "../../components/layout/Layout";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { emailVerificationService } from "../../services/auth/emailVerificationService";
 
 // --- INTERFACES ---
 interface LoginFormData {
@@ -101,8 +102,11 @@ const CustomInput: React.FC<CustomInputProps> = ({
 function AuthPage() {
   const { t } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isProcessingLogin, setIsProcessingLogin] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { user, signin, signup, loading, error } = useAuthStore();
+  const { user, signin, signup, loading, clearError } = useAuthStore();
 
   const [loginData, setLoginData] = useState<LoginFormData>({
     usernameOrEmailOrPhone: "",
@@ -124,6 +128,11 @@ function AuthPage() {
   const [showSignupPass, setShowSignupPass] = useState(false);
 
   useEffect(() => {
+    // Không redirect nếu đang xử lý login
+    if (isProcessingLogin) {
+      return;
+    }
+
     if (user) {
       switch (user.role) {
         case "admin":
@@ -136,7 +145,7 @@ function AuthPage() {
           navigate("/");
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, isProcessingLogin]);
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
@@ -158,7 +167,40 @@ function AuthPage() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateLogin()) return;
-    await signin(loginData, rememberMe);
+
+    setIsProcessingLogin(true);
+    setLocalError(null);
+
+    try {
+      await signin(loginData, rememberMe);
+      setIsProcessingLogin(false);
+    } catch (err: any) {
+      setIsProcessingLogin(false);
+
+      // Check if error is about email verification
+      const errorMessage = err.response?.data?.message || err.message || "";
+
+      if (errorMessage.includes("Email must be verified")) {
+        // Extract email from login data
+        const email = loginData.usernameOrEmailOrPhone.includes("@")
+          ? loginData.usernameOrEmailOrPhone
+          : "";
+
+        if (email) {
+          // Clear the error from authStore
+          if (clearError) clearError();
+
+          // Navigate to email verification page with email and returnUrl
+          navigate(
+            `/email-verification?email=${encodeURIComponent(email)}&returnUrl=/auth&mode=login`
+          );
+          return;
+        }
+      }
+
+      // For other errors, show them locally
+      setLocalError(errorMessage || "Sign in failed");
+    }
   };
 
   const handleSignupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,6 +235,31 @@ function AuthPage() {
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateSignup()) return;
+
+    // Trước tiên kiểm tra email đã được verify chưa
+    try {
+      const emailStatus = await emailVerificationService.checkEmailStatus(
+        signupData.email
+      );
+      if (!emailStatus.verified) {
+        // Nếu chưa verify, lưu signup data vào sessionStorage và navigate đến trang verification
+        sessionStorage.setItem("pendingSignupData", JSON.stringify(signupData));
+        navigate(
+          `/email-verification?email=${encodeURIComponent(signupData.email)}&returnUrl=/auth&mode=signup`
+        );
+        return;
+      }
+    } catch (err) {
+      console.error("Error checking email status:", err);
+      // Nếu có lỗi, vẫn tiếp tục navigate đến trang verification
+      sessionStorage.setItem("pendingSignupData", JSON.stringify(signupData));
+      navigate(
+        `/email-verification?email=${encodeURIComponent(signupData.email)}&returnUrl=/auth&mode=signup`
+      );
+      return;
+    }
+
+    // Nếu email đã verify, tiến hành đăng ký
     await signup({
       email: signupData.email,
       username: signupData.username,
@@ -305,9 +372,9 @@ function AuthPage() {
                   )}
                 </button>
 
-                {error && !isSignUp && (
+                {localError && !isSignUp && (
                   <p className="text-red-500 text-center text-sm mt-2 font-medium bg-red-50 py-1 rounded-md">
-                    {error}
+                    {localError}
                   </p>
                 )}
               </form>
@@ -413,9 +480,9 @@ function AuthPage() {
                   )}
                 </button>
 
-                {error && isSignUp && (
+                {signupError && isSignUp && (
                   <p className="text-red-500 text-center text-sm mt-2 font-medium bg-red-50 py-1 rounded-md">
-                    {error}
+                    {signupError}
                   </p>
                 )}
               </form>

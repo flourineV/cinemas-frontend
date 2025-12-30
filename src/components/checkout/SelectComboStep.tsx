@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import SelectCombo from "@/components/booking/SelectCombo";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { bookingService } from "@/services/booking/booking.service";
+import { seatLockService } from "@/services/showtime/seatLockService";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export interface SelectedComboItem {
@@ -21,6 +21,8 @@ interface Props {
   onPrev?: () => void;
   movieId: string;
   bookingId?: string;
+  showtimeId?: string;
+  seats?: Array<{ seatId: string }>;
 }
 
 const SelectComboStep: React.FC<Props> = ({
@@ -28,10 +30,31 @@ const SelectComboStep: React.FC<Props> = ({
   setSelectedCombos,
   onNext,
   movieId,
-  bookingId,
+  showtimeId,
+  seats,
 }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+
+  // Lấy identity từ auth-storage
+  const getIdentity = () => {
+    const authStorage = localStorage.getItem("auth-storage");
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage);
+        const userId = parsed?.state?.user?.id;
+        if (userId) {
+          return { userId, guestSessionId: undefined };
+        }
+      } catch (e) {
+        console.error("Error parsing auth-storage", e);
+      }
+    }
+    return {
+      userId: undefined,
+      guestSessionId: localStorage.getItem("guestSessionId") ?? undefined,
+    };
+  };
 
   const handleBack = async () => {
     const result = await Swal.fire({
@@ -46,14 +69,39 @@ const SelectComboStep: React.FC<Props> = ({
     });
 
     if (result.isConfirmed) {
-      // Unlock seats by canceling booking if exists
-      if (bookingId) {
+      // Unlock seats trước khi navigate
+      if (showtimeId && seats && seats.length > 0) {
+        const identity = getIdentity();
+        console.log(
+          "[SelectComboStep] Unlocking seats before going back:",
+          seats.map((s) => s.seatId)
+        );
+
         try {
-          await bookingService.cancelBooking(bookingId);
+          await Promise.all(
+            seats.map((seat) =>
+              seatLockService
+                .unlockSingleSeat(
+                  showtimeId,
+                  seat.seatId,
+                  identity.userId,
+                  identity.guestSessionId
+                )
+                .catch((err) => {
+                  console.error(`Failed to unlock seat ${seat.seatId}:`, err);
+                })
+            )
+          );
+          console.log("[SelectComboStep] Seats unlocked successfully");
         } catch (error) {
-          console.error("Failed to cancel booking:", error);
+          console.error("[SelectComboStep] Error unlocking seats:", error);
         }
       }
+
+      // Clear seat state từ localStorage
+      const seatStateKey = `seat_state_${movieId}`;
+      localStorage.removeItem(seatStateKey);
+
       navigate(`/movies/${movieId}`);
     }
   };

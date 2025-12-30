@@ -1,5 +1,6 @@
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/Auth/AuthPage";
+import EmailVerificationPage from "@/pages/Auth/EmailVerificationPage";
 import ForgotPassword from "@/pages/Auth/ForgotPassword";
 import RedirectReset from "@/pages/Auth/RedirectReset";
 import ResetPassword from "@/pages/Auth/ResetPassword";
@@ -37,6 +38,7 @@ export const publicRoutes = [
   { path: "/theater/:theaterId", element: <TheaterDetail /> },
   { path: "/booking/seats/:showtimeId", element: <SeatSelectionPage /> },
   { path: "/auth", element: <AuthPage /> },
+  { path: "/email-verification", element: <EmailVerificationPage /> },
   { path: "/reset-password", element: <ResetPassword /> },
   { path: "/redirect-reset", element: <RedirectReset /> },
   { path: "/forgot-password", element: <ForgotPassword /> },

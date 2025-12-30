@@ -47,7 +47,7 @@ const NowPlayingPage = () => {
         keywords="phim đang chiếu, phim hot, phim mới, đặt vé xem phim, lịch chiếu phim, cinehub"
       />
       <div className="w-full min-h-screen pb-16 bg-gray-100 mt-1">
-        <section className="w-full max-w-5xl mx-auto pt-8 px-4">
+        <section className="w-full max-w-5xl mx-auto pt-8">
           <div className="relative flex justify-center mb-8">
             <h1 className="text-2xl md:text-4xl font-extrabold text-yellow-500 whitespace-nowrap">
               {t("home.nowPlaying")}

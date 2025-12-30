@@ -113,6 +113,12 @@ const PrivacyPolicy = () => {
             "Chúng tôi sử dụng cookie để cải thiện trải nghiệm của bạn. Bạn có thể quản lý cài đặt cookie trong trình duyệt của mình. Các loại cookie chúng tôi sử dụng bao gồm: cookie cần thiết (để website hoạt động), cookie phân tích (để hiểu cách bạn sử dụng website), và cookie marketing (để hiển thị quảng cáo phù hợp).",
         },
         {
+          icon: RefreshCw,
+          title: "Chính Sách Hủy Vé & Hoàn Tiền",
+          content:
+            "Bạn có thể hủy tối đa 1 booking trong 1 tháng. Việc hủy vé phải được thực hiện trước giờ chiếu ít nhất 60 phút. Khi hủy vé thành công, tiền sẽ được hoàn về dưới dạng Refund Voucher có giá trị tương đương và có hiệu lực trong 2 tháng. Voucher này có thể sử dụng cho các lần đặt vé tiếp theo. Lưu ý: Không áp dụng hoàn tiền mặt hoặc chuyển khoản.",
+        },
+        {
           icon: Baby,
           title: "Bảo Vệ Trẻ Em",
           content:
@@ -203,6 +209,12 @@ const PrivacyPolicy = () => {
           title: "Cookies and Tracking Technologies",
           content:
             "We use cookies to improve your experience. You can manage cookie settings in your browser. Types of cookies we use include: necessary cookies (for website functionality), analytics cookies (to understand how you use the website), and marketing cookies (to display relevant ads).",
+        },
+        {
+          icon: RefreshCw,
+          title: "Ticket Cancellation & Refund Policy",
+          content:
+            "You can cancel up to 1 booking per month. Cancellation must be made at least 60 minutes before showtime. Upon successful cancellation, the amount will be refunded as a Refund Voucher with equivalent value, valid for 2 months. This voucher can be used for future bookings. Note: Cash refunds or bank transfers are not available.",
         },
         {
           icon: Baby,

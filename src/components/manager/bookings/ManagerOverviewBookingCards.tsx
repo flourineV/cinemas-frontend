@@ -6,6 +6,7 @@ import {
   Clock,
   DollarSign,
   Building2,
+  RotateCcw,
 } from "lucide-react";
 import { bookingService } from "@/services/booking/booking.service";
 import { theaterService } from "@/services/showtime/theaterService";
@@ -16,6 +17,7 @@ interface BookingStats {
   totalBookings: number;
   confirmedBookings: number;
   cancelledBookings: number;
+  refundedBookings: number;
   pendingBookings: number;
   totalRevenue: number;
 }
@@ -26,6 +28,7 @@ export default function ManagerOverviewBookingCards(): React.JSX.Element {
     totalBookings: 0,
     confirmedBookings: 0,
     cancelledBookings: 0,
+    refundedBookings: 0,
     pendingBookings: 0,
     totalRevenue: 0,
   });
@@ -74,8 +77,8 @@ export default function ManagerOverviewBookingCards(): React.JSX.Element {
           <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
           <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-          {Array.from({ length: 5 }).map((_, idx) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
+          {Array.from({ length: 6 }).map((_, idx) => (
             <div
               key={idx}
               className="bg-white border border-gray-400 rounded-lg p-6 animate-pulse"
@@ -103,7 +106,7 @@ export default function ManagerOverviewBookingCards(): React.JSX.Element {
       </div>
 
       {/* Theater-specific Booking Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
         <div className="bg-white border border-gray-400 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <span className="text-sm font-medium text-gray-700">
@@ -130,6 +133,16 @@ export default function ManagerOverviewBookingCards(): React.JSX.Element {
 
         <div className="bg-white border border-gray-400 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-gray-700">Chờ xử lý</span>
+            <Clock size={20} className="text-gray-600" />
+          </div>
+          <p className="text-3xl font-bold text-yellow-500">
+            {stats.pendingBookings.toLocaleString("vi-VN")}
+          </p>
+        </div>
+
+        <div className="bg-white border border-gray-400 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
             <span className="text-sm font-medium text-gray-700">Đã hủy</span>
             <XCircle size={20} className="text-gray-600" />
           </div>
@@ -140,11 +153,13 @@ export default function ManagerOverviewBookingCards(): React.JSX.Element {
 
         <div className="bg-white border border-gray-400 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-sm font-medium text-gray-700">Chờ xử lý</span>
-            <Clock size={20} className="text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">
+              Đã hoàn tiền
+            </span>
+            <RotateCcw size={20} className="text-gray-600" />
           </div>
           <p className="text-3xl font-bold text-yellow-500">
-            {stats.pendingBookings.toLocaleString("vi-VN")}
+            {stats.refundedBookings.toLocaleString("vi-VN")}
           </p>
         </div>
 

@@ -851,6 +851,16 @@ const Profile = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
+              {/* Cancellation Policy Notice */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-yellow-800">
+                  <span className="font-semibold">
+                    📋 {t("profile.cancellationPolicy")}:
+                  </span>{" "}
+                  {t("profile.cancellationPolicyDesc")}
+                </p>
+              </div>
+
               {bookingsLoading ? (
                 <div className="text-center py-16">
                   <div className="text-gray-500">{t("profile.loading")}</div>
@@ -873,79 +883,153 @@ const Profile = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {displayedBookings.map((booking) => (
-                    <div
-                      key={booking.bookingId}
-                      className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-400"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {language === "en" && booking.movieTitleEn
-                              ? booking.movieTitleEn
-                              : booking.movieTitle || "Phim"}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {t("profile.bookingCode")}: {booking.bookingCode}
-                          </p>
-                        </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            booking.status === "CONFIRMED"
-                              ? "bg-green-100 text-green-700"
-                              : booking.status === "PENDING"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                      </div>
+                  {displayedBookings.map((booking) => {
+                    // Check if booking can be cancelled (60 minutes before showtime)
+                    const showDateTime = booking.showDateTime
+                      ? new Date(booking.showDateTime)
+                      : null;
+                    const now = new Date();
+                    const minutesUntilShow = showDateTime
+                      ? (showDateTime.getTime() - now.getTime()) / (1000 * 60)
+                      : 0;
+                    const canCancel =
+                      booking.status === "CONFIRMED" && minutesUntilShow >= 60;
 
-                      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                        <div className="text-gray-600">
-                          <span className="font-medium">
-                            {t("profile.theater")}:
-                          </span>{" "}
-                          {language === "en" && booking.theaterNameEn
-                            ? booking.theaterNameEn
-                            : booking.theaterName || "N/A"}
-                        </div>
-                        <div className="text-gray-600">
-                          <span className="font-medium">
-                            {t("profile.room")}:
-                          </span>{" "}
-                          {language === "en" && booking.roomNameEn
-                            ? booking.roomNameEn
-                            : booking.roomName || "N/A"}
-                        </div>
-                        <div className="text-gray-600 col-span-2">
-                          <span className="font-medium">
-                            {t("profile.showtime")}:
-                          </span>{" "}
-                          {booking.showDateTime
-                            ? new Date(booking.showDateTime).toLocaleString(
-                                language === "en" ? "en-US" : "vi-VN"
-                              )
-                            : "N/A"}
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          {t("profile.seats")}:{" "}
-                          <span className="font-semibold text-gray-900">
-                            {booking.seats
-                              ?.map((s: any) => s.seatNumber || s)
-                              .join(", ") || "N/A"}
+                    return (
+                      <div
+                        key={booking.bookingId}
+                        className="bg-white rounded-xl p-6 shadow hover:shadow-md transition border border-gray-400"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                              {language === "en" && booking.movieTitleEn
+                                ? booking.movieTitleEn
+                                : booking.movieTitle || "Phim"}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {t("profile.bookingCode")}: {booking.bookingCode}
+                            </p>
+                          </div>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              booking.status === "CONFIRMED"
+                                ? "bg-green-100 text-green-700"
+                                : booking.status === "PENDING"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {booking.status}
                           </span>
                         </div>
-                        <div className="text-lg font-bold text-yellow-600">
-                          {booking.totalPrice?.toLocaleString() || 0} VNĐ
+
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                          <div className="text-gray-600">
+                            <span className="font-medium">
+                              {t("profile.theater")}:
+                            </span>{" "}
+                            {language === "en" && booking.theaterNameEn
+                              ? booking.theaterNameEn
+                              : booking.theaterName || "N/A"}
+                          </div>
+                          <div className="text-gray-600">
+                            <span className="font-medium">
+                              {t("profile.room")}:
+                            </span>{" "}
+                            {language === "en" && booking.roomNameEn
+                              ? booking.roomNameEn
+                              : booking.roomName || "N/A"}
+                          </div>
+                          <div className="text-gray-600 col-span-2">
+                            <span className="font-medium">
+                              {t("profile.showtime")}:
+                            </span>{" "}
+                            {booking.showDateTime
+                              ? new Date(booking.showDateTime).toLocaleString(
+                                  language === "en" ? "en-US" : "vi-VN"
+                                )
+                              : "N/A"}
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
+                          <div className="text-sm text-gray-600">
+                            {t("profile.seats")}:{" "}
+                            <span className="font-semibold text-gray-900">
+                              {booking.seats
+                                ?.map((s: any) => s.seatNumber || s)
+                                .join(", ") || "N/A"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-lg font-bold text-yellow-600">
+                              {(
+                                booking.finalPrice ?? booking.totalPrice
+                              )?.toLocaleString() || 0}{" "}
+                              VNĐ
+                            </div>
+                            {canCancel && (
+                              <button
+                                onClick={async () => {
+                                  const result = await Swal.fire({
+                                    title: t("profile.cancelBookingTitle"),
+                                    text: t("profile.cancelBookingConfirm"),
+                                    icon: "warning",
+                                    showCancelButton: true,
+                                    confirmButtonColor: "#ef4444",
+                                    cancelButtonColor: "#6b7280",
+                                    confirmButtonText: t(
+                                      "profile.confirmCancel"
+                                    ),
+                                    cancelButtonText: t("profile.keepBooking"),
+                                  });
+
+                                  if (result.isConfirmed) {
+                                    try {
+                                      await bookingService.cancelBooking(
+                                        booking.bookingId
+                                      );
+                                      Swal.fire({
+                                        icon: "success",
+                                        title: t("profile.cancelSuccess"),
+                                        text: t("profile.cancelSuccessDesc"),
+                                        confirmButtonColor: "#EAB308",
+                                      });
+                                      // Refresh bookings
+                                      const data =
+                                        await bookingService.getBookingsByUser(
+                                          user!.id
+                                        );
+                                      const confirmedBookings = data.filter(
+                                        (b: any) => b.status === "CONFIRMED"
+                                      );
+                                      setBookings(confirmedBookings);
+                                      setDisplayedBookings(
+                                        confirmedBookings.slice(0, 10)
+                                      );
+                                    } catch (error: any) {
+                                      Swal.fire({
+                                        icon: "error",
+                                        title: t("profile.cancelError"),
+                                        text:
+                                          error.response?.data?.message ||
+                                          t("profile.cancelErrorDesc"),
+                                        confirmButtonColor: "#EAB308",
+                                      });
+                                    }
+                                  }
+                                }}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                              >
+                                {t("profile.cancelBooking")}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {hasMoreBookings && (
                     <button

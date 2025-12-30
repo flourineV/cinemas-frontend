@@ -435,7 +435,7 @@ const Home = () => {
                               : `${promo.discountValue.toLocaleString()}đ`}
                           </p>
                           <p className="text-lg text-white/90 font-semibold">
-                            {language === "en" ? "DISCOUNT" : "GIẢM GIÁ"}
+                            {t("home.discount")}
                           </p>
                         </div>
                       </div>
@@ -460,7 +460,7 @@ const Home = () => {
                           </p>
                         )}
                         <p className="text-xs text-gray-400">
-                          {language === "en" ? "Valid until:" : "HSD:"}{" "}
+                          {t("home.validUntil")}{" "}
                           {new Date(promo.endDate).toLocaleDateString(
                             language === "en" ? "en-US" : "vi-VN"
                           )}

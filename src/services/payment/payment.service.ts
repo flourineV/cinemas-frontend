@@ -117,4 +117,14 @@ export const paymentService = {
     );
     return res.data;
   },
+
+  // Confirm free booking (when finalPrice = 0, no payment gateway needed)
+  confirmFreeBooking: async (
+    bookingId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const res = await paymentClient.post<{ success: boolean; message: string }>(
+      `/confirm-free?bookingId=${bookingId}`
+    );
+    return res.data;
+  },
 };

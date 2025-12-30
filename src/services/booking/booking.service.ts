@@ -10,6 +10,7 @@ interface BookingStatsResponse {
   totalBookings: number;
   confirmedBookings: number;
   cancelledBookings: number;
+  refundedBookings: number;
   pendingBookings: number;
   totalRevenue: number;
 }
