@@ -41,9 +41,11 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
     const fetchStats = async () => {
       try {
         setLoading(true);
+        console.log("🔄 Fetching showtime stats...");
 
         // Fetch overall stats
         const overallStats = await showtimeService.getStatsOverview();
+        console.log("✅ Overall stats:", overallStats);
         setStats({
           totalShowtimes: overallStats.totalShowtimes || 0,
           activeShowtimes: overallStats.activeShowtimes || 0,
@@ -53,6 +55,14 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
 
         // Fetch all theaters and their stats
         const theaters = await theaterService.getAllTheaters();
+        console.log("✅ Theaters:", theaters?.length, "theaters found");
+
+        if (!theaters || theaters.length === 0) {
+          console.log("⚠️ No theaters found, skipping theater stats");
+          setTheaterStats([]);
+          return;
+        }
+
         const theaterStatsPromises = theaters.map(async (theater) => {
           try {
             const theaterStat = await showtimeService.getStatsOverview(
@@ -78,11 +88,18 @@ export default function OverviewShowtimeCards(): React.JSX.Element {
           }
         });
 
+        console.log(
+          "🔄 Fetching stats for",
+          theaterStatsPromises.length,
+          "theaters..."
+        );
         const theaterStatsResults = await Promise.all(theaterStatsPromises);
+        console.log("✅ Theater stats results:", theaterStatsResults);
         setTheaterStats(theaterStatsResults);
       } catch (error) {
-        console.error("Error fetching showtime stats:", error);
+        console.error("❌ Error fetching showtime stats:", error);
       } finally {
+        console.log("✅ Done fetching, setting loading to false");
         setLoading(false);
       }
     };

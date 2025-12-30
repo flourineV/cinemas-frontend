@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { formatSpokenLanguages } from "@/utils/format";
 import Layout from "../../components/layout/Layout";
+import SEO from "../../components/seo/SEO";
 import { getPosterUrl } from "../../utils/getPosterUrl";
 import { formatAgeRating } from "@/utils/formatAgeRating";
 import { movieService } from "@/services/movie/movieService";
@@ -419,6 +420,16 @@ export default function MovieDetailPage() {
   // Main content
   return (
     <Layout>
+      <SEO
+        title={movie.title}
+        description={
+          movie.overview?.substring(0, 160) ||
+          `Xem thông tin chi tiết và đặt vé xem phim ${movie.title} tại CineHub`
+        }
+        keywords={`${movie.title}, ${movie.genres?.join(", ")}, đặt vé xem phim, lịch chiếu phim, cinehub`}
+        image={getPosterUrl(movie.posterUrl)}
+        type="movie"
+      />
       <div className="min-h-screen">
         {/* Section 1: Movie Info with Poster Background */}
         <div className="relative pt-20 pb-48">

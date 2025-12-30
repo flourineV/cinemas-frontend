@@ -1,7 +1,6 @@
 export interface StatsOverviewResponse {
   totalUsers: number;
   totalCustomers: number;
-  totalStaff: number;
   totalManagers: number;
   totalAdmins: number;
 }

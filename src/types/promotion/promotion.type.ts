@@ -65,12 +65,15 @@ export interface UserPromotionsResponse {
 }
 
 // Refund Voucher Response
+export type RefundType = "USER_CANCELLED" | "SYSTEM_REFUND";
+
 export interface RefundVoucherResponse {
   id: string;
   code: string;
   userId: string;
   value: number;
   isUsed: boolean;
+  refundType: RefundType;
   createdAt: string;
   expiredAt: string;
 }

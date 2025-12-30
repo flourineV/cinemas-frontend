@@ -6,7 +6,7 @@ type BadgeType = "AccountRole" | "AccountStatus" | "MovieStatus";
 interface BadgeProps {
   type?: BadgeType;
   value: string; // text hiển thị (có thể là tiếng Việt)
-  raw?: string; // giá trị thô từ DB (ví dụ 'admin','manager', 'staff', 'customer' hoặc 'ACTIVE','INACTIVE')
+  raw?: string; // giá trị thô từ DB (ví dụ 'admin','manager', 'customer' hoặc 'ACTIVE','INACTIVE')
   className?: string;
 }
 
@@ -27,11 +27,9 @@ export const Badge: React.FC<BadgeProps> = ({
         ? "bg-red-100 border-red-300 text-red-800"
         : role === "manager"
           ? "bg-yellow-100 border-yellow-300 text-yellow-800"
-          : role === "staff"
-            ? "bg-blue-100 border-blue-300 text-blue-800"
-            : role === "customer"
-              ? "bg-green-100 border-green-300 text-green-800"
-              : "bg-gray-100 border-gray-300 text-gray-800";
+          : role === "customer"
+            ? "bg-green-100 border-green-300 text-green-800"
+            : "bg-gray-100 border-gray-300 text-gray-800";
 
     return <span className={`${base} ${cls} ${className}`}>{value}</span>;
   }

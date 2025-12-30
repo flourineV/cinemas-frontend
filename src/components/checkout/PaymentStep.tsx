@@ -7,6 +7,7 @@ import { bookingService } from "@/services/booking/booking.service";
 import type {
   PromotionResponse,
   UserPromotionsResponse,
+  RefundVoucherResponse,
 } from "@/types/promotion/promotion.type";
 import type {
   FinalizeBookingRequest,
@@ -20,6 +21,8 @@ interface Props {
   setPaymentMethod: (val: string) => void;
   appliedPromo: PromotionResponse | null;
   onApplyPromo: (promo: PromotionResponse | null) => void;
+  selectedRefundVoucher: RefundVoucherResponse | null;
+  onSelectRefundVoucher: (voucher: RefundVoucherResponse | null) => void;
   bookingId: string;
   selectedCombos: Record<string, SelectedComboItem>;
   userId?: string;
@@ -36,6 +39,8 @@ interface Props {
 const PaymentStep: React.FC<Props> = ({
   appliedPromo,
   onApplyPromo,
+  selectedRefundVoucher,
+  onSelectRefundVoucher,
   bookingId,
   selectedCombos,
   userId,
@@ -48,6 +53,9 @@ const PaymentStep: React.FC<Props> = ({
   const { t, language } = useLanguage();
   const [userPromotions, setUserPromotions] =
     useState<UserPromotionsResponse | null>(null);
+  const [refundVouchers, setRefundVouchers] = useState<RefundVoucherResponse[]>(
+    []
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [userRank, setUserRank] = useState<string | null>(null);
@@ -68,6 +76,15 @@ const PaymentStep: React.FC<Props> = ({
           const data =
             await promotionService.getActivePromotionsForUser(userId);
           setUserPromotions(data);
+
+          // Fetch refund vouchers for logged-in user
+          try {
+            const vouchers =
+              await promotionService.getAvailableRefundVouchers(userId);
+            setRefundVouchers(vouchers);
+          } catch (voucherErr) {
+            console.error("Lấy refund vouchers thất bại:", voucherErr);
+          }
         } else {
           // Guest - lấy tất cả active promotions nhưng đặt vào notApplicable
           const allPromotions = await promotionService.getActivePromotions();
@@ -111,6 +128,24 @@ const PaymentStep: React.FC<Props> = ({
     fetchRankDiscount();
   }, [userId, onRankDiscountValueChange]);
 
+  // Handle selecting refund voucher - mutually exclusive with promotion
+  const handleSelectRefundVoucher = (voucher: RefundVoucherResponse | null) => {
+    if (voucher) {
+      // Clear promotion when selecting refund voucher
+      onApplyPromo(null);
+    }
+    onSelectRefundVoucher(voucher);
+  };
+
+  // Handle selecting promotion - mutually exclusive with refund voucher
+  const handleSelectPromotion = (promo: PromotionResponse | null) => {
+    if (promo) {
+      // Clear refund voucher when selecting promotion
+      onSelectRefundVoucher(null);
+    }
+    onApplyPromo(promo);
+  };
+
   // Không cần handleSelectPromo nữa vì chọn trực tiếp từ danh sách
 
   const handlePayment = async () => {
@@ -142,14 +177,32 @@ const PaymentStep: React.FC<Props> = ({
       const finalizeRequest: FinalizeBookingRequest = {
         fnbItems: fnbItems,
         promotionCode: appliedPromo?.code,
+        refundVoucherCode: selectedRefundVoucher?.code,
         useLoyaltyDiscount: useRankDiscount,
         language: language, // Send current language for email/notification
       };
 
       console.log("Finalizing booking with data:", finalizeRequest);
-      await bookingService.finalizeBooking(bookingId, finalizeRequest);
+      const finalizedBooking = await bookingService.finalizeBooking(
+        bookingId,
+        finalizeRequest
+      );
 
-      // Bước 3: Gọi API tạo ZaloPay URL
+      // Bước 3: Kiểm tra finalPrice - nếu = 0 thì không cần qua ZaloPay
+      if (finalizedBooking.finalPrice === 0) {
+        console.log(
+          "Final price is 0, confirming booking directly without payment gateway"
+        );
+
+        // Gọi API confirm booking trực tiếp (không qua ZaloPay)
+        await paymentService.confirmFreeBooking(bookingId);
+
+        // Redirect to success page
+        window.location.href = `/payment/result?bookingId=${bookingId}&status=success&free=true`;
+        return;
+      }
+
+      // Bước 4: Gọi API tạo ZaloPay URL (chỉ khi finalPrice > 0)
       const response = await paymentService.createZaloPayUrl(bookingId);
 
       if (response.return_code === 1 && response.order_url) {
@@ -272,7 +325,9 @@ const PaymentStep: React.FC<Props> = ({
                     return (
                       <div
                         key={promo.code}
-                        onClick={() => onApplyPromo(isSelected ? null : promo)}
+                        onClick={() =>
+                          handleSelectPromotion(isSelected ? null : promo)
+                        }
                         className={`relative cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 ${
                           isSelected
                             ? "bg-yellow-500 border-yellow-600 shadow-lg"
@@ -356,6 +411,82 @@ const PaymentStep: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* Refund Vouchers Section - chỉ hiển thị cho user đã đăng nhập */}
+      {userId && (
+        <div>
+          <h3 className="text-2xl font-bold text-zinc-800 mb-4">
+            {t("checkout.refundVoucher")}
+          </h3>
+          {refundVouchers.length === 0 ? (
+            <div className="text-zinc-600 text-center py-8 bg-zinc-100 rounded-xl border border-zinc-300">
+              {t("checkout.noRefundVoucher")}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {refundVouchers.map((voucher) => {
+                  const isSelected =
+                    selectedRefundVoucher?.code === voucher.code;
+                  const expiredDate = new Date(voucher.expiredAt);
+                  return (
+                    <div
+                      key={voucher.code}
+                      onClick={() =>
+                        handleSelectRefundVoucher(isSelected ? null : voucher)
+                      }
+                      className={`relative cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 ${
+                        isSelected
+                          ? "bg-green-500 border-green-600 shadow-lg"
+                          : "bg-white border-zinc-300 hover:border-green-400 hover:shadow-md"
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="absolute -top-2 -right-2 bg-zinc-900 text-green-500 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm border-2 border-green-500">
+                          ✓
+                        </div>
+                      )}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div
+                            className={`font-bold text-lg mb-1 ${isSelected ? "text-black" : "text-zinc-800"}`}
+                          >
+                            {voucher.code}
+                          </div>
+                          <div
+                            className={`text-sm mb-2 ${isSelected ? "text-zinc-900" : "text-zinc-600"}`}
+                          >
+                            {t("checkout.refundVoucherDesc")}
+                          </div>
+                          <div
+                            className={`text-xs font-semibold ${isSelected ? "text-zinc-800" : "text-green-600"}`}
+                          >
+                            {t("checkout.voucherValue")}{" "}
+                            {Number(voucher.value).toLocaleString()}đ
+                          </div>
+                          <div
+                            className={`text-xs mt-1 ${isSelected ? "text-zinc-700" : "text-zinc-500"}`}
+                          >
+                            {t("checkout.expiredAt")}{" "}
+                            {expiredDate.toLocaleDateString(
+                              language === "en" ? "en-US" : "vi-VN"
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {selectedRefundVoucher && (
+                <p className="text-sm text-green-600 mt-2">
+                  {t("checkout.refundVoucherNote")}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Buttons */}
       <div className="flex justify-between mt-10">

@@ -5,15 +5,14 @@ import type { UserRole } from "@/constants/UserRole";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: UserRole; // CUSTOMER | STAFF | MANAGER | ADMIN
+  requiredRole?: UserRole; // CUSTOMER | MANAGER | ADMIN
 }
 
 const roleHierarchy: Record<UserRole, number> = {
   GUEST: 0,
   CUSTOMER: 1,
-  STAFF: 2,
-  MANAGER: 3,
-  ADMIN: 4,
+  MANAGER: 2,
+  ADMIN: 3,
 };
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -42,8 +41,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         return <Navigate to="/admin/dashboard" replace />;
       case "MANAGER":
         return <Navigate to="/manager/dashboard" replace />;
-      case "STAFF":
-        return <Navigate to="/staff/dashboard" replace />;
       case "CUSTOMER":
         return <Navigate to="/profile" replace />;
       default:

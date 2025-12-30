@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import type { SelectedComboItem } from "./SelectComboStep";
-import type { PromotionResponse } from "@/types/promotion/promotion.type";
+import type {
+  PromotionResponse,
+  RefundVoucherResponse,
+} from "@/types/promotion/promotion.type";
 import { userProfileService } from "@/services/userprofile/userProfileService";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -10,6 +13,8 @@ interface Props {
   comboTotal: number;
   appliedPromo: PromotionResponse | null;
   discountValue: number;
+  selectedRefundVoucher: RefundVoucherResponse | null;
+  refundVoucherDiscount: number;
   finalTotal: number;
   useRankDiscount: boolean;
   rankDiscountValue: number;
@@ -30,6 +35,8 @@ const BookingSummary: React.FC<Props> = ({
   comboTotal,
   appliedPromo,
   discountValue,
+  selectedRefundVoucher,
+  refundVoucherDiscount,
   finalTotal,
   useRankDiscount,
   rankDiscountValue,
@@ -237,14 +244,27 @@ const BookingSummary: React.FC<Props> = ({
                 </span>
               </div>
             )}
-            {useRankDiscount && rankDiscountValue > 0 && userRank && (
+            {selectedRefundVoucher && refundVoucherDiscount > 0 && (
               <div className="flex justify-between text-green-600 mt-2">
                 <span>
-                  {t("checkout.rankDiscountLabel")} {userRank}
+                  {t("checkout.refundVoucherDiscount")} (
+                  {selectedRefundVoucher.code})
                 </span>
-                <span>-{rankDiscountValue}%</span>
+                <span>-{refundVoucherDiscount.toLocaleString()} VND</span>
               </div>
             )}
+            {useRankDiscount &&
+              rankDiscountValue > 0 &&
+              userRank &&
+              !appliedPromo &&
+              !selectedRefundVoucher && (
+                <div className="flex justify-between text-green-600 mt-2">
+                  <span>
+                    {t("checkout.rankDiscountLabel")} {userRank}
+                  </span>
+                  <span>-{rankDiscountValue}%</span>
+                </div>
+              )}
             <div className="flex justify-between text-yellow-600 font-bold mt-3 text-lg">
               <span>{t("checkout.total")}</span>
               <span>{finalTotal.toLocaleString()} VND</span>

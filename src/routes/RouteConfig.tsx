@@ -1,5 +1,6 @@
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/Auth/AuthPage";
+import EmailVerificationPage from "@/pages/Auth/EmailVerificationPage";
 import ForgotPassword from "@/pages/Auth/ForgotPassword";
 import RedirectReset from "@/pages/Auth/RedirectReset";
 import ResetPassword from "@/pages/Auth/ResetPassword";
@@ -14,7 +15,6 @@ import NowPlayingPage from "@/pages/Movie/NowPlayingPage";
 import UpcomingPage from "@/pages/Movie/UpcomingPage";
 import AdminDashboard from "@/pages/Dashboard/Admin/AdminDashboard";
 import ManagerDashboard from "@/pages/Dashboard/Manager/ManagerDashboard";
-import StaffDashboard from "@/pages/Dashboard/Staff/StaffDashboard";
 import CheckoutPage from "@/pages/Checkout/CheckoutPage";
 import PaymentResult from "@/pages/Payment/PaymentResult";
 import TheaterDetail from "@/pages/Theater/TheaterDetail";
@@ -38,6 +38,7 @@ export const publicRoutes = [
   { path: "/theater/:theaterId", element: <TheaterDetail /> },
   { path: "/booking/seats/:showtimeId", element: <SeatSelectionPage /> },
   { path: "/auth", element: <AuthPage /> },
+  { path: "/email-verification", element: <EmailVerificationPage /> },
   { path: "/reset-password", element: <ResetPassword /> },
   { path: "/redirect-reset", element: <RedirectReset /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
@@ -57,10 +58,5 @@ export const protectedRoutes = [
     path: "/manager/dashboard",
     element: <ManagerDashboard />,
     role: UserRole.MANAGER,
-  },
-  {
-    path: "/staff/dashboard",
-    element: <StaffDashboard />,
-    role: UserRole.STAFF,
   },
 ];

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Users, UserCheck, Briefcase, Shield, Crown } from "lucide-react";
+import { Users, UserCheck, Shield, Crown } from "lucide-react";
 import type { StatsOverviewResponse } from "@/types/auth/stats.type";
 import { userAdminService } from "@/services/auth/userService";
 import { motion, useReducedMotion } from "framer-motion";
@@ -56,8 +56,8 @@ export default function OverviewCards() {
   // Skeleton loading
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        {Array.from({ length: 5 }).map((_, idx) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {Array.from({ length: 4 }).map((_, idx) => (
           <div
             key={idx}
             className="bg-white border border-gray-400 rounded-lg p-6 animate-pulse"
@@ -92,12 +92,6 @@ export default function OverviewCards() {
       label: "Tổng khách hàng",
       value: overview?.totalCustomers ?? "-",
       icon: <UserCheck size={20} className="text-gray-600" />,
-      color: "",
-    },
-    {
-      label: "Tổng nhân viên",
-      value: overview?.totalStaff ?? "-",
-      icon: <Briefcase size={20} className="text-gray-600" />,
       color: "",
     },
     {
@@ -140,7 +134,7 @@ export default function OverviewCards() {
 
   return (
     <motion.div
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
       initial={shouldReduceMotion ? undefined : "hidden"}
       animate={shouldReduceMotion ? undefined : "show"}
       variants={containerVariants}

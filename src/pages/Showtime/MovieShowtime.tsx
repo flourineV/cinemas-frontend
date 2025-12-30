@@ -79,6 +79,82 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   const { guestSessionId, isLoggedIn } = useGuestSessionContext();
   const navigate = useNavigate();
 
+  // --- Lưu và restore trạng thái ghế đã chọn ---
+  const SEAT_STATE_KEY = `seat_state_${movieId}`;
+
+  // Lưu trạng thái khi có thay đổi
+  useEffect(() => {
+    if (selectedSeats.length > 0 && selectedShowtime) {
+      const seatState = {
+        showtimeId: selectedShowtime.id,
+        selectedSeats,
+        selectedTickets,
+        totalPrice,
+        seatLockTTL,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(SEAT_STATE_KEY, JSON.stringify(seatState));
+    }
+  }, [
+    selectedSeats,
+    selectedShowtime,
+    selectedTickets,
+    totalPrice,
+    seatLockTTL,
+    SEAT_STATE_KEY,
+  ]);
+
+  // Restore trạng thái khi component mount
+  useEffect(() => {
+    const restoreSeatState = () => {
+      try {
+        const savedState = localStorage.getItem(SEAT_STATE_KEY);
+        if (savedState) {
+          const seatState = JSON.parse(savedState);
+
+          // Chỉ restore nếu không quá 10 phút (600 seconds)
+          const isRecent = Date.now() - seatState.timestamp < 600000;
+
+          if (isRecent && seatState.selectedSeats?.length > 0) {
+            console.log("🔄 [MovieShowtime] Restoring seat state:", seatState);
+
+            // Restore state
+            setSelectedSeats(seatState.selectedSeats);
+            setSelectedTickets(seatState.selectedTickets || {});
+            setTotalPrice(seatState.totalPrice || 0);
+            setSeatLockTTL(seatState.seatLockTTL);
+
+            // Tìm và set showtime tương ứng
+            if (seatState.showtimeId && !selectedShowtime) {
+              // Sẽ được set khi theaterShowtimes load xong
+              console.log(
+                "🎬 [MovieShowtime] Will restore showtime:",
+                seatState.showtimeId
+              );
+            }
+          } else {
+            // Xóa state cũ
+            localStorage.removeItem(SEAT_STATE_KEY);
+          }
+        }
+      } catch (error) {
+        console.error("❌ [MovieShowtime] Error restoring seat state:", error);
+        localStorage.removeItem(SEAT_STATE_KEY);
+      }
+    };
+
+    restoreSeatState();
+  }, [SEAT_STATE_KEY]);
+
+  // Clear seat state khi user chọn showtime mới
+  const clearSeatState = () => {
+    localStorage.removeItem(SEAT_STATE_KEY);
+    setSelectedSeats([]);
+    setSelectedTickets({});
+    setTotalPrice(0);
+    setSeatLockTTL(null);
+  };
+
   // --- WebSocket & TTL Logic ---
   const handleSeatLockUpdate = useCallback((data: SeatLockResponse) => {
     if (data.status === "LOCKED" && data.ttl > 0) {
@@ -194,6 +270,57 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
         console.log("✅ [MovieShowtime] Number of theaters:", theaters.length);
 
         setTheaterShowtimes(theaters);
+
+        // Restore showtime từ saved state nếu có
+        const savedState = localStorage.getItem(SEAT_STATE_KEY);
+        if (savedState && !selectedShowtime) {
+          try {
+            const seatState = JSON.parse(savedState);
+            const isRecent = Date.now() - seatState.timestamp < 600000;
+
+            if (isRecent && seatState.showtimeId) {
+              // Tìm showtime trong theaters vừa load
+              for (const theater of theaters) {
+                for (const showtime of theater.showtimes) {
+                  if (showtime.showtimeId === seatState.showtimeId) {
+                    console.log(
+                      "🔄 [MovieShowtime] Restoring showtime:",
+                      showtime
+                    );
+
+                    const restoredShowtime: ShowtimeResponse = {
+                      id: showtime.showtimeId,
+                      movieId,
+                      theaterName: theater.theaterName,
+                      theaterNameEn: theater.theaterNameEn,
+                      roomId: showtime.roomId,
+                      roomName: showtime.roomName,
+                      roomNameEn: showtime.roomNameEn,
+                      startTime: showtime.startTime,
+                      endTime: showtime.endTime,
+                    };
+
+                    setSelectedShowtime(restoredShowtime);
+                    onSelectShowtime?.(restoredShowtime);
+
+                    // Set date để match với showtime
+                    const showtimeDate = dayjs(showtime.startTime).format(
+                      "YYYY-MM-DD"
+                    );
+                    setSelectedDate(showtimeDate);
+
+                    return; // Exit loops
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(
+              "❌ [MovieShowtime] Error restoring showtime:",
+              error
+            );
+          }
+        }
       } catch (error: any) {
         console.error(
           "❌ [MovieShowtime] Error fetching theater showtimes:",
@@ -286,6 +413,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
 
     if (theaterExists || !theaterId) {
       console.log("🎬 [MovieShowtime] Theater found, setting selectedShowtime");
+      clearSeatState(); // Clear old seat state
       setSelectedShowtime(pendingShowtime);
       onSelectShowtime?.(pendingShowtime);
       setPendingShowtime(null);
@@ -322,6 +450,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
           );
           console.log("📅 [MovieShowtime] Setting date:", showtimeDate);
           setSelectedDate(showtimeDate);
+          clearSeatState(); // Clear old seat state
           setSelectedShowtime(showtimeDetail);
           onSelectShowtime?.(showtimeDetail);
         }
@@ -453,6 +582,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
         }
 
         setSelectedShowtime(null);
+        clearSeatState(); // Clear seat state
         setSelectedTickets({});
         setSelectedSeats([]);
         setTotalPrice(0);
@@ -489,6 +619,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
         }
 
         setSelectedShowtime(null);
+        clearSeatState(); // Clear seat state
         setSelectedTickets({});
         setSelectedSeats([]);
         setTotalPrice(0);
@@ -503,7 +634,47 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
 
   useEffect(() => {
     const calculateTotal = async () => {
-      // Tính tổng số vé đã chọn
+      // Nếu đã chọn ghế, tính giá dựa trên ghế thực tế
+      if (selectedSeats.length > 0) {
+        try {
+          const { pricingService } = await import(
+            "@/services/pricing/pricingService"
+          );
+          const allPrices = await pricingService.getAllSeatPrices();
+
+          let total = 0;
+
+          // Tính giá dựa trên ghế thực tế đã chọn
+          selectedSeats.forEach((seat) => {
+            // Tìm loại vé tương ứng với ghế này
+            let ticketType: string = "ADULT"; // default
+
+            // Tìm loại vé đã chọn cho loại ghế này
+            Object.keys(selectedTickets).forEach((key) => {
+              const [seatType, ...ticketTypeParts] = key.split("-");
+              if (seatType === seat.type && selectedTickets[key] > 0) {
+                ticketType = ticketTypeParts.join("-");
+              }
+            });
+
+            // Tìm giá tương ứng
+            const price = allPrices.find(
+              (p) => p.seatType === seat.type && p.ticketType === ticketType
+            );
+
+            if (price) {
+              total += Number(price.basePrice);
+            }
+          });
+
+          setTotalPrice(total);
+          return;
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      // Fallback: Tính tổng số vé đã chọn (khi chưa chọn ghế)
       const totalTickets = Object.values(selectedTickets).reduce(
         (a, b) => a + b,
         0
@@ -545,7 +716,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
       }
     };
     calculateTotal();
-  }, [selectedTickets]);
+  }, [selectedTickets, selectedSeats]); // Thêm selectedSeats vào dependency
 
   useEffect(() => {
     const totalTickets = Object.values(selectedTickets).reduce(
@@ -569,6 +740,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
   // === CLEANUP: Unlock ghế khi component unmount ===
   const selectedSeatsRef = useRef<ShowtimeSeatResponse[]>([]);
   const selectedShowtimeRef = useRef<ShowtimeResponse | null>(null);
+  const isNavigatingToCheckoutRef = useRef(false); // Track nếu đang navigate sang checkout
 
   // Keep refs updated
   useEffect(() => {
@@ -578,33 +750,56 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
 
   useEffect(() => {
     return () => {
-      // Unlock ghế khi user navigate ra ngoài trang này
+      // KHÔNG unlock ghế nếu đang navigate sang checkout
+      if (isNavigatingToCheckoutRef.current) {
+        console.log(
+          "[MovieShowtime UNMOUNT] Skipping unlock - navigating to checkout"
+        );
+        return;
+      }
+
+      // Unlock ghế khi user navigate ra ngoài trang này (không phải checkout)
       const seats = selectedSeatsRef.current;
       const showtime = selectedShowtimeRef.current;
 
       if (seats.length > 0 && showtime) {
-        const identity = {
-          userId: localStorage.getItem("userId"),
-          guestSessionId: localStorage.getItem("guestSessionId"),
-        };
+        // Lấy identity từ auth-storage (giống SelectSeat)
+        let userId: string | undefined;
+        let guestSessionId: string | undefined;
+
+        const authStorage = localStorage.getItem("auth-storage");
+        if (authStorage) {
+          try {
+            const parsed = JSON.parse(authStorage);
+            userId = parsed?.state?.user?.id;
+          } catch (e) {
+            console.error("Error parsing auth-storage", e);
+          }
+        }
+
+        if (!userId) {
+          guestSessionId = localStorage.getItem("guestSessionId") ?? undefined;
+        }
 
         console.log(
           "[MovieShowtime UNMOUNT] Unlocking seats:",
-          seats.map((s) => s.seatId)
+          seats.map((s) => s.seatId),
+          "userId:",
+          userId,
+          "guestSessionId:",
+          guestSessionId
         );
 
         seats.forEach((seat) => {
           seatLockService
-            .unlockSingleSeat(
-              showtime.id,
-              seat.seatId,
-              identity.userId ?? undefined,
-              identity.guestSessionId ?? undefined
-            )
+            .unlockSingleSeat(showtime.id, seat.seatId, userId, guestSessionId)
             .catch((error) => {
               console.error(`Failed to unlock seat ${seat.seatId}:`, error);
             });
         });
+
+        // Clear seat state khi unlock
+        localStorage.removeItem(SEAT_STATE_KEY);
       }
     };
   }, []); // Empty dependency để chỉ chạy khi unmount
@@ -685,6 +880,10 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
         });
 
         Swal.close();
+
+        // Set flag để không unlock seats khi unmount
+        isNavigatingToCheckoutRef.current = true;
+
         navigate("/checkout", {
           state: {
             booking: {
@@ -723,6 +922,10 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
           ttl: seatLockTTL,
           ttlTimestamp: Date.now(),
         };
+
+        // Set flag để không unlock seats khi unmount
+        isNavigatingToCheckoutRef.current = true;
+
         navigate("/checkout", { state: { pendingData } });
       }
     } catch (error) {
@@ -877,6 +1080,7 @@ const MovieShowtime: React.FC<MovieShowtimeProps> = ({
                                     startTime: st.startTime,
                                     endTime: st.endTime,
                                   };
+                                  clearSeatState(); // Clear old seat state
                                   setSelectedShowtime(res);
                                   onSelectShowtime?.(res);
                                 }}

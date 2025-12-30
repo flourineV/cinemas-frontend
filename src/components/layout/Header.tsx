@@ -58,8 +58,7 @@ const Header = () => {
   }, []);
 
   // Check if user has access to dashboard
-  const hasAdminAccess =
-    user && ["admin", "manager", "staff"].includes(user.role);
+  const hasAdminAccess = user && ["admin", "manager"].includes(user.role);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -67,6 +67,24 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     return guestIdentity;
   };
 
+  // === CONSISTENT IDENTITY: Lưu identity đầu tiên và dùng xuyên suốt ===
+  const [consistentIdentity, setConsistentIdentity] = useState<{
+    userId?: string;
+    guestSessionId?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!consistentIdentity) {
+      const identity = getSafeIdentity();
+      setConsistentIdentity(identity);
+      console.log("🔒 [SelectSeat] Set consistent identity:", identity);
+    }
+  }, [consistentIdentity]);
+
+  const getConsistentIdentity = () => {
+    return consistentIdentity || getSafeIdentity();
+  };
+
   // === WEBSOCKET HANDLING ===
   // (Giữ nguyên logic cập nhật trạng thái từ socket)
   useEffect(() => {
@@ -152,7 +170,7 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
         e.preventDefault();
         e.returnValue = "Bạn đang giữ ghế. Reload sẽ mất chỗ ngồi đã chọn!";
 
-        const identity = getSafeIdentity();
+        const identity = getConsistentIdentity();
         const seatIds = selectedSeatsRef.current.map((s) => s.seatId);
 
         console.log("[BEFOREUNLOAD] Attempting to unlock seats:", seatIds);
@@ -208,8 +226,9 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
 
       // Chỉ unlock ghế khi shouldUnlockOnUnmount = true
       if (selectedSeatsRef.current.length > 0 && shouldUnlockOnUnmount) {
-        const identity = getSafeIdentity();
+        const identity = getConsistentIdentity();
         console.log("[UNMOUNT] Unlocking seats due to component unmount");
+        console.log("[UNMOUNT] Using identity:", identity);
 
         // Unlock từng ghế một khi unmount
         selectedSeatsRef.current.forEach((seat) => {
@@ -286,7 +305,8 @@ const SelectSeat: React.FC<SelectSeatProps> = ({
     );
 
     // LẤY IDENTITY AN TOÀN TẠI THỜI ĐIỂM CLICK
-    const identity = getSafeIdentity();
+    const identity = getConsistentIdentity();
+    console.log("🎯 [SelectSeat] Toggle seat using identity:", identity);
 
     // CASE 1: BỎ CHỌN (UNLOCK) - Cho phép bỏ chọn ghế mình đã chọn
     if (isCurrentlySelected) {

@@ -150,4 +150,15 @@ export const userProfileService = {
     const res = await profileClient.get(`/stats/user/${userId}`);
     return res.data;
   },
+
+  // Search profiles (for admin/manager)
+  searchProfiles: async (keyword?: string): Promise<UserProfileResponse[]> => {
+    const res = await profileClient.get<UserProfileResponse[]>(
+      "profiles/search",
+      {
+        params: keyword ? { keyword } : {},
+      }
+    );
+    return res.data;
+  },
 };

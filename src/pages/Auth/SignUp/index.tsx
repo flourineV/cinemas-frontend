@@ -102,16 +102,13 @@ const SignUp: React.FC = () => {
     // nếu đăng ký thành công thì Zustand đã lưu user rồi
     const user = useAuthStore.getState().user;
     if (user) {
-      // redirect giống SignIn: nếu admin/manager/staff -> dashboard, else về /
+      // redirect giống SignIn: nếu admin/manager -> dashboard, else về /
       switch (user.role) {
         case "admin":
           navigate("/admin/dashboard");
           break;
         case "manager":
           navigate("/manager/dashboard");
-          break;
-        case "staff":
-          navigate("/staff/dashboard");
           break;
         default:
           navigate("/");

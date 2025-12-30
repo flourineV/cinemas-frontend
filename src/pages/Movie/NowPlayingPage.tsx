@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/seo/SEO";
 import { movieService } from "@/services/movie/movieService";
 import { getPosterUrl } from "@/utils/getPosterUrl";
 import { Link, useNavigate } from "react-router-dom";
@@ -40,8 +41,13 @@ const NowPlayingPage = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Phim đang chiếu"
+        description="Danh sách phim đang chiếu tại CineHub. Xem lịch chiếu và đặt vé xem phim online ngay hôm nay."
+        keywords="phim đang chiếu, phim hot, phim mới, đặt vé xem phim, lịch chiếu phim, cinehub"
+      />
       <div className="w-full min-h-screen pb-16 bg-gray-100 mt-1">
-        <section className="w-full max-w-5xl mx-auto pt-8 px-4">
+        <section className="w-full max-w-5xl mx-auto pt-8">
           <div className="relative flex justify-center mb-8">
             <h1 className="text-2xl md:text-4xl font-extrabold text-yellow-500 whitespace-nowrap">
               {t("home.nowPlaying")}

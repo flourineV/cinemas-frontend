@@ -1,4 +1,5 @@
 import Layout from "../../components/layout/Layout";
+import SEO from "../../components/seo/SEO";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useLanguage } from "../../contexts/LanguageContext";
 import {
@@ -252,6 +253,11 @@ const Home = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Trang chủ"
+        description="CineHub - Hệ thống rạp chiếu phim hiện đại. Đặt vé xem phim online, xem lịch chiếu phim đang chiếu và sắp chiếu tại các rạp trên toàn quốc."
+        keywords="đặt vé xem phim, rạp chiếu phim, phim đang chiếu, phim sắp chiếu, lịch chiếu phim, cinehub"
+      />
       <div className="w-full min-h-screen pb-16 bg-gray-100">
         {/* Hero Section */}
         <div
@@ -429,7 +435,7 @@ const Home = () => {
                               : `${promo.discountValue.toLocaleString()}đ`}
                           </p>
                           <p className="text-lg text-white/90 font-semibold">
-                            {language === "en" ? "DISCOUNT" : "GIẢM GIÁ"}
+                            {t("home.discount")}
                           </p>
                         </div>
                       </div>
@@ -454,7 +460,7 @@ const Home = () => {
                           </p>
                         )}
                         <p className="text-xs text-gray-400">
-                          {language === "en" ? "Valid until:" : "HSD:"}{" "}
+                          {t("home.validUntil")}{" "}
                           {new Date(promo.endDate).toLocaleDateString(
                             language === "en" ? "en-US" : "vi-VN"
                           )}

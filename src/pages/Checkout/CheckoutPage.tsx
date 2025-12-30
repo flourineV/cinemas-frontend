@@ -14,7 +14,10 @@ import ConfirmStep from "@/components/checkout/ConfirmStep";
 import BookingSummary from "@/components/checkout/BookingSummary";
 
 import type { SelectedComboItem } from "@/components/checkout/SelectComboStep";
-import type { PromotionResponse } from "@/types/promotion/promotion.type";
+import type {
+  PromotionResponse,
+  RefundVoucherResponse,
+} from "@/types/promotion/promotion.type";
 
 const STEPS = [
   { id: 1, labelKey: "checkout.step1" },
@@ -44,6 +47,8 @@ export default function CheckoutPage() {
   const [appliedPromo, setAppliedPromo] = useState<PromotionResponse | null>(
     null
   );
+  const [selectedRefundVoucher, setSelectedRefundVoucher] =
+    useState<RefundVoucherResponse | null>(null);
   const [initialTTL, setInitialTTL] = useState<number | null>(null);
   const [useRankDiscount, setUseRankDiscount] = useState(false);
   const [rankDiscountValue, setRankDiscountValue] = useState(0);
@@ -117,6 +122,7 @@ export default function CheckoutPage() {
         customer,
         paymentMethod,
         appliedPromo,
+        selectedRefundVoucher,
         useRankDiscount,
         rankDiscountValue,
         bookingId: booking?.id || booking?.bookingId,
@@ -129,6 +135,7 @@ export default function CheckoutPage() {
     customer,
     paymentMethod,
     appliedPromo,
+    selectedRefundVoucher,
     useRankDiscount,
     rankDiscountValue,
     booking,
@@ -171,6 +178,7 @@ export default function CheckoutPage() {
         );
         setPaymentMethod(restoredState.paymentMethod || "momo");
         setAppliedPromo(restoredState.appliedPromo || null);
+        setSelectedRefundVoucher(restoredState.selectedRefundVoucher || null);
         setUseRankDiscount(restoredState.useRankDiscount || false);
         setRankDiscountValue(restoredState.rankDiscountValue || 0);
       } else {
@@ -313,17 +321,39 @@ export default function CheckoutPage() {
       : Number(appliedPromo.discountValue);
   }, [appliedPromo, booking, comboTotal]);
 
+  // Refund voucher discount value
+  const refundVoucherDiscount = useMemo(() => {
+    if (!selectedRefundVoucher) return 0;
+    const total = (booking?.totalPrice ?? 0) + comboTotal;
+    // Voucher chỉ được dùng tối đa bằng total
+    return Math.min(Number(selectedRefundVoucher.value), total);
+  }, [selectedRefundVoucher, booking, comboTotal]);
+
   const finalTotal = useMemo(() => {
     const total = (booking?.totalPrice ?? 0) + comboTotal;
-    let totalDiscount = discountValue;
+    let totalDiscount = discountValue + refundVoucherDiscount;
 
-    // Add rank discount if enabled
-    if (useRankDiscount && rankDiscountValue > 0) {
+    // Add rank discount if enabled (only if no promo or voucher)
+    if (
+      useRankDiscount &&
+      rankDiscountValue > 0 &&
+      !appliedPromo &&
+      !selectedRefundVoucher
+    ) {
       totalDiscount += Math.round(total * (rankDiscountValue / 100));
     }
 
     return Math.max(total - totalDiscount, 0);
-  }, [booking, comboTotal, discountValue, useRankDiscount, rankDiscountValue]);
+  }, [
+    booking,
+    comboTotal,
+    discountValue,
+    refundVoucherDiscount,
+    useRankDiscount,
+    rankDiscountValue,
+    appliedPromo,
+    selectedRefundVoucher,
+  ]);
 
   // --- Navigation Handlers ---
   const handleNextStep = () => setActiveStep((prev) => prev + 1);
@@ -415,6 +445,12 @@ export default function CheckoutPage() {
                         onPrev={handlePrevStep}
                         movieId={booking.movieId || pendingData?.movieId || ""}
                         bookingId={booking?.id || booking?.bookingId}
+                        showtimeId={
+                          booking?.showtime?.id ||
+                          booking?.showtimeId ||
+                          pendingData?.showtime?.id
+                        }
+                        seats={booking?.seats || pendingData?.seats || []}
                       />
                     )}
                     {activeStep === 3 && (
@@ -423,6 +459,8 @@ export default function CheckoutPage() {
                         setPaymentMethod={setPaymentMethod}
                         appliedPromo={appliedPromo}
                         onApplyPromo={setAppliedPromo}
+                        selectedRefundVoucher={selectedRefundVoucher}
+                        onSelectRefundVoucher={setSelectedRefundVoucher}
                         bookingId={booking?.id || booking?.bookingId || ""}
                         selectedCombos={selectedCombos}
                         userId={booking?.userId}
@@ -458,6 +496,8 @@ export default function CheckoutPage() {
                 comboTotal={comboTotal}
                 appliedPromo={appliedPromo}
                 discountValue={discountValue}
+                selectedRefundVoucher={selectedRefundVoucher}
+                refundVoucherDiscount={refundVoucherDiscount}
                 finalTotal={finalTotal}
                 useRankDiscount={useRankDiscount}
                 rankDiscountValue={rankDiscountValue}

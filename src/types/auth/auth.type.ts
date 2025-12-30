@@ -31,6 +31,7 @@ export interface UserResponse {
   email: string;
   username: string;
   role: string;
+  emailVerified: boolean;
   User: User;
 }
 

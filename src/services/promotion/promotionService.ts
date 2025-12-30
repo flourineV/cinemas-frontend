@@ -91,4 +91,14 @@ export const promotionService = {
     );
     return res.data;
   },
+
+  // Lấy refund vouchers available (chưa dùng, chưa hết hạn) của user
+  getAvailableRefundVouchers: async (
+    userId: string
+  ): Promise<RefundVoucherResponse[]> => {
+    const res = await promotionClient.get<RefundVoucherResponse[]>(
+      `/refund-vouchers/user/${userId}/available`
+    );
+    return res.data;
+  },
 };

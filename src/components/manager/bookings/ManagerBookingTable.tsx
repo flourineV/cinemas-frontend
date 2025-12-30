@@ -27,7 +27,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
 import { useAuthStore } from "@/stores/authStore";
-import OverviewBookingCards from "@/components/admin/bookings/OverviewBookingCards";
+import ManagerOverviewBookingCards from "./ManagerOverviewBookingCards";
 
 const STATUS_LABELS: Record<string, string> = {
   ALL: "Tất cả",
@@ -419,7 +419,7 @@ export default function ManagerBookingTable(): React.JSX.Element {
     <>
       <div className="space-y-6">
         {/* Overview Cards */}
-        <OverviewBookingCards />
+        <ManagerOverviewBookingCards />
 
         <div className="bg-white border border-gray-400 rounded-lg p-6">
           {/* Header */}
@@ -635,9 +635,9 @@ export default function ManagerBookingTable(): React.JSX.Element {
 
       {/* Detail Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[9999] flex items-center justify-center px-4 py-6">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           />
 
@@ -669,13 +669,13 @@ export default function ManagerBookingTable(): React.JSX.Element {
                       Thông tin đặt vé
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="border border-gray-200 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">Mã booking</p>
                         <p className="font-semibold text-gray-900">
                           {modalBooking.bookingCode}
                         </p>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="border border-gray-200 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">Trạng thái</p>
                         <span
                           className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[modalBooking.status] || "bg-gray-100 text-gray-800"}`}
@@ -684,14 +684,14 @@ export default function ManagerBookingTable(): React.JSX.Element {
                             modalBooking.status}
                         </span>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="border border-gray-200 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">Khách hàng</p>
                         <p className="font-semibold text-gray-900">
                           {getName(modalBooking)}
                         </p>
                       </div>
                       {modalPaymentMethod && (
-                        <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="border border-gray-200 rounded-lg p-3">
                           <p className="text-xs text-gray-500 mb-1">
                             Phương thức thanh toán
                           </p>
@@ -710,13 +710,13 @@ export default function ManagerBookingTable(): React.JSX.Element {
                       Thông tin suất chiếu
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="border border-gray-200 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">Phim</p>
                         <p className="font-semibold text-gray-900">
                           {modalBooking.movieTitle || "N/A"}
                         </p>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="border border-gray-200 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">
                           Phòng chiếu
                         </p>
@@ -724,7 +724,7 @@ export default function ManagerBookingTable(): React.JSX.Element {
                           {modalBooking.roomName || "N/A"}
                         </p>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="border border-gray-200 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">Suất chiếu</p>
                         <p className="font-semibold text-gray-900">
                           {modalBooking.showDateTime

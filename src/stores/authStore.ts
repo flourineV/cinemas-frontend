@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { authService } from "@/services/auth/authService";
+import { userProfileService } from "@/services/userprofile/userProfileService";
 import type {
   SignInRequest,
   SignUpRequest,
@@ -18,6 +19,7 @@ export interface AuthUser {
   username: string;
   email: string;
   role: string;
+  emailVerified: boolean;
 }
 
 interface AuthState {
@@ -34,6 +36,8 @@ interface AuthActions {
   signout: () => void;
   refreshAccessToken: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState & AuthActions>()(
@@ -66,10 +70,19 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
           // Create user profile after successful signup
           try {
-            const { userProfileService } = await import(
-              "@/services/userprofile/userProfileService"
-            );
-            await userProfileService.createProfile({
+            // Small delay to ensure token is set in localStorage
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            console.log("🔄 Creating profile with data:", {
+              userId: jwt.user.id,
+              email: jwt.user.email,
+              username: jwt.user.username,
+              fullName: jwt.user.username,
+              phoneNumber: data.phoneNumber,
+              nationalId: data.nationalId,
+            });
+
+            const profileResult = await userProfileService.createProfile({
               userId: jwt.user.id,
               email: jwt.user.email || data.email, // Use jwt.user.email if available, fallback to data.email
               username: jwt.user.username,
@@ -77,8 +90,17 @@ export const useAuthStore = create<AuthState & AuthActions>()(
               phoneNumber: data.phoneNumber,
               nationalId: data.nationalId,
             });
-          } catch (profileError) {
-            console.error("Failed to create profile:", profileError);
+            console.log(
+              "✅ Profile created successfully for user:",
+              jwt.user.id,
+              profileResult
+            );
+          } catch (profileError: any) {
+            console.error("❌ Failed to create profile:", profileError);
+            console.error(
+              "❌ Profile error response:",
+              profileError.response?.data
+            );
             // Don't fail the signup process if profile creation fails
           }
         } catch (err: any) {
@@ -94,6 +116,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         try {
           const res = await authService.signin(data);
           const jwt: JwtResponse = res.data;
+
+          // Only proceed if we have a successful response
+          if (!jwt.accessToken || !jwt.user) {
+            throw new Error("Invalid response from server");
+          }
 
           // Always save to localStorage for immediate use
           localStorage.setItem("accessToken", jwt.accessToken ?? "");
@@ -119,10 +146,21 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             loading: false,
           });
         } catch (err: any) {
+          const errorMessage = err.response?.data?.message || "Sign in failed";
           set({
-            error: err.response?.data?.message || "Sign in failed",
+            error: errorMessage,
             loading: false,
+            user: null, // Ensure user is cleared on error
+            accessToken: null,
+            refreshToken: null,
           });
+
+          // Clear any stored tokens on error
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          deleteAllAuthCookies();
+
+          throw err; // Re-throw so component can handle specific errors
         }
       },
 
@@ -231,10 +269,36 @@ export const useAuthStore = create<AuthState & AuthActions>()(
               username: decoded.username ?? "",
               email: decoded.email ?? "",
               role: decoded.role ?? getUserRole(accessToken),
+              emailVerified: decoded.emailVerified ?? false,
             },
             accessToken,
             refreshToken,
           });
+      },
+
+      refreshUser: async () => {
+        const { accessToken } = get();
+        if (!accessToken || isTokenExpired(accessToken)) {
+          await get().checkAuth();
+          return;
+        }
+
+        const decoded = decodeToken(accessToken);
+        if (decoded) {
+          set({
+            user: {
+              id: decoded.sub,
+              username: decoded.username ?? "",
+              email: decoded.email ?? "",
+              role: decoded.role ?? getUserRole(accessToken),
+              emailVerified: decoded.emailVerified ?? false,
+            },
+          });
+        }
+      },
+
+      clearError: () => {
+        set({ error: null });
       },
     }),
     {

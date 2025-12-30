@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { paymentService } from "@/services/payment/payment.service";
 import Layout from "@/components/layout/Layout";
-import { Loader2, CheckCircle2, XCircle, Mail } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Mail, Home } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuthStore } from "@/stores/authStore";
 
 const PaymentResult = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuthStore();
   const [status, setStatus] = useState<"loading" | "success" | "failed">(
     "loading"
   );
@@ -17,6 +19,21 @@ const PaymentResult = () => {
   useEffect(() => {
     const checkPaymentStatus = async () => {
       try {
+        // Check if this is a free booking (paid with voucher)
+        const isFreeBooking = searchParams.get("free") === "true";
+        const bookingIdParam = searchParams.get("bookingId");
+
+        if (isFreeBooking && bookingIdParam) {
+          // Free booking - no need to check ZaloPay status
+          setStatus("success");
+          setMessage(t("payment.success"));
+
+          // Clear pending payment state on success
+          sessionStorage.removeItem("cinehub-payment-pending");
+          sessionStorage.removeItem("cinehub-checkout-state");
+          return;
+        }
+
         // Lấy appTransId từ URL params (ZaloPay redirect sẽ có param này)
         const appTransId = searchParams.get("apptransid");
 
@@ -37,25 +54,6 @@ const PaymentResult = () => {
           // Clear pending payment state on success
           sessionStorage.removeItem("cinehub-payment-pending");
           sessionStorage.removeItem("cinehub-checkout-state");
-
-          // Phân biệt loại payment để redirect đúng tab
-          // Check nếu có type parameter hoặc appTransId có pattern FnB
-          const paymentType = searchParams.get("type");
-          const isFnbPayment =
-            paymentType === "fnb" ||
-            appTransId.toLowerCase().includes("fnb") ||
-            appTransId.toLowerCase().includes("popcorn");
-
-          // Redirect về trang phù hợp sau 3 giây với state để force refresh
-          setTimeout(() => {
-            if (isFnbPayment) {
-              navigate("/profile?tab=fnb", { state: { refresh: Date.now() } });
-            } else {
-              navigate("/profile?tab=bookings", {
-                state: { refresh: Date.now() },
-              });
-            }
-          }, 3000);
         } else {
           setStatus("failed");
           setMessage(response.returnMessage || t("payment.notCompleted"));
@@ -109,11 +107,35 @@ const PaymentResult = () => {
                   <p className="text-sm">{t("payment.emailSent")}</p>
                 </div>
               )}
-              <p className="text-sm text-gray-500">
-                {isFnbPayment
-                  ? t("payment.redirectFnb")
-                  : t("payment.redirectBookings")}
-              </p>
+              <div className="flex flex-col gap-3 mt-6">
+                <button
+                  onClick={() => navigate("/")}
+                  className="bg-yellow-500 text-black font-semibold px-6 py-3 rounded-md hover:bg-yellow-400 transition flex items-center justify-center gap-2"
+                >
+                  <Home className="w-4 h-4" />
+                  {t("payment.backHome")}
+                </button>
+                {user && (
+                  <button
+                    onClick={() => {
+                      if (isFnbPayment) {
+                        navigate("/profile?tab=fnb", {
+                          state: { refresh: Date.now() },
+                        });
+                      } else {
+                        navigate("/profile?tab=bookings", {
+                          state: { refresh: Date.now() },
+                        });
+                      }
+                    }}
+                    className="bg-gray-600 text-white font-semibold px-6 py-3 rounded-md hover:bg-gray-500 transition"
+                  >
+                    {isFnbPayment
+                      ? t("payment.viewFnbOrders")
+                      : t("payment.viewBookings")}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

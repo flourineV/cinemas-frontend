@@ -2,15 +2,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Header from "../../../components/layout/Header";
-import { useAuthStore } from "@/stores/authStore";
 import { useScrollToTop } from "@/hooks/useScrollToTop";
 
-import ManagerStaffTable from "@/components/manager/accounts/ManagerStaffTable";
 import ManagerMovieTable from "@/components/manager/movies/ManagerMovieTable";
 import ManagerShowtimeManagement from "@/components/manager/showtimes/ManagerShowtimeManagement";
-import ManagerBookingTable from "@/components/manager/bookings/ManagerBookingTable";
 import ReviewManagementTable from "@/components/admin/reviews/ReviewManagementTable";
-import FacilitiesManagement from "@/components/admin/facilities/FacilitiesManagement";
+import ManagerFacilitiesManagement from "@/components/manager/facilities/ManagerFacilitiesManagement";
 
 type Tab = {
   id: string;
@@ -18,10 +15,8 @@ type Tab = {
 };
 
 const TABS: Tab[] = [
-  { id: "accounts", label: "Quản lý nhân viên" },
   { id: "movies", label: "Quản lý phim" },
   { id: "showtimes", label: "Quản lý lịch chiếu" },
-  { id: "bookings", label: "Quản lý đặt vé" },
   { id: "reviews", label: "Quản lý đánh giá" },
   { id: "facilities", label: "Quản lý cơ sở vật chất" },
 ];
@@ -29,15 +24,13 @@ const TABS: Tab[] = [
 const STORAGE_KEY = "manager_dashboard_tab";
 
 const ManagerDashboard: React.FC = () => {
-  const { user } = useAuthStore();
-
-  // Initialize from localStorage or default to "accounts"
+  // Initialize from localStorage or default to "movies"
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && TABS.some((tab) => tab.id === saved)) {
       return saved;
     }
-    return "accounts";
+    return "movies";
   });
 
   // Save to localStorage when tab changes
@@ -55,13 +48,6 @@ const ManagerDashboard: React.FC = () => {
         {/* SIDEBAR - Fixed */}
         <div className="w-64 bg-black border-r border-gray-600 shadow-lg fixed h-full top-0 z-10 pt-16">
           <div className="p-3">
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Bảng Điều Khiển
-            </h1>
-            <p className="text-lg font-light text-gray-300 mb-6">
-              Chào mừng {user?.username ?? "Quản lý"}
-            </p>
-
             {/* SIDEBAR NAVIGATION */}
             <nav className="space-y-2">
               {TABS.map((tab) => {
@@ -91,15 +77,6 @@ const ManagerDashboard: React.FC = () => {
         <div className="flex-1 ml-64 pt-16">
           <div className="p-8">
             <div className="max-w-6xl mx-auto">
-              {activeTab === "accounts" && (
-                <section>
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Quản lý nhân viên
-                  </h2>
-                  <ManagerStaffTable />
-                </section>
-              )}
-
               {activeTab === "movies" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
@@ -118,15 +95,6 @@ const ManagerDashboard: React.FC = () => {
                 </section>
               )}
 
-              {activeTab === "bookings" && (
-                <section>
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Quản lý đặt vé
-                  </h2>
-                  <ManagerBookingTable />
-                </section>
-              )}
-
               {activeTab === "reviews" && (
                 <section className="space-y-6">
                   <h2 className="text-2xl font-semibold text-gray-800">
@@ -141,7 +109,7 @@ const ManagerDashboard: React.FC = () => {
                   <h2 className="text-2xl font-semibold mb-6 text-gray-800">
                     Quản lý cơ sở vật chất
                   </h2>
-                  <FacilitiesManagement />
+                  <ManagerFacilitiesManagement />
                 </section>
               )}
             </div>

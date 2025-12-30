@@ -738,13 +738,15 @@ function MovieTable({ status }: MovieTableProps) {
                           </button>
                         )}
 
-                        <button
-                          onClick={() => onDelete(String(m.id))}
-                          className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                          title="Xóa phim"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {(m as any).status !== "NOW_PLAYING" && (
+                          <button
+                            onClick={() => onDelete(String(m.id))}
+                            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                            title="Xóa phim"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

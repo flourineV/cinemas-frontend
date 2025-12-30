@@ -1,14 +1,18 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Crown, Eye, Edit2, Trash2, X } from "lucide-react";
+import { Crown, Eye, Edit2, Trash2, X, Plus } from "lucide-react";
 import Swal from "sweetalert2";
 
-import { managerService } from "@/services/userprofile";
+import { managerService, userProfileService } from "@/services/userprofile";
 import { theaterService } from "@/services/showtime/theaterService";
-import type { ManagerProfileResponse } from "@/types/userprofile";
+import type {
+  ManagerProfileResponse,
+  UserProfileResponse,
+} from "@/types/userprofile";
 import type { TheaterResponse } from "@/types/showtime/theater.type";
 import { Badge } from "@/components/ui/Badge";
 import { CustomDropdown } from "@/components/ui/CustomDropdown";
+import DateInput from "@/components/ui/DateInput";
 import { useScrollToTop } from "@/hooks/useScrollToTop";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
@@ -26,9 +30,20 @@ export default function ManagerTable(): React.JSX.Element {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // Add manager modal states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<UserProfileResponse[]>(
+    []
+  );
+  const [selectedUser, setSelectedUser] = useState<string>("");
+  const [selectedTheater, setSelectedTheater] = useState<string>("");
+  const [hireDate, setHireDate] = useState<string>("");
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [creating, setCreating] = useState(false);
+
   // Scroll to top when component mounts
   useScrollToTop();
-  useBodyScrollLock(isProfileModalOpen);
+  useBodyScrollLock(isProfileModalOpen || isAddModalOpen);
 
   // Load theaters on component mount
   useEffect(() => {
@@ -107,6 +122,87 @@ export default function ManagerTable(): React.JSX.Element {
     setUserProfile(null);
   };
 
+  // Open add manager modal
+  const openAddModal = async () => {
+    setIsAddModalOpen(true);
+    setLoadingUsers(true);
+
+    try {
+      const users = await userProfileService.searchProfiles();
+      // Filter out users who already have manager profiles
+      const existingManagers = await managerService.getAllManagers();
+      const managerUserIds = existingManagers.map((m) => m.userProfileId);
+
+      const availableUsersFiltered = users.filter(
+        (user) => !managerUserIds.includes(user.id)
+      );
+
+      setAvailableUsers(availableUsersFiltered);
+    } catch (error) {
+      console.error("Error loading users:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Không thể tải danh sách người dùng",
+        text: "Vui lòng thử lại sau",
+      });
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Close add manager modal
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setSelectedUser("");
+    setSelectedTheater("");
+    setHireDate("");
+    setAvailableUsers([]);
+  };
+
+  // Create manager
+  const handleCreateManager = async () => {
+    if (!selectedUser || !selectedTheater || !hireDate) {
+      Swal.fire({
+        icon: "warning",
+        title: "Thiếu thông tin",
+        text: "Vui lòng điền đầy đủ thông tin",
+      });
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await managerService.createManager({
+        userProfileId: selectedUser,
+        managedCinemaName: selectedTheater,
+        hireDate: hireDate,
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Tạo quản lý thành công",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      closeAddModal();
+
+      // Reload managers if the created manager is for the selected cinema
+      if (selectedTheater === selectedCinema) {
+        loadManagersByCinema(selectedCinema);
+      }
+    } catch (error) {
+      console.error("Error creating manager:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi tạo quản lý",
+        text: "Vui lòng thử lại sau",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <>
       <div className="bg-white border border-gray-400 rounded-lg p-6">
@@ -119,8 +215,17 @@ export default function ManagerTable(): React.JSX.Element {
             </h3>
           </div>
 
-          {/* Cinema selector */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Add Manager Button */}
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              <Plus size={16} />
+              Thêm quản lý
+            </button>
+
+            {/* Cinema selector */}
             <CustomDropdown
               options={theaters.map((theater) => ({
                 value: theater.name,
@@ -481,6 +586,105 @@ export default function ManagerTable(): React.JSX.Element {
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Manager Modal */}
+      {isAddModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6"
+        >
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeAddModal}
+          />
+
+          <div className="relative w-full max-w-md bg-white border border-gray-400 rounded-lg p-6 shadow-xl z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Thêm quản lý mới
+              </h3>
+              <button
+                onClick={closeAddModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* User Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn người dùng
+                </label>
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-yellow-600"></div>
+                  </div>
+                ) : (
+                  <CustomDropdown
+                    options={availableUsers.map((user) => ({
+                      value: user.id,
+                      label: `${user.fullName || user.username} (${user.email})`,
+                    }))}
+                    value={selectedUser}
+                    onChange={setSelectedUser}
+                    placeholder="Chọn người dùng"
+                  />
+                )}
+              </div>
+
+              {/* Theater Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rạp quản lý
+                </label>
+                <CustomDropdown
+                  options={theaters.map((theater) => ({
+                    value: theater.name,
+                    label: theater.name,
+                  }))}
+                  value={selectedTheater}
+                  onChange={setSelectedTheater}
+                  placeholder="Chọn rạp"
+                />
+              </div>
+
+              {/* Hire Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ngày nhận chức
+                </label>
+                <DateInput
+                  value={hireDate}
+                  onChange={setHireDate}
+                  placeholder="Chọn ngày"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={closeAddModal}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                disabled={creating}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleCreateManager}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50"
+                disabled={
+                  creating || !selectedUser || !selectedTheater || !hireDate
+                }
+              >
+                {creating ? "Đang tạo..." : "Tạo quản lý"}
               </button>
             </div>
           </div>
